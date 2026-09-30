@@ -178,6 +178,136 @@ function composeCanvasFilters(...filters: string[]): string {
   return activeFilters.length ? activeFilters.join(' ') : 'none';
 }
 
+let filterSurface: HTMLCanvasElement | null = null;
+let filterSurfaceContext: CanvasRenderingContext2D | null = null;
+let canvasFilterSupport: boolean | null = null;
+
+const supportsCanvasFilters = (): boolean => {
+  if (canvasFilterSupport !== null) return canvasFilterSupport;
+  const source = document.createElement('canvas');
+  source.width = 1;
+  source.height = 1;
+  const sourceContext = source.getContext('2d');
+  const destination = document.createElement('canvas');
+  destination.width = 1;
+  destination.height = 1;
+  const destinationContext = destination.getContext('2d');
+  if (!sourceContext || !destinationContext || !('filter' in destinationContext)) {
+    canvasFilterSupport = false;
+    return false;
+  }
+  sourceContext.fillStyle = '#ff0000';
+  sourceContext.fillRect(0, 0, 1, 1);
+  destinationContext.filter = 'grayscale(1)';
+  destinationContext.drawImage(source, 0, 0);
+  const pixel = destinationContext.getImageData(0, 0, 1, 1).data;
+  canvasFilterSupport = Math.abs(pixel[0] - pixel[1]) < 12 && pixel[0] < 180;
+  return canvasFilterSupport;
+};
+
+const clampByte = (value: number): number => Math.max(0, Math.min(255, Math.round(value)));
+
+const applyFilterChain = (data: Uint8ClampedArray, filter: string): void => {
+  const steps = filter.match(/[a-z-]+\([^)]+\)/g) ?? [];
+  for (const step of steps) {
+    const splitAt = step.indexOf('(');
+    const name = step.slice(0, splitAt);
+    const amount = Number.parseFloat(step.slice(splitAt + 1));
+    if (!Number.isFinite(amount) || name === 'blur') continue;
+    for (let index = 0; index < data.length; index += 4) {
+      let red = data[index];
+      let green = data[index + 1];
+      let blue = data[index + 2];
+      if (name === 'grayscale') {
+        const luma = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+        red += (luma - red) * amount;
+        green += (luma - green) * amount;
+        blue += (luma - blue) * amount;
+      } else if (name === 'sepia') {
+        const sepiaRed = red * 0.393 + green * 0.769 + blue * 0.189;
+        const sepiaGreen = red * 0.349 + green * 0.686 + blue * 0.168;
+        const sepiaBlue = red * 0.272 + green * 0.534 + blue * 0.131;
+        red += (sepiaRed - red) * amount;
+        green += (sepiaGreen - green) * amount;
+        blue += (sepiaBlue - blue) * amount;
+      } else if (name === 'hue-rotate') {
+        const radians = amount * Math.PI / 180;
+        const cos = Math.cos(radians);
+        const sin = Math.sin(radians);
+        const nextRed = red * (0.213 + cos * 0.787 - sin * 0.213) + green * (0.715 - cos * 0.715 - sin * 0.715) + blue * (0.072 - cos * 0.072 + sin * 0.928);
+        const nextGreen = red * (0.213 - cos * 0.213 + sin * 0.143) + green * (0.715 + cos * 0.285 + sin * 0.140) + blue * (0.072 - cos * 0.072 - sin * 0.283);
+        const nextBlue = red * (0.213 - cos * 0.213 - sin * 0.787) + green * (0.715 - cos * 0.715 + sin * 0.715) + blue * (0.072 + cos * 0.928 + sin * 0.072);
+        red = nextRed;
+        green = nextGreen;
+        blue = nextBlue;
+      } else if (name === 'saturate') {
+        const luma = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+        red = luma + (red - luma) * amount;
+        green = luma + (green - luma) * amount;
+        blue = luma + (blue - luma) * amount;
+      } else if (name === 'contrast') {
+        red = (red - 128) * amount + 128;
+        green = (green - 128) * amount + 128;
+        blue = (blue - 128) * amount + 128;
+      } else if (name === 'brightness') {
+        red *= amount;
+        green *= amount;
+        blue *= amount;
+      }
+      data[index] = clampByte(red);
+      data[index + 1] = clampByte(green);
+      data[index + 2] = clampByte(blue);
+    }
+  }
+};
+
+const drawFilteredSource = (
+  target: CanvasRenderingContext2D,
+  image: CanvasImageSource,
+  filter: string,
+  sourceX: number,
+  sourceY: number,
+  sourceWidth: number,
+  sourceHeight: number,
+  destX: number,
+  destY: number,
+  destWidth: number,
+  destHeight: number,
+): void => {
+  target.filter = 'none';
+  if (!filter || filter === 'none') {
+    target.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+    return;
+  }
+  if (supportsCanvasFilters()) {
+    if (!filterSurface) filterSurface = document.createElement('canvas');
+    const width = Math.max(1, Math.round(destWidth));
+    const height = Math.max(1, Math.round(destHeight));
+    if (filterSurface.width !== width || filterSurface.height !== height) {
+      filterSurface.width = width;
+      filterSurface.height = height;
+      filterSurfaceContext = null;
+    }
+    filterSurfaceContext ??= filterSurface.getContext('2d');
+    if (filterSurfaceContext) {
+      filterSurfaceContext.clearRect(0, 0, width, height);
+      filterSurfaceContext.filter = filter;
+      filterSurfaceContext.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
+      filterSurfaceContext.filter = 'none';
+      target.drawImage(filterSurface, destX, destY, destWidth, destHeight);
+      return;
+    }
+  }
+  target.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+  const originX = Math.max(0, Math.floor(destX));
+  const originY = Math.max(0, Math.floor(destY));
+  const pixelWidth = Math.max(1, Math.min(target.canvas.width - originX, Math.round(destWidth)));
+  const pixelHeight = Math.max(1, Math.min(target.canvas.height - originY, Math.round(destHeight)));
+  const pixels = target.getImageData(originX, originY, pixelWidth, pixelHeight);
+  applyFilterChain(pixels.data, filter);
+  target.putImageData(pixels, originX, originY);
+};
+
 type LookRecipe = {
   saturate?: number;
   contrast?: number;
@@ -1426,11 +1556,7 @@ const paintHomeEffect = (): void => {
   };
   if (effect === 'smooth-skin') {
     const source = snapshot();
-    context.save();
-    context.filter = 'blur(0.8px) brightness(1.05)';
-    context.drawImage(source, 0, 0);
-    context.filter = 'none';
-    context.restore();
+    drawFilteredSource(context, source, 'blur(0.8px) brightness(1.05)', 0, 0, width, height, 0, 0, width, height);
     return;
   }
   if (effect === 'eyelashes') {
@@ -1594,8 +1720,7 @@ const render = (): void => {
     context.clearRect(0, 0, width, height);
     context.fillStyle = editBackground?.value ?? '#ffffff';
     context.fillRect(0, 0, width, height);
-    context.filter = selectedFilter;
-    context.drawImage(originalImage, sourceX, sourceY, sourceWidth, sourceHeight, drawX, drawY, drawWidth, drawHeight);
+    drawFilteredSource(context, originalImage, selectedFilter, sourceX, sourceY, sourceWidth, sourceHeight, drawX, drawY, drawWidth, drawHeight);
   } else {
     if (sourceRatio > targetRatio) {
       sourceWidth = originalImage.naturalHeight * targetRatio;
@@ -1607,8 +1732,7 @@ const render = (): void => {
     context.clearRect(0, 0, width, height);
     context.fillStyle = editBackground?.value ?? '#ffffff';
     context.fillRect(0, 0, width, height);
-    context.filter = selectedFilter;
-    context.drawImage(originalImage, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
+    drawFilteredSource(context, originalImage, selectedFilter, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
   }
   context.filter = 'none';
   applySharpness(sliderNumber('adjustSharpness'));
@@ -2004,6 +2128,9 @@ document.querySelectorAll<HTMLButtonElement>('[data-open-tools]').forEach((butto
 document.querySelectorAll<HTMLButtonElement>('[data-look]').forEach((chip) => {
   chip.addEventListener('click', () => {
     if (!chip.dataset.look || !photoFilter) return;
+    activeHomeEffect = null;
+    const title = byId<HTMLElement>('editorTitle');
+    if (title) title.textContent = 'Filters';
     photoFilter.value = chip.dataset.look;
     console.log('filter', chip.dataset.look);
     syncFilterChips();
