@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
@@ -7,6 +7,8 @@ const pages = [
   'settings.html',
   'about.html',
   'privacy.html',
+  'privacy-policy.html',
+  'contact.html',
   'terms.html',
   'licensing.html',
   'copyright.html',
@@ -39,6 +41,8 @@ export default defineConfig({
       name: 'copy-service-worker',
       closeBundle() {
         copyFileSync(resolve('sw.js'), resolve('dist/sw.js'));
+        const ads = resolve('public/ads.txt');
+        if (existsSync(ads)) copyFileSync(ads, resolve('dist/ads.txt'));
         const imagesDir = resolve('dist/images');
         mkdirSync(imagesDir, { recursive: true });
         for (const file of readdirSync(resolve('images'))) {

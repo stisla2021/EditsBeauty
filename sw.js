@@ -1,10 +1,12 @@
 // Copyright (c) StISLA2021
-const CACHE = 'editsbeauty-shell-v7';
+const CACHE = 'editsbeauty-shell-v8';
 const SHELL = [
   './',
   './index.html',
   './about.html',
   './privacy.html',
+  './privacy-policy.html',
+  './contact.html',
   './terms.html',
   './licensing.html',
   './copyright.html',

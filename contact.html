@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!-- Copyright (c) StISLA2021 -->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#f6f6f7">
+  <title>Contact - EditsBeauty</title>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="EditsBeauty">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo-192.png">
+  <link rel="apple-touch-icon" href="images/logo-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="ios-legal">
+  <header class="ios-header">
+    <a class="ios-back" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</a>
+    <h1>Contact</h1>
+    <span></span>
+  </header>
+  <main class="legal-card">
+    <h2>Contact Us</h2>
+    <p>Email <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a></p>
+    <p>Location: Serekunda, Gambia.</p>
+    <form class="contact-form" id="contactForm">
+      <label>Name<input name="name" type="text" required autocomplete="name"></label>
+      <label>Email<input name="email" type="email" required autocomplete="email"></label>
+      <label>Message<textarea name="message" required></textarea></label>
+      <button type="submit">Send</button>
+      <p id="contactStatus" aria-live="polite"></p>
+    </form>
+  </main>
+  <footer class="site-footer">
+    <nav aria-label="Site">
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="about.html">About Us</a>
+      <a href="contact.html">Contact Us</a>
+      <a href="terms.html">Terms</a>
+    </nav>
+    <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a>
+    <span>Copyright © StISLA2021</span>
+  </footer>
+  <script>
+    document.getElementById('contactForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+      const body = `Name: ${data.get('name')}\nEmail: ${data.get('email')}\n\n${data.get('message')}`;
+      const status = document.getElementById('contactStatus');
+      if (status) status.textContent = 'Opening your email app to send this message.';
+      window.location.href = `mailto:stisla2021@gmail.com?subject=${encodeURIComponent('EditsBeauty contact')}&body=${encodeURIComponent(body)}`;
+    });
+  </script>
+  <script type="module" src="./menu.ts"></script>
+</body>
+</html>

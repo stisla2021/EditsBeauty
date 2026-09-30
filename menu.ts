@@ -137,6 +137,8 @@ const coreFiles = [
   './index.html',
   './about.html',
   './privacy.html',
+  './privacy-policy.html',
+  './contact.html',
   './terms.html',
   './licensing.html',
   './copyright.html',
@@ -241,7 +243,7 @@ const restoreCoreCache = async (): Promise<void> => {
     }
   }
   await Promise.all(names.map((name) => caches.delete(name)));
-  const fresh = await caches.open('editsbeauty-shell-v7');
+  const fresh = await caches.open('editsbeauty-shell-v8');
   for (const item of saved) await fresh.put(item.request, item.response);
   if (navigator.onLine) {
     void Promise.all([...coreFiles, ...modelFiles].map(async (path) => {

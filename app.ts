@@ -189,10 +189,10 @@ type LookRecipe = {
 
 const lookRecipes: Record<string, LookRecipe> = {
   original: {},
-  film: { sepia: 0.3, contrast: 1.12, saturate: 0.84 },
-  warm: { sepia: 0.16, saturate: 1.2 },
-  glow: { brightness: 1.12, saturate: 1.2 },
-  cool: { hue: 12, saturate: 0.92 },
+  film: { sepia: 0.45, contrast: 1.2, saturate: 0.7 },
+  warm: { sepia: 0.35, saturate: 1.35, hue: -8 },
+  glow: { brightness: 1.28, saturate: 1.25, contrast: 0.92 },
+  cool: { hue: 28, saturate: 0.75, brightness: 1.05 },
   vivid: { saturate: 1.3, contrast: 1.1 },
   'vivid-warm': { saturate: 1.3, sepia: 0.2 },
   'vivid-cool': { saturate: 1.2, hue: -10 },
@@ -202,10 +202,10 @@ const lookRecipes: Record<string, LookRecipe> = {
   mono: { grayscale: 1 },
   silvertone: { grayscale: 1, contrast: 1.2 },
   noir: { grayscale: 1, contrast: 1.5, brightness: 0.9 },
-  fade: { saturate: 0.8, contrast: 0.9, brightness: 1.08, sepia: 0.08 },
-  instant: { contrast: 1.15, saturate: 0.85, sepia: 0.15 },
-  transfer: { sepia: 0.35, contrast: 1.05, saturate: 1.2, hue: 10 },
-  chrome: { contrast: 1.2, saturate: 1.15, brightness: 1.05, hue: 8 },
+  fade: { saturate: 0.55, contrast: 0.82, brightness: 1.18, sepia: 0.22 },
+  instant: { contrast: 1.28, saturate: 0.7, sepia: 0.28, brightness: 1.06 },
+  transfer: { sepia: 0.5, contrast: 1.12, saturate: 1.35, hue: 18 },
+  chrome: { contrast: 1.35, saturate: 1.4, brightness: 1.12, hue: 14 },
 };
 
 const mixUnit = (value: number, amount: number): number => 1 + (value - 1) * amount;
@@ -318,9 +318,10 @@ const showEditor = (): void => {
   stage?.classList.toggle('has-photo', Boolean(originalImage));
 };
 
-type HomeEffect = 'lipstick' | 'eyelashes' | 'double-chin' | 'acne' | 'ai-retouch' | 'ai-bg' | 'red-light' | 'golden-hour' | 'slim' | 'body' | 'remover' | 'removal';
+type HomeEffect = 'smooth-skin' | 'lipstick' | 'eyelashes' | 'double-chin' | 'acne' | 'ai-retouch' | 'ai-bg' | 'red-light' | 'golden-hour' | 'slim' | 'body' | 'remover' | 'removal';
 
 const homeEffectLabel: Record<HomeEffect, string> = {
+  'smooth-skin': 'SMOOTH SKIN',
   lipstick: 'LIPSTICK',
   eyelashes: 'EYELASHES',
   'double-chin': 'DOUBLE CHIN',
@@ -905,6 +906,8 @@ function openPortrait(kind: 'retouch' | 'narrow'): void {
     if (overlay) stage.insertBefore(canvas, overlay);
     else stage.append(canvas);
   }
+  const smoothControl = byId<HTMLElement>('smoothControl');
+  if (kind === 'retouch' && smoothControl) byId<HTMLElement>('smoothMount')?.append(smoothControl);
   render();
 }
 
@@ -918,6 +921,8 @@ function closePortrait(apply: boolean): void {
   if (retouchScreen) retouchScreen.hidden = true;
   if (narrowScreen) narrowScreen.hidden = true;
   if (brushRing) brushRing.hidden = true;
+  const smoothControl = byId<HTMLElement>('smoothControl');
+  if (smoothControl) byId<HTMLElement>('smoothSlot')?.append(smoothControl);
   parkCanvas();
   if (!apply) render();
 }
@@ -938,7 +943,7 @@ function updatePortraitGuides(): void {
     brushRing.style.height = `${size}px`;
     brushRing.style.left = `${left + canvasBox.width / 2 - size / 2}px`;
     brushRing.style.top = `${top + canvasBox.height * 0.42 - size / 2}px`;
-    if (brushChip) brushChip.style.filter = `blur(${Math.max(0, amount / 28)}px)`;
+    if (brushChip) brushChip.style.filter = `blur(${Math.min(1.5, amount / 50)}px)`;
   }
   if (!noseLandmarks || !narrowScreen || narrowScreen.hidden || canvasBox.width <= 0) return;
   noseLandmarks.style.left = `${left}px`;
@@ -1419,6 +1424,15 @@ const paintHomeEffect = (): void => {
     context.drawImage(sharp, 0, 0);
     context.restore();
   };
+  if (effect === 'smooth-skin') {
+    const source = snapshot();
+    context.save();
+    context.filter = 'blur(0.8px) brightness(1.05)';
+    context.drawImage(source, 0, 0);
+    context.filter = 'none';
+    context.restore();
+    return;
+  }
   if (effect === 'eyelashes') {
     context.save();
     context.globalCompositeOperation = 'multiply';
@@ -1647,13 +1661,20 @@ const render = (): void => {
     const source = document.createElement('canvas');
     source.width = width;
     source.height = height;
-    source.getContext('2d')?.drawImage(canvas, 0, 0);
-    context.save();
-    context.globalAlpha = (smooth / 100) * 0.45;
-    context.filter = `blur(${Math.max(0.5, smooth / 35)}px)`;
-    context.drawImage(source, 0, 0);
-    context.restore();
-    context.filter = 'none';
+    const sourceContext = source.getContext('2d');
+    if (sourceContext) {
+      sourceContext.filter = `blur(${(3 + smooth / 6).toFixed(2)}px)`;
+      sourceContext.drawImage(canvas, 0, 0);
+      sourceContext.filter = 'none';
+      context.save();
+      context.beginPath();
+      context.ellipse(width * 0.5, height * 0.46, width * 0.36, height * 0.42, 0, 0, Math.PI * 2);
+      context.clip();
+      context.globalAlpha = 0.4 + (smooth / 100) * 0.55;
+      context.drawImage(source, 0, 0);
+      context.restore();
+      context.filter = 'none';
+    }
   }
 
   const warpRegion = (centerX: number, centerY: number, radiusXFactor: number, radiusYFactor: number, amount: number): void => {
@@ -2005,13 +2026,22 @@ const scheduleRender = (): void => {
   });
 };
 
-smoothSlider?.addEventListener('input', () => {
-  if (smoothValue) smoothValue.value = smoothSlider.value;
-  scheduleRender();
-});
-smoothSlider?.addEventListener('change', () => {
-  if (smoothValue) smoothValue.value = smoothSlider.value;
-  scheduleRender();
+const paintSmooth = (): void => {
+  const amount = Number(smoothSlider?.value ?? 0);
+  if (smoothValue) smoothValue.value = String(amount);
+  if (smoothSlider) paintRange(smoothSlider);
+  byId<HTMLButtonElement>('smoothToggle')?.setAttribute('aria-pressed', String(amount > 0));
+  if (brushChip) brushChip.style.filter = `blur(${Math.min(1.5, amount / 50)}px)`;
+  console.log('filter', 'smooth', amount);
+  render();
+};
+smoothSlider?.addEventListener('input', paintSmooth);
+smoothSlider?.addEventListener('change', paintSmooth);
+byId<HTMLButtonElement>('smoothToggle')?.addEventListener('click', () => {
+  if (!smoothSlider) return;
+  console.log('filter', 'smooth');
+  smoothSlider.value = Number(smoothSlider.value) > 0 ? '0' : '80';
+  paintSmooth();
 });
 noseSlider?.addEventListener('input', () => {
   if (noseValue) noseValue.value = noseSlider.value;
