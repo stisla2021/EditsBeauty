@@ -136,6 +136,7 @@ const coreFiles = [
   './',
   './index.html',
   './about.html',
+  './faq.html',
   './privacy.html',
   './privacy-policy.html',
   './contact.html',
@@ -183,21 +184,32 @@ const showMenuToast = (message: string): void => {
   window.setTimeout(() => toast?.remove(), 2800);
 };
 
-const formatMegabytes = (bytes: number): string => `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+const formatMegabytes = (bytes: number): string => {
+  if (bytes < 1024) return `${Math.round(bytes)} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
 let cacheMeasure = 0;
 
+const responseBytes = async (response: Response): Promise<number> => {
+  const header = Number(response.headers.get('content-length'));
+  if (Number.isFinite(header) && header > 0) return header;
+  try {
+    return (await response.clone().blob()).size;
+  } catch {
+    return 0;
+  }
+};
+
 const measureStorageBytes = async (): Promise<number> => {
-  let bytes = 0;
+  let counted = 0;
   if ('caches' in window) {
     const names = await caches.keys();
     for (const name of names) {
       const cache = await caches.open(name);
-      const requests = await cache.keys();
-      for (const request of requests) {
+      for (const request of await cache.keys()) {
         const response = await cache.match(request);
-        if (!response) continue;
-        const blob = await response.clone().blob();
-        bytes += blob.size;
+        if (response) counted += await responseBytes(response);
       }
     }
   }
@@ -205,12 +217,33 @@ const measureStorageBytes = async (): Promise<number> => {
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
       if (!key) continue;
-      bytes += key.length + (localStorage.getItem(key)?.length ?? 0);
+      counted += new Blob([key, localStorage.getItem(key) ?? '']).size;
     }
   } catch {
     // Storage can be unavailable in a private window.
   }
-  return bytes;
+  let estimated = 0;
+  if (navigator.storage?.estimate) {
+    try {
+      estimated = (await navigator.storage.estimate()).usage ?? 0;
+    } catch {
+      estimated = 0;
+    }
+  }
+  return Math.max(counted, estimated);
+};
+
+const showCacheSize = async (): Promise<void> => {
+  const cacheSize = document.getElementById('cacheSize');
+  if (!cacheSize) return;
+  const measure = cacheMeasure;
+  try {
+    const bytes = await measureStorageBytes();
+    if (measure !== cacheMeasure) return;
+    cacheSize.textContent = formatMegabytes(bytes);
+  } catch {
+    if (measure === cacheMeasure) cacheSize.textContent = '0 B';
+  }
 };
 
 const modelFiles = [
@@ -243,10 +276,10 @@ const restoreCoreCache = async (): Promise<void> => {
     }
   }
   await Promise.all(names.map((name) => caches.delete(name)));
-  const fresh = await caches.open('editsbeauty-shell-v8');
+  const fresh = await caches.open('editsbeauty-shell-v9');
   for (const item of saved) await fresh.put(item.request, item.response);
   if (navigator.onLine) {
-    void Promise.all([...coreFiles, ...modelFiles].map(async (path) => {
+    await Promise.all([...coreFiles, ...modelFiles].map(async (path) => {
       try {
         const response = await fetch(path, { cache: 'reload' });
         if (response.ok) await fresh.put(path, response);
@@ -273,8 +306,9 @@ const clearAppCache = async (): Promise<void> => {
   }
   cacheMeasure += 1;
   const cacheSize = document.getElementById('cacheSize');
-  if (cacheSize) cacheSize.textContent = '0.00 MB';
+  if (cacheSize) cacheSize.textContent = '…';
   showMenuToast('Cache cleared successfully!');
+  await showCacheSize();
 };
 
 const bindSettings = (): void => {
@@ -350,13 +384,8 @@ const bindSettings = (): void => {
   });
 
   if (cacheSize) {
-    const measure = cacheMeasure;
-    void measureStorageBytes().then((bytes) => {
-      if (measure !== cacheMeasure) return;
-      cacheSize.textContent = formatMegabytes(bytes);
-    }).catch(() => {
-      if (measure === cacheMeasure) cacheSize.textContent = '0.00 MB';
-    });
+    cacheSize.textContent = '…';
+    void showCacheSize();
   }
 };
 
