@@ -27,8 +27,10 @@ const canvas = byId<HTMLCanvasElement>('canvas');
 const editorPanel = byId<HTMLElement>('editor');
 const context = canvas?.getContext('2d', { willReadFrequently: true }) ?? null;
 const smoothSlider = byId<HTMLInputElement>('smooth');
+const teethSlider = byId<HTMLInputElement>('teeth');
 const noseSlider = byId<HTMLInputElement>('nose');
 const smoothValue = byId<HTMLOutputElement>('smoothVal');
+const teethValue = byId<HTMLOutputElement>('teethVal');
 const noseValue = byId<HTMLOutputElement>('noseVal');
 const retouchScreen = byId<HTMLElement>('retouchScreen');
 const narrowScreen = byId<HTMLElement>('narrowScreen');
@@ -102,6 +104,7 @@ let aiLoadingTimer = 0;
 let originalImage: HTMLImageElement | null = null;
 let imageUrl: string | null = null;
 let faceMeshLandmarks: FacePoint[] | null = null;
+let teethPixels = 0;
 let imageGeneration = 0;
 let activeBackgroundScene: BackgroundScene | null = null;
 let personMask: HTMLCanvasElement | null = null;
@@ -172,6 +175,32 @@ const showToast = (message: string): void => {
   window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => toast?.remove(), 2800);
 };
+
+const copyShareLink = async (shareUrl: string): Promise<void> => {
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    showToast('Link copied. Send it to share EditsBeauty.');
+  } catch {
+    showToast(shareUrl);
+  }
+};
+
+byId<HTMLButtonElement>('shareApp')?.addEventListener('click', () => {
+  document.getElementById('navLinks')?.classList.remove('active');
+  document.getElementById('hamburger')?.setAttribute('aria-expanded', 'false');
+  const shareUrl = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)
+    ? 'https://editsbeauty.vercel.app/'
+    : new URL('./', window.location.href).href;
+  const payload = { title: 'EditsBeauty', text: 'Edit photos in your browser with EditsBeauty.', url: shareUrl };
+  if (navigator.share) {
+    void navigator.share(payload).catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      void copyShareLink(shareUrl);
+    });
+    return;
+  }
+  void copyShareLink(shareUrl);
+});
 
 function composeCanvasFilters(...filters: string[]): string {
   const activeFilters = filters.filter((filter) => filter && filter !== 'none');
@@ -324,6 +353,88 @@ const paintFilterPixels = (target: CanvasRenderingContext2D, filter: string, ori
   } catch {
     showToast('This photo is too large for this filter on the phone.');
   }
+};
+
+const mouthLoop = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
+
+const whitenTeeth = (
+  target: CanvasRenderingContext2D,
+  points: FacePoint[],
+  amount: number,
+): number => {
+  const width = target.canvas.width;
+  const height = target.canvas.height;
+  if (points.length < 8 || amount <= 0 || width < 2 || height < 2) return 0;
+  let centerX = 0;
+  let centerY = 0;
+  points.forEach((point) => {
+    centerX += point.x;
+    centerY += point.y;
+  });
+  centerX /= points.length;
+  centerY /= points.length;
+  const inset = points.map((point) => ({
+    x: centerX + (point.x - centerX) * 0.86,
+    y: centerY + (point.y - centerY) * 0.86,
+  }));
+  const mask = document.createElement('canvas');
+  mask.width = width;
+  mask.height = height;
+  const maskContext = mask.getContext('2d');
+  if (!maskContext) return 0;
+  maskContext.fillStyle = '#fff';
+  maskContext.shadowColor = '#fff';
+  maskContext.shadowBlur = Math.max(1.5, width * 0.003);
+  maskContext.beginPath();
+  inset.forEach((point, index) => {
+    const x = point.x * width;
+    const y = point.y * height;
+    if (index === 0) maskContext.moveTo(x, y);
+    else maskContext.lineTo(x, y);
+  });
+  maskContext.closePath();
+  maskContext.fill();
+  const left = Math.max(0, Math.floor(Math.min(...inset.map((point) => point.x)) * width) - 4);
+  const top = Math.max(0, Math.floor(Math.min(...inset.map((point) => point.y)) * height) - 4);
+  const right = Math.min(width, Math.ceil(Math.max(...inset.map((point) => point.x)) * width) + 4);
+  const bottom = Math.min(height, Math.ceil(Math.max(...inset.map((point) => point.y)) * height) + 4);
+  const pixelWidth = right - left;
+  const pixelHeight = bottom - top;
+  if (pixelWidth < 2 || pixelHeight < 2) return 0;
+  let photo: ImageData;
+  let coverage: ImageData;
+  try {
+    photo = target.getImageData(left, top, pixelWidth, pixelHeight);
+    coverage = maskContext.getImageData(left, top, pixelWidth, pixelHeight);
+  } catch {
+    return 0;
+  }
+  const strength = amount / 100;
+  let changed = 0;
+  for (let index = 0; index < photo.data.length; index += 4) {
+    const cover = coverage.data[index] / 255;
+    if (cover < 0.08) continue;
+    const red = photo.data[index];
+    const green = photo.data[index + 1];
+    const blue = photo.data[index + 2];
+    const luma = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+    const max = Math.max(red, green, blue);
+    const min = Math.min(red, green, blue);
+    const saturation = max === 0 ? 1 : (max - min) / max;
+    if (luma < 96 || saturation > 0.58 || red - green > 36 || blue > red + 8) continue;
+    const bright = Math.max(0, Math.min(1, (luma - 96) / 80));
+    const neutral = Math.max(0, Math.min(1, (0.58 - saturation) / 0.58));
+    const mix = strength * cover * bright * neutral;
+    if (mix < 0.04) continue;
+    const lifted = luma + (255 - luma) * mix * 0.34;
+    const yellow = Math.max(0, (red + green) * 0.5 - blue);
+    photo.data[index] = clampByte(red + (lifted - red) * mix * 0.62 - yellow * mix * 0.12);
+    photo.data[index + 1] = clampByte(green + (lifted - green) * mix * 0.72);
+    photo.data[index + 2] = clampByte(blue + (lifted - blue) * mix * 0.92 + yellow * mix * 0.35);
+    changed += 1;
+  }
+  if (changed > 0) target.putImageData(photo, left, top);
+  return changed;
 };
 
 const drawFilteredSource = (
@@ -730,6 +841,7 @@ const beginHomeEffect = (effect: HomeEffect): void => {
 };
 
 const closeStudio = (): void => {
+  keepCrop();
   if (editorPanel) editorPanel.hidden = true;
   const cropScreen = byId<HTMLElement>('cropScreen');
   if (cropScreen) cropScreen.hidden = true;
@@ -748,6 +860,7 @@ const setStudioTab = (tab: 'adjust' | 'filters' | 'crop'): void => {
     openCrop();
     return;
   }
+  keepCrop();
   const cropScreen = byId<HTMLElement>('cropScreen');
   if (cropScreen) cropScreen.hidden = true;
   showEditor();
@@ -1398,6 +1511,19 @@ document.querySelectorAll<HTMLButtonElement>('[data-tool]').forEach((button) => 
     if (tool === 'Crop') {
       closeTools();
       setStudioTab('crop');
+      return;
+    }
+    if (tool === 'Teeth') {
+      closeTools();
+      setStudioTab('filters');
+      if (!originalImage) {
+        pendingTeeth = '68';
+        showToast('Choose a photo to whiten teeth.');
+        requestPhoto();
+        return;
+      }
+      if (Number(teethSlider?.value ?? 0) === 0) setTeethAmount(68);
+      teethSlider?.focus({ preventScroll: true });
       return;
     }
     if (tool === 'Collage' || tool === 'Photo Grid' || tool === 'Photo Strip') {
@@ -2151,6 +2277,13 @@ const render = (): void => {
       y: Math.max(0, Math.min(1, (point.y * sourceImage.naturalHeight - sourceY) / sourceHeight)),
     };
   };
+  const teethAmount = Number(teethSlider?.value ?? 0);
+  if (teethAmount > 0 && faceMeshLandmarks && context) {
+    const mouth = mouthLoop.map((index) => faceMeshLandmarks?.[index]).filter((point): point is FacePoint => !!point).map(mapFacePoint);
+    teethPixels = whitenTeeth(context, mouth, teethAmount);
+  } else {
+    teethPixels = 0;
+  }
   const rawBridge = faceMeshLandmarks?.[168];
   const rawTip = faceMeshLandmarks?.[1];
   const rawLeftNostril = faceMeshLandmarks?.[98];
@@ -2289,6 +2422,7 @@ const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): P
 };
 
 let pendingSmooth: string | null = null;
+let pendingTeeth: string | null = null;
 let pendingApply: string | null = null;
 let pendingGuideRequest: string | null = null;
 let pendingPortraitFinish = false;
@@ -2339,10 +2473,16 @@ const openPhoto = (src: string): void => {
     if (downloadButton) downloadButton.disabled = false;
     const smoothAmount = pendingSmooth ?? '0';
     pendingSmooth = null;
+    const teethAmount = pendingTeeth ?? '0';
+    pendingTeeth = null;
     if (smoothSlider) smoothSlider.value = smoothAmount;
+    if (teethSlider) teethSlider.value = teethAmount;
     if (noseSlider) noseSlider.value = '0';
     if (smoothValue) smoothValue.value = smoothAmount;
+    if (teethValue) teethValue.value = teethAmount;
     if (smoothSlider) paintRange(smoothSlider);
+    if (teethSlider) paintRange(teethSlider);
+    byId<HTMLButtonElement>('teethToggle')?.setAttribute('aria-pressed', String(Number(teethAmount) > 0));
     if (noseValue) noseValue.value = '0';
     render();
     paintFilterPreviews();
@@ -2373,6 +2513,9 @@ const openPhoto = (src: string): void => {
       if (generation !== imageGeneration) return;
       faceMeshLandmarks = landmarks;
       render();
+      if (Number(teethSlider?.value ?? 0) <= 0) return;
+      if (!landmarks) showToast('No face found, so teeth whitening is waiting. Your other edits still apply.');
+      else if (teethPixels < 20) showToast('Use a photo where the teeth are showing.');
     });
     if (activeBackgroundScene) void selectBackgroundScene(activeBackgroundScene, false);
   };
@@ -2688,6 +2831,46 @@ const paintSmooth = (): void => {
 };
 smoothSlider?.addEventListener('input', paintSmooth);
 smoothSlider?.addEventListener('change', paintSmooth);
+
+const setTeethAmount = (amount: number): void => {
+  const next = String(Math.max(0, Math.min(100, Math.round(amount))));
+  if (teethSlider) teethSlider.value = next;
+  if (teethValue) teethValue.value = next;
+  if (teethSlider) paintRange(teethSlider);
+  byId<HTMLButtonElement>('teethToggle')?.setAttribute('aria-pressed', String(Number(next) > 0));
+  if (originalImage) {
+    pendingTeeth = null;
+    render();
+  } else {
+    pendingTeeth = next;
+  }
+};
+
+const paintTeeth = (): void => {
+  const amount = Number(teethSlider?.value ?? 0);
+  if (teethValue) teethValue.value = String(amount);
+  if (teethSlider) paintRange(teethSlider);
+  byId<HTMLButtonElement>('teethToggle')?.setAttribute('aria-pressed', String(amount > 0));
+  if (originalImage) render();
+  else pendingTeeth = String(amount);
+};
+
+teethSlider?.addEventListener('input', paintTeeth);
+teethSlider?.addEventListener('change', () => {
+  paintTeeth();
+  const amount = Number(teethSlider?.value ?? 0);
+  if (amount <= 0) return;
+  if (!originalImage) {
+    showToast('Choose a photo to whiten teeth.');
+    return;
+  }
+  if (!faceMeshLandmarks) showToast('Finding the smile…');
+  else if (teethPixels < 20) showToast('Use a photo where the teeth are showing.');
+  else showToast('Teeth whitened. Your other edits stay in place.');
+});
+byId<HTMLButtonElement>('teethToggle')?.addEventListener('click', () => {
+  setTeethAmount(Number(teethSlider?.value ?? 0) > 0 ? 0 : 68);
+});
 byId<HTMLButtonElement>('smoothToggle')?.addEventListener('click', () => {
   if (!smoothSlider) return;
   console.log('filter', 'smooth');
@@ -3100,7 +3283,8 @@ const hideCropMenus = (): void => {
 };
 
 function closeCrop(apply: boolean): void {
-  if (apply) commitCrop();
+  if (apply && cropDraftChanged()) commitCrop();
+  resetCropDraft();
   hideCropMenus();
   if (cropScreenEl) cropScreenEl.hidden = true;
   const filters = byId<HTMLElement>('panelFilters');
@@ -3143,6 +3327,19 @@ const replaceOriginal = (src: string, message: string): void => {
   };
   image.src = src;
 };
+
+function cropDraftChanged(): boolean {
+  const fullFrame = cropBox.x <= 0.004 && cropBox.y <= 0.004 && cropBox.w >= 0.996 && cropBox.h >= 0.996;
+  return !fullFrame || quarterTurns !== 0 || flipHorizontal || flipVertical || straightenAngle !== 0 || Math.abs(perspectiveVertical) >= 0.4 || Math.abs(perspectiveHorizontal) >= 0.4;
+}
+
+function keepCrop(): void {
+  if (!cropScreenEl || cropScreenEl.hidden) return;
+  if (cropDraftChanged()) commitCrop();
+  resetCropDraft();
+  hideCropMenus();
+  cropScreenEl.hidden = true;
+}
 
 const commitCrop = (): void => {
   if (!originalImage) return;
@@ -3452,10 +3649,10 @@ const answerGuide = (raw: string): void => {
   guideLine('you', typed);
   const asksHow = /^(how|what|where|why)\b/.test(text) || /\bhow do i\b/.test(text);
   if (asksHow && !/\b(please|can you|do it)\b/.test(text)) {
-    guideLine('guide', 'Choose a photo with Start Editing, the camera, or an example portrait. Then ask me to edit it, or use the tools yourself. I can smooth skin, apply a look, change the background, and set Adjust: Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Save downloads editsbeauty-edit.jpg.');
+    guideLine('guide', 'Choose a photo with Start Editing, the camera, or an example portrait. Then ask me to edit it, or use the tools yourself. I can smooth skin, whiten teeth, apply a look, change the background, and set Adjust: Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Save downloads editsbeauty-edit.jpg.');
     return;
   }
-  if (/\b(save|download|export)\b/.test(text) && !/\b(edit|smooth|vivid|noir|background|bright|warm|exposure)\b/.test(text)) {
+  if (/\b(save|download|export)\b/.test(text) && !/\b(edit|smooth|vivid|noir|background|bright|warm|exposure|teeth|tooth)\b/.test(text)) {
     if (downloadButton && originalImage && !downloadButton.disabled) downloadButton.click();
     else showToast('Choose a photo before saving.');
     guideLine('guide', originalImage
@@ -3486,6 +3683,7 @@ const answerGuide = (raw: string): void => {
     activeBackgroundScene = null;
     setSceneButtons(null);
     if (backgroundStatus) backgroundStatus.textContent = 'Pick a scene. The person stays, and the photo behind them changes on this device.';
+    setTeethAmount(0);
     done.push('cleared the previous edit');
   }
   const effectMatch: Array<[RegExp, HomeEffect]> = [
@@ -3592,13 +3790,23 @@ const answerGuide = (raw: string): void => {
     byId<HTMLButtonElement>('smoothToggle')?.setAttribute('aria-pressed', 'true');
     done.push(`smooth ${amount}`);
   }
+  const wantsTeeth = /\b(teeth|tooth)\b/.test(text);
+  if (wantsTeeth) {
+    const named = text.match(/\b(?:teeth|tooth)\D{0,16}(\d{1,3})\b/) ?? text.match(/(\d{1,3})\D{0,16}\b(?:teeth|tooth)\b/);
+    const amount = named ? Math.max(0, Math.min(100, Number(named[1]))) : 68;
+    setTeethAmount(amount);
+    done.push(`teeth ${amount}`);
+  } else if (vagueEdit && !look && namedAdjust.length === 0 && !effect && !wantsBackground) {
+    setTeethAmount(42);
+    done.push('teeth 42');
+  }
   if (done.length === 0 && !wantsBackground) {
-    guideLine('guide', 'Tell me the edit. For example: “edit my photo”, “brighten the lighting”, “smooth my skin”, “make it noir”, “add lipstick”, or “background beach”. The same controls stay on the page if you want to do it by hand.');
+    guideLine('guide', 'Tell me the edit. For example: “edit my photo”, “whiten my teeth”, “smooth my skin and make it noir”, “brighten the lighting”, or “background beach”. The same controls stay on the page if you want to do it by hand.');
     return;
   }
   showEditor();
-  if (wantsBackground || namedAdjust.length > 0 || lighting || (vagueEdit && !look)) setStudioTab('adjust');
-  else if (look || effect || wantsSmooth) setStudioTab('filters');
+  if (wantsBackground || namedAdjust.length > 0 || lighting || (vagueEdit && !look && !wantsTeeth)) setStudioTab('adjust');
+  else if (look || effect || wantsSmooth || wantsTeeth) setStudioTab('filters');
   if (done.some((item) => item !== 'cleared the previous edit') || wantsBackground) needsPhoto();
   if (originalImage) render();
   if (wantsBackground) {

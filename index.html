@@ -37,6 +37,7 @@
     <a class="logo" href="index.html"><span class="brand-mark brand-mark-small" aria-hidden="true">e</span><span>EditsBeauty</span></a>
     <button class="hamburger" id="hamburger" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Open menu"><span></span><span></span><span></span></button>
     <ul class="nav-links" id="navLinks">
+      <li><button class="nav-share" id="shareApp" type="button">Share app</button></li>
       <li><a href="about.html">About Us</a></li>
       <li><a href="privacy-policy.html">Privacy Policy</a></li>
       <li><a href="terms.html">Terms and Conditions</a></li>
@@ -72,6 +73,7 @@
         <button type="button" data-studio-tab="adjust">Adjust</button>
         <button type="button" data-studio-tab="crop">Crop</button>
         <button type="button" data-tool="Retouch">Retouch</button>
+        <button type="button" data-tool="Teeth">Teeth</button>
         <button type="button" data-tool="Narrow">Narrow</button>
         <button type="button" data-tool="Background">Background</button>
         <button type="button" data-tool="Enhance">Enhance</button>
@@ -124,6 +126,12 @@
                   <span>Smooth</span>
                 </button>
                 <label class="range-control" for="smooth"><span class="visually-hidden">Smooth amount</span><output id="smoothVal">0</output><input type="range" id="smooth" min="0" max="100" value="0"></label>
+              </div>
+              <div class="smooth-row" id="teethControl">
+                <button class="smooth-icon" id="teethToggle" type="button" aria-pressed="false" aria-label="Whiten teeth">
+                  <span>Teeth</span>
+                </button>
+                <label class="range-control" for="teeth"><span class="visually-hidden">Teeth whitening</span><output id="teethVal">0</output><input type="range" id="teeth" min="0" max="100" value="0"></label>
               </div>
             </div>
           </div>
@@ -450,6 +458,7 @@
       </div></section>
       <section class="tool-category"><h3>Portraits</h3><div class="tool-grid">
         <button class="tool-button" id="retouchTool" data-tool="Retouch"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="12.5" r="6.2"/><path d="M9 11.2h.01M13 11.2h.01"/><path d="M8.8 14.4c.7.7 1.4 1 2.2 1s1.5-.3 2.2-1"/><path d="M17.2 5.2l.45 1.15 1.15.45-1.15.45-.45 1.15-.45-1.15-1.15-.45 1.15-.45z"/><path d="M5.2 7.2l.3.75.75.3-.75.3-.3.75-.3-.75-.75-.3.75-.3z"/></svg></span><span>Retouch</span></button>
+        <button class="tool-button" id="teethTool" data-tool="Teeth"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4c1.2 1.4 1.6 3 1.4 4.6C9.2 10.2 8 11 8 13.2 8 16 9.2 20 10.4 20c.8 0 1.1-1.2 1.6-1.2s.8 1.2 1.6 1.2 1.1-1.2 1.6-1.2.8 1.2 1.6 1.2c1.2 0 2.4-4 2.4-6.8 0-2.2-1.2-3-1.4-4.6C17.6 7 18 5.4 19.2 4"/></svg></span><span>Teeth</span></button>
         <button class="tool-button" data-tool="Body Tuner"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2"/><path d="M8 22l2-7 2 3 2-3 2 7M7 10h10l-1 4H8z"/></svg></span><span>Body Tuner</span></button>
         <button class="tool-button" data-tool="Hair"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20c0-6 1-10 4-14 3 4 4 8 4 14"/><path d="M6 16c2 1 4 1 6 0s4-1 6 0"/></svg></span><span>Hair</span></button>
         <button class="tool-button" data-tool="Video Retouch"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10l5-2v8l-5-2"/><path d="M7 12h4"/></svg></span><span>Video Retouch</span></button>
