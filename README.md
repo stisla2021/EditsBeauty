@@ -8,23 +8,13 @@ Version V1.0.0. Copyright (c) StISLA2021.
 
 ## Run it locally
 
-From this folder:
-
 ```powershell
-python -m http.server 5173
-```
-
-Open http://localhost:5173/index.html
-
-## Build
-
-TypeScript in `app.ts` and `menu.ts` compiles into `dist/`.
-
-```powershell
+npm install
 npm run build
+npx vite preview
 ```
 
-`sw.js` is plain JavaScript and is not compiled.
+The preview serves the built site. `npm run build` runs Vite and writes the site into `dist/`.
 
 ## Deploy
 

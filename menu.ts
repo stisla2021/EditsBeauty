@@ -148,8 +148,8 @@ const coreFiles = [
   './images/logo-192.png',
   './images/logo-512.png',
   './images/EditsBeauty.jpeg',
-  './dist/app.js',
-  './dist/menu.js',
+  './assets/index.js',
+  './assets/menu.js',
   './sw.js',
 ];
 
@@ -241,7 +241,7 @@ const restoreCoreCache = async (): Promise<void> => {
     }
   }
   await Promise.all(names.map((name) => caches.delete(name)));
-  const fresh = await caches.open('editsbeauty-shell-v5');
+  const fresh = await caches.open('editsbeauty-shell-v6');
   for (const item of saved) await fresh.put(item.request, item.response);
   if (navigator.onLine) {
     void Promise.all([...coreFiles, ...modelFiles].map(async (path) => {

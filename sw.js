@@ -1,5 +1,5 @@
 // Copyright (c) StISLA2021
-const CACHE = 'editsbeauty-shell-v5';
+const CACHE = 'editsbeauty-shell-v6';
 const SHELL = [
   './',
   './index.html',
@@ -16,8 +16,8 @@ const SHELL = [
   './images/logo-192.png',
   './images/logo-512.png',
   './images/EditsBeauty.jpeg',
-  './dist/app.js',
-  './dist/menu.js',
+  './assets/index.js',
+  './assets/menu.js',
   './sw.js',
 ];
 const MEDIAPIPE = [
@@ -45,7 +45,13 @@ const isCode = (url, request) => {
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await cache.addAll(SHELL);
+    await Promise.all(SHELL.map(async (url) => {
+      try {
+        await cache.add(url);
+      } catch {
+        // Skip a shell file that this host does not serve.
+      }
+    }));
     await Promise.all(MEDIAPIPE.map(async (url) => {
       try {
         const response = await fetch(url, { mode: 'cors' });
