@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!-- Copyright (c) StISLA2021 -->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#ffffff">
+  <title>Settings - EditsBeauty</title>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="EditsBeauty">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo-192.png">
+  <link rel="apple-touch-icon" href="images/logo-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="ios-settings">
+  <header class="ios-header">
+    <a class="ios-back" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Settings</a>
+  </header>
+  <main>
+    <div class="ios-group">
+      <div class="ios-row">
+        <span>Save to EditsBeauty Album</span>
+        <button class="ios-switch" id="saveAlbum" type="button" role="switch" aria-checked="true" aria-label="Save to EditsBeauty Album"></button>
+      </div>
+    </div>
+    <h2 class="ios-section">Other Settings</h2>
+    <div class="ios-group">
+      <button class="ios-row" id="resolutionRow" type="button">
+        <span class="ios-copy">Image Resolution<small>Compression limit for imported images</small></span>
+        <span class="ios-value"><span id="resolutionValue">High</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <button class="ios-row" id="liveRow" type="button">
+        <span class="ios-copy">Live Photo editing format<small>Choose a format each time you edit a Live Photo.</small></span>
+        <span class="ios-value"><span id="liveValue">Ask every time</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <div class="ios-row">
+        <span class="ios-copy">Sticker Storage Optimization<small>Automatically remove stickers that you haven't been used in the past two weeks.</small></span>
+        <button class="ios-switch" id="stickerOptimize" type="button" role="switch" aria-checked="false" aria-label="Sticker Storage Optimization"></button>
+      </div>
+      <div class="ios-row">
+        <span class="ios-copy">Use HEIC Format<small>Save more than 85% of storage space when saving selfies and retouching photos.</small></span>
+        <button class="ios-switch" id="heicFormat" type="button" role="switch" aria-checked="true" aria-label="Use HEIC Format"></button>
+      </div>
+    </div>
+    <h2 class="ios-section">More</h2>
+    <div class="ios-group">
+      <button class="ios-row" id="languageRow" type="button">
+        <span>Languages</span>
+        <span class="ios-value"><span id="languageValue">English</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <button class="ios-row" id="clearCache" type="button">
+        <span>Clear Cache</span>
+        <span class="ios-value" id="cacheSize">…</span>
+      </button>
+      <a class="ios-row" href="about.html">
+        <span>About</span>
+        <svg class="ios-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+    <p class="ios-version">EditsBeauty V1.0.0</p>
+  </main>
+  <div class="confirm-dialog" id="clearDialog" hidden>
+    <div class="confirm-card" role="dialog" aria-labelledby="clearTitle">
+      <h2 id="clearTitle">Clear Cache?</h2>
+      <p>This will remove temporary files but keep your saved photos.</p>
+      <div class="confirm-actions">
+        <button id="clearCancel" type="button">Cancel</button>
+        <button id="clearConfirm" type="button">Clear</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="dist/menu.js"></script>
+</body>
+</html>

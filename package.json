@@ -1,0 +1,7 @@
+{
+  "name": "editsbeauty",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json --pretty false"
+  }
+}
