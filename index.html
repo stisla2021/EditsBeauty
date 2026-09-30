@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <!-- Copyright (c) StISLA2021 -->
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
-  <title>EditsBeauty - Photo Editor</title>
+  <title>EditsBeauty - Free Photo Editor</title>
+  <meta name="description" content="EditsBeauty is a free browser photo editor for selfies and portraits. Smooth skin, adjust brightness, and save the picture on your device. Published by StISLA2021 in Jalangbam, The Gambia.">
+  <link rel="canonical" href="https://editsbeauty.vercel.app/">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="EditsBeauty">
@@ -13,7 +15,6 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="images/logo-192.png">
   <link rel="apple-touch-icon" href="images/logo-192.png">
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous" defer></script>
   <link rel="stylesheet" href="style.css">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7160015922473007" crossorigin="anonymous"></script>
@@ -26,6 +27,7 @@
   </script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <p class="offline-pill" id="offlinePill">Online</p>
   <div class="splash" id="splash" aria-label="EditsBeauty loading">
     <img class="app-face" src="images/logo.png" alt="EditsBeauty">
@@ -35,6 +37,10 @@
     <a class="logo" href="index.html"><span class="brand-mark brand-mark-small" aria-hidden="true">e</span><span>EditsBeauty</span></a>
     <button class="hamburger" id="hamburger" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Open menu"><span></span><span></span><span></span></button>
     <ul class="nav-links" id="navLinks">
+      <li><a href="about.html">About Us</a></li>
+      <li><a href="privacy-policy.html">Privacy Policy</a></li>
+      <li><a href="terms.html">Terms and Conditions</a></li>
+      <li><a href="contact.html">Contact Us</a></li>
       <li><a href="settings.html">Settings</a></li>
       <li class="theme-setting">
         <p>Theme</p>
@@ -47,7 +53,8 @@
     </ul>
   </nav>
 
-  <main class="container home">
+  <main class="container home" id="main">
+    <h1 class="visually-hidden">EditsBeauty free photo editor</h1>
     <div class="top-edit">
       <button class="start-pill" id="startEditing" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z"/><path d="M18 13l.6 1.8L20.5 16l-1.9.7L18 18.5l-.6-1.8L15.5 16l1.9-.7L18 13z"/></svg> Start Editing</button>
     </div>
@@ -55,7 +62,7 @@
     <section class="studio" id="editor" aria-labelledby="editorTitle" hidden>
       <header class="studio-bar">
         <button class="studio-back" id="studioBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
-        <h1 id="editorTitle">Filters</h1>
+        <p class="studio-title" id="editorTitle">Filters</p>
         <button class="studio-save" id="downloadBtn" type="button" disabled>Save</button>
       </header>
       <aside class="studio-rail" aria-label="Tools">
@@ -341,6 +348,11 @@
       </div>
       <canvas id="videoCanvas" hidden></canvas>
     </section>
+    <section class="home-note" aria-labelledby="publisherTitle">
+      <h2 id="publisherTitle">A free editor from Jalangbam</h2>
+      <p>EditsBeauty is published by StISLA2021 in Jalangbam, The Gambia. It edits a photo in this browser. The picture is not uploaded to an EditsBeauty server, and it is dropped when you leave the page. Save writes a JPEG to your device.</p>
+      <p>Start Editing opens your photo. Face Details, filters, brightness, contrast, and saturation then paint on the canvas. The longer explanation of each look is on <a href="about.html">About Us</a>. Questions about privacy, the editor, or a photo are answered on <a href="faq.html">FAQ</a> and <a href="contact.html">Contact Us</a>.</p>
+    </section>
   </main>
 
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
@@ -510,11 +522,14 @@
   <script type="module" src="./app.ts"></script>
   <footer class="site-footer">
     <nav aria-label="Site">
-      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="index.html">Home</a>
       <a href="about.html">About Us</a>
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms.html">Terms and Conditions</a>
       <a href="contact.html">Contact Us</a>
-      <a href="terms.html">Terms</a>
+      <a href="faq.html">FAQ</a>
     </nav>
+    <p>EditsBeauty is published by StISLA2021 in Jalangbam, The Gambia.</p>
     <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a>
     <span>Copyright © StISLA2021</span>
   </footer>

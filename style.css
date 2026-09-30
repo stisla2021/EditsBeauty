@@ -21,6 +21,7 @@
 }
 
 * { box-sizing: border-box; }
+:focus-visible { outline: 2px solid #111; outline-offset: 2px; }
 html { min-width: 20rem; max-width: 100%; scroll-behavior: smooth; overflow-x: hidden; }
 body {
   min-height: 100svh;
@@ -371,6 +372,8 @@ body.dark .canvas-stage { background: #302c31; }
 .filter-chip canvas.ready { opacity: 1; }
 .adjust-grid { display: grid; gap: 8px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.skip-link { position: absolute; left: 8px; top: -48px; z-index: 50; padding: 8px 12px; border-radius: 8px; background: #111; color: #fff; text-decoration: none; }
+.skip-link:focus { top: 8px; }
 .install-app[hidden] { display: none; }
 .offline-pill { position: fixed; z-index: 40; top: max(8px, env(safe-area-inset-top)); left: 50%; max-width: calc(100% - 32px); margin: 0; padding: 5px 12px; border-radius: 999px; background: #8e8e93; color: #fff; font-size: 12px; font-weight: 750; line-height: 1.2; white-space: nowrap; transform: translateX(-50%); box-shadow: 0 6px 16px rgb(0 0 0 / 18%); }
 .offline-pill.is-online { background: #1fad5a; }
@@ -381,10 +384,10 @@ body.dark .canvas-stage { background: #302c31; }
 body.ios-settings, body.dark.ios-settings { background: #fff; color: #111; }
 body.ios-about, body.dark.ios-about, body.ios-legal, body.dark.ios-legal { background: #f6f6f7; color: #111; }
 .ios-header { display: grid; grid-template-columns: 88px 1fr 88px; align-items: center; min-height: 52px; padding: max(8px, env(safe-area-inset-top)) 8px 8px; background: #fff; }
-.ios-settings .ios-header { display: flex; background: #fff; }
-.ios-settings .ios-back { font-size: 20px; font-weight: 750; }
+.ios-settings .ios-header { display: grid; background: #fff; }
+.ios-settings .ios-back { font-size: 17px; font-weight: 500; }
 .ios-about .ios-header, .ios-legal .ios-header { background: #f6f6f7; }
-.ios-header h1 { margin: 0; font-size: 17px; font-weight: 750; text-align: center; }
+.ios-header h1 { margin: 0; font-size: clamp(14px, 3.6vw, 17px); font-weight: 750; line-height: 1.2; text-align: center; }
 .ios-back { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; color: #111; font-size: 17px; font-weight: 500; text-decoration: none; }
 .ios-back svg { width: 22px; height: 22px; }
 .ios-settings main { width: min(100% - 0px, 720px); margin: 0 auto; padding: 0 0 28px; }
@@ -408,7 +411,9 @@ body.ios-about, body.dark.ios-about, body.ios-legal, body.dark.ios-legal { backg
 .about-list { margin: 0 0 24px; background: #fff; }
 .about-foot { display: grid; gap: 6px; padding: 8px 20px 32px; color: #8e8e93; font-size: 12px; text-align: center; }
 .legal-card { width: min(100% - 32px, 720px); margin: 12px auto 32px; padding: 18px 16px 8px; border-radius: 16px; background: #fff; }
-.legal-card h2 { margin: 0 0 10px; font-size: 18px; }
+.legal-card h2 { margin: 18px 0 10px; font-size: 18px; }
+.legal-card h2:first-child { margin-top: 0; }
+.legal-card h3 { margin: 14px 0 6px; font-size: 16px; }
 .legal-card p, .legal-card li { color: #3a3a3c; font-size: 15px; line-height: 1.55; }
 .legal-card ul { margin: 0 0 16px; padding-left: 18px; }
 .confirm-dialog { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 24px; background: rgb(0 0 0 / 40%); }
@@ -466,7 +471,11 @@ body.studio-open .offline-pill { visibility: hidden; }
 .studio[hidden], .crop-screen[hidden] { display: none; }
 .crop-screen { z-index: 34; }
 .studio-bar, .crop-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: var(--touch); padding: max(0.5rem, env(safe-area-inset-top)) 0.75rem 0.5rem; background: #fff; color: #111; }
-.studio-bar h1 { flex: 1 1 auto; min-width: 0; margin: 0; font-size: clamp(1rem, 2vw, 1.125rem); font-weight: 750; text-align: center; }
+.studio-bar h1, .studio-bar .studio-title { flex: 1 1 auto; min-width: 0; margin: 0; font-size: clamp(1rem, 2vw, 1.125rem); font-weight: 750; text-align: center; }
+.home-note { width: min(100% - 32px, 40rem); margin: 28px auto 0; }
+.home-note h2 { margin: 0 0 8px; font-size: 1.35rem; }
+.home-note p { margin: 0 0 12px; color: inherit; font-size: 15px; line-height: 1.6; }
+.home-note a { color: inherit; font-weight: 650; }
 .studio-back, .pill-btn, .auto-btn, .studio-save { border: 0; background: none; color: #111; cursor: pointer; }
 .studio-back { display: inline-flex; justify-self: start; align-items: center; gap: 2px; min-height: 44px; padding: 0; font-size: 17px; }
 .studio-back svg { width: 22px; height: 22px; }
