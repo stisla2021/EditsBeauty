@@ -9,7 +9,7 @@ Updated 30 September 2026.
 
 Editing happens on the device. The AI guide edits a photo when asked, using the same tools a person can move by hand. It does not generate a new picture and it does not upload the photo.
 
-Adjust holds Auto, Color, B/W, Noir, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Filters hold the looks and Smooth. Background change keeps the person and places a real scene behind them. Choose your own photo, then tap an example portrait to apply that look to it. Ask AI accepts a dropped photo and a task, including a named background. The camera has Portrait, Live, and Video. Filters, Adjust, crop, and the camera open again offline after one visit. Delete chat empties the AI guide. Clear Cache in Settings deletes stored files and shows 0 B again.
+Adjust holds Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Filters hold the looks, including B/W, and Smooth. Background change keeps the person and places a real scene behind them. Choose your own photo, then tap an example portrait to apply that look to it. Ask AI accepts a dropped photo and a task, including a named background. The camera has Portrait, Live, and Video. Filters, Adjust, crop, and the camera open again offline after one visit. Delete chat empties the AI guide. Clear Cache in Settings deletes stored files and shows 0 B again.
 
 Save downloads a JPEG named `editsbeauty-edit.jpg`. Settings, About, and the legal pages are linked from the app.
 

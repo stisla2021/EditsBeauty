@@ -1,5 +1,5 @@
 // Copyright (c) StISLA2021
-const CACHE = 'editsbeauty-shell-v13';
+const CACHE = 'editsbeauty-shell-v14';
 const SHELL = [
   './',
   './index.html',

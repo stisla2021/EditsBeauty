@@ -481,7 +481,7 @@ const lookRecipes: Record<string, LookRecipe> = {
   dramatic: { contrast: 1.3, brightness: 0.95 },
   'dramatic-warm': { contrast: 1.25, sepia: 0.25, brightness: 0.97 },
   'dramatic-cool': { contrast: 1.3, hue: -18, brightness: 0.96 },
-  mono: { grayscale: 1 },
+  mono: { grayscale: 1, contrast: 1.5, brightness: 0.9 },
   silvertone: { grayscale: 1, contrast: 1.2 },
   noir: { grayscale: 1, contrast: 1.5, brightness: 0.9 },
   fade: { saturate: 0.55, contrast: 0.82, brightness: 1.18, sepia: 0.22 },
@@ -725,12 +725,9 @@ const applyPhotoAdjustments = (target: CanvasRenderingContext2D, surface: HTMLCa
 };
 
 const syncFilterChips = (): void => {
-  const current = photoFilter?.value ?? 'original';
+  const current = photoFilter?.value === 'noir' ? 'mono' : (photoFilter?.value ?? 'original');
   document.querySelectorAll<HTMLButtonElement>('[data-look]').forEach((chip) => {
     chip.setAttribute('aria-pressed', String(chip.dataset.look === current));
-  });
-  document.querySelectorAll<HTMLButtonElement>('[data-adjust-look]').forEach((button) => {
-    button.setAttribute('aria-pressed', String(button.dataset.adjustLook === current));
   });
 };
 
@@ -2949,23 +2946,6 @@ byId<HTMLButtonElement>('adjustAuto')?.addEventListener('click', () => {
   const button = byId<HTMLButtonElement>('adjustAuto');
   applyAutoAdjust(button?.getAttribute('aria-pressed') !== 'true');
 });
-document.querySelectorAll<HTMLButtonElement>('[data-adjust-look]').forEach((button) => {
-  button.addEventListener('click', () => {
-    const look = button.dataset.adjustLook;
-    if (!look || !photoFilter || !(look in lookRecipes)) return;
-    activeHomeEffect = null;
-    photoFilter.value = look;
-    syncFilterChips();
-    showEditor();
-    setStudioTab('adjust');
-    if (originalImage) render();
-    else {
-      pendingApply = look;
-      showToast('Choose your photo. B/W or Noir will be applied to it.');
-      requestPhoto();
-    }
-  });
-});
 
 ['filterIntensity'].forEach((id) => {
   const input = byId<HTMLInputElement>(id);
@@ -3618,10 +3598,9 @@ const lookFromRequest = (text: string): string | null => {
     [/\bdramatic warm\b|\bdramatic-warm\b/, 'dramatic-warm'],
     [/\bdramatic cool\b|\bdramatic-cool\b/, 'dramatic-cool'],
     [/\bsilver\b/, 'silvertone'],
-    [/\bblack and white\b|\bmono\b/, 'mono'],
+    [/\bblack and white\b|\bb\/w\b|\bbw\b|\bmono\b|\bnoir\b/, 'mono'],
     [/\bvivid\b/, 'vivid'],
     [/\bdramatic\b/, 'dramatic'],
-    [/\bnoir\b/, 'noir'],
     [/\bfilm\b/, 'film'],
     [/\bwarm\b/, 'warm'],
     [/\bglow\b/, 'glow'],

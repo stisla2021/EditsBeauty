@@ -95,7 +95,7 @@
       </div>
       <input type="file" id="upload" accept="image/*" hidden>
       <div class="studio-sheet creative-controls" id="creativeControls">
-        <label class="grid-setting visually-hidden">Filter<select id="photoFilter"><option value="original">Original</option><option value="vivid">Vivid</option><option value="vivid-warm">Vivid Warm</option><option value="vivid-cool">Vivid Cool</option><option value="dramatic">Dramatic</option><option value="dramatic-warm">Dramatic Warm</option><option value="dramatic-cool">Dramatic Cool</option><option value="mono">Mono</option><option value="silvertone">Silvertone</option><option value="noir">Noir</option><option value="fade">Fade</option><option value="instant">Instant</option><option value="transfer">Transfer</option><option value="chrome">Chrome</option><option value="film">Film</option><option value="warm">Warm</option><option value="glow">Glow</option><option value="cool">Cool</option></select></label>
+        <label class="grid-setting visually-hidden">Filter<select id="photoFilter"><option value="original">Original</option><option value="vivid">Vivid</option><option value="vivid-warm">Vivid Warm</option><option value="vivid-cool">Vivid Cool</option><option value="dramatic">Dramatic</option><option value="dramatic-warm">Dramatic Warm</option><option value="dramatic-cool">Dramatic Cool</option><option value="mono">B/W</option><option value="silvertone">Silvertone</option><option value="noir">B/W</option><option value="fade">Fade</option><option value="instant">Instant</option><option value="transfer">Transfer</option><option value="chrome">Chrome</option><option value="film">Film</option><option value="warm">Warm</option><option value="glow">Glow</option><option value="cool">Cool</option></select></label>
         <div class="sheet-panel" id="panelFilters">
           <div class="iphone-filters" id="iphoneFilters">
             <div class="filter-scroll" id="filterBar" role="listbox" aria-label="Photo filters">
@@ -106,9 +106,8 @@
               <button class="filter-chip" type="button" data-look="dramatic"><span class="thumb look-dramatic"><canvas data-filter-preview="dramatic" width="112" height="112"></canvas></span><span>Dramatic</span></button>
               <button class="filter-chip" type="button" data-look="dramatic-warm"><span class="thumb look-dramatic-warm"><canvas data-filter-preview="dramatic-warm" width="112" height="112"></canvas></span><span>Dramatic Warm</span></button>
               <button class="filter-chip" type="button" data-look="dramatic-cool"><span class="thumb look-dramatic-cool"><canvas data-filter-preview="dramatic-cool" width="112" height="112"></canvas></span><span>Dramatic Cool</span></button>
-              <button class="filter-chip" type="button" data-look="mono"><span class="thumb look-mono"><canvas data-filter-preview="mono" width="112" height="112"></canvas></span><span>Mono</span></button>
+              <button class="filter-chip" type="button" data-look="mono"><span class="thumb look-mono"><canvas data-filter-preview="mono" width="112" height="112"></canvas></span><span>B/W</span></button>
               <button class="filter-chip" type="button" data-look="silvertone"><span class="thumb look-silvertone"><canvas data-filter-preview="silvertone" width="112" height="112"></canvas></span><span>Silvertone</span></button>
-              <button class="filter-chip" type="button" data-look="noir"><span class="thumb look-noir"><canvas data-filter-preview="noir" width="112" height="112"></canvas></span><span>Noir</span></button>
               <button class="filter-chip" type="button" data-look="fade"><span class="thumb look-fade"><canvas data-filter-preview="fade" width="112" height="112"></canvas></span><span>Fade</span></button>
               <button class="filter-chip" type="button" data-look="instant"><span class="thumb look-instant"><canvas data-filter-preview="instant" width="112" height="112"></canvas></span><span>Instant</span></button>
               <button class="filter-chip" type="button" data-look="transfer"><span class="thumb look-transfer"><canvas data-filter-preview="transfer" width="112" height="112"></canvas></span><span>Transfer</span></button>
@@ -139,11 +138,6 @@
         <div class="sheet-panel" id="panelAdjust" hidden>
           <div class="adjust-list">
             <button class="adjust-auto" id="adjustAuto" type="button" aria-pressed="false">Auto</button>
-            <div class="adjust-tones" role="group" aria-label="Black and white">
-              <button type="button" data-adjust-look="original" aria-pressed="true">Color</button>
-              <button type="button" data-adjust-look="mono" aria-pressed="false">B/W</button>
-              <button type="button" data-adjust-look="noir" aria-pressed="false">Noir</button>
-            </div>
             <label class="range-control" for="adjustExposure"><span>Exposure</span><output id="adjustExposureVal">0</output><input type="range" id="adjustExposure" min="-100" max="100" value="0"></label>
             <label class="range-control" for="adjustBrilliance"><span>Brilliance</span><output id="adjustBrillianceVal">0</output><input type="range" id="adjustBrilliance" min="-100" max="100" value="0"></label>
             <label class="range-control" for="adjustHighlights"><span>Highlights</span><output id="adjustHighlightsVal">0</output><input type="range" id="adjustHighlights" min="-100" max="100" value="0"></label>
@@ -426,7 +420,7 @@
     <section class="home-note" aria-labelledby="publisherTitle">
       <h2 id="publisherTitle">A free editor from Jalangbam</h2>
       <p>EditsBeauty is published by StISLA2021 in Jalangbam, The Gambia. It edits a photo in this browser. The picture is not uploaded to an EditsBeauty server, and it is dropped when you leave the page. Save writes a JPEG to your device.</p>
-      <p>Start Editing opens your photo. Face Details and the filter looks paint on the canvas. Adjust holds Auto, Color, B/W, Noir, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Example portraits opens a different person in Adjust. The longer explanation of each look is on <a href="about.html">About Us</a>. Questions about privacy, the editor, or a photo are answered on <a href="faq.html">FAQ</a> and <a href="contact.html">Contact Us</a>.</p>
+      <p>Start Editing opens your photo. Face Details and the filter looks paint on the canvas. Adjust holds Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. B/W is in Filters. Example portraits opens a different person in Adjust. The longer explanation of each look is on <a href="about.html">About Us</a>. Questions about privacy, the editor, or a photo are answered on <a href="faq.html">FAQ</a> and <a href="contact.html">Contact Us</a>.</p>
     </section>
   </main>
 
