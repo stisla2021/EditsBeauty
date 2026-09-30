@@ -178,31 +178,83 @@ function composeCanvasFilters(...filters: string[]): string {
   return activeFilters.length ? activeFilters.join(' ') : 'none';
 }
 
-let filterSurface: HTMLCanvasElement | null = null;
-let filterSurfaceContext: CanvasRenderingContext2D | null = null;
-let canvasFilterSupport: boolean | null = null;
-
-const supportsCanvasFilters = (): boolean => {
-  if (canvasFilterSupport !== null) return canvasFilterSupport;
-  const source = document.createElement('canvas');
-  source.width = 1;
-  source.height = 1;
-  const sourceContext = source.getContext('2d');
-  const destination = document.createElement('canvas');
-  destination.width = 1;
-  destination.height = 1;
-  const destinationContext = destination.getContext('2d');
-  if (!sourceContext || !destinationContext || !('filter' in destinationContext)) {
-    canvasFilterSupport = false;
-    return false;
+const blurHorizontal = (input: Float32Array, output: Float32Array, width: number, height: number, radius: number): void => {
+  const span = radius * 2 + 1;
+  const scale = 1 / span;
+  for (let y = 0; y < height; y += 1) {
+    const row = y * width * 3;
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+    const first = row;
+    const last = row + (width - 1) * 3;
+    for (let offset = -radius; offset <= radius; offset += 1) {
+      const sample = offset < 0 ? first : offset >= width ? last : row + offset * 3;
+      red += input[sample];
+      green += input[sample + 1];
+      blue += input[sample + 2];
+    }
+    for (let x = 0; x < width; x += 1) {
+      const index = row + x * 3;
+      output[index] = red * scale;
+      output[index + 1] = green * scale;
+      output[index + 2] = blue * scale;
+      const add = x + radius + 1 < width ? row + (x + radius + 1) * 3 : last;
+      const remove = x - radius >= 0 ? row + (x - radius) * 3 : first;
+      red += input[add] - input[remove];
+      green += input[add + 1] - input[remove + 1];
+      blue += input[add + 2] - input[remove + 2];
+    }
   }
-  sourceContext.fillStyle = '#ff0000';
-  sourceContext.fillRect(0, 0, 1, 1);
-  destinationContext.filter = 'grayscale(1)';
-  destinationContext.drawImage(source, 0, 0);
-  const pixel = destinationContext.getImageData(0, 0, 1, 1).data;
-  canvasFilterSupport = Math.abs(pixel[0] - pixel[1]) < 12 && pixel[0] < 180;
-  return canvasFilterSupport;
+};
+
+const blurVertical = (input: Float32Array, output: Float32Array, width: number, height: number, radius: number): void => {
+  const span = radius * 2 + 1;
+  const scale = 1 / span;
+  for (let x = 0; x < width; x += 1) {
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+    const column = x * 3;
+    const stride = width * 3;
+    const first = column;
+    const last = column + (height - 1) * stride;
+    for (let offset = -radius; offset <= radius; offset += 1) {
+      const sample = offset < 0 ? first : offset >= height ? last : column + offset * stride;
+      red += input[sample];
+      green += input[sample + 1];
+      blue += input[sample + 2];
+    }
+    for (let y = 0; y < height; y += 1) {
+      const index = column + y * stride;
+      output[index] = red * scale;
+      output[index + 1] = green * scale;
+      output[index + 2] = blue * scale;
+      const add = y + radius + 1 < height ? column + (y + radius + 1) * stride : last;
+      const remove = y - radius >= 0 ? column + (y - radius) * stride : first;
+      red += input[add] - input[remove];
+      green += input[add + 1] - input[remove + 1];
+      blue += input[add + 2] - input[remove + 2];
+    }
+  }
+};
+
+const boxBlur = (data: Uint8ClampedArray, width: number, height: number, radius: number): void => {
+  const amount = Math.max(1, Math.round(radius));
+  const src = new Float32Array(width * height * 3);
+  const tmp = new Float32Array(src.length);
+  for (let pixel = 0, index = 0; pixel < data.length; pixel += 4, index += 3) {
+    src[index] = data[pixel];
+    src[index + 1] = data[pixel + 1];
+    src[index + 2] = data[pixel + 2];
+  }
+  blurHorizontal(src, tmp, width, height, amount);
+  blurVertical(tmp, src, width, height, amount);
+  for (let pixel = 0, index = 0; pixel < data.length; pixel += 4, index += 3) {
+    data[pixel] = src[index];
+    data[pixel + 1] = src[index + 1];
+    data[pixel + 2] = src[index + 2];
+  }
 };
 
 const clampByte = (value: number): number => Math.max(0, Math.min(255, Math.round(value)));
@@ -261,6 +313,19 @@ const applyFilterChain = (data: Uint8ClampedArray, filter: string): void => {
   }
 };
 
+const paintFilterPixels = (target: CanvasRenderingContext2D, filter: string, originX = 0, originY = 0, pixelWidth = target.canvas.width, pixelHeight = target.canvas.height): void => {
+  if (!filter || filter === 'none' || pixelWidth < 1 || pixelHeight < 1) return;
+  try {
+    const pixels = target.getImageData(originX, originY, pixelWidth, pixelHeight);
+    applyFilterChain(pixels.data, filter);
+    const blur = Number(filter.match(/blur\(([\d.]+)px\)/)?.[1] ?? 0);
+    if (blur > 0.4) boxBlur(pixels.data, pixelWidth, pixelHeight, blur);
+    target.putImageData(pixels, originX, originY);
+  } catch {
+    showToast('This photo is too large for this filter on the phone.');
+  }
+};
+
 const drawFilteredSource = (
   target: CanvasRenderingContext2D,
   image: CanvasImageSource,
@@ -275,37 +340,13 @@ const drawFilteredSource = (
   destHeight: number,
 ): void => {
   target.filter = 'none';
-  if (!filter || filter === 'none') {
-    target.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
-    return;
-  }
-  if (supportsCanvasFilters()) {
-    if (!filterSurface) filterSurface = document.createElement('canvas');
-    const width = Math.max(1, Math.round(destWidth));
-    const height = Math.max(1, Math.round(destHeight));
-    if (filterSurface.width !== width || filterSurface.height !== height) {
-      filterSurface.width = width;
-      filterSurface.height = height;
-      filterSurfaceContext = null;
-    }
-    filterSurfaceContext ??= filterSurface.getContext('2d');
-    if (filterSurfaceContext) {
-      filterSurfaceContext.clearRect(0, 0, width, height);
-      filterSurfaceContext.filter = filter;
-      filterSurfaceContext.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
-      filterSurfaceContext.filter = 'none';
-      target.drawImage(filterSurface, destX, destY, destWidth, destHeight);
-      return;
-    }
-  }
   target.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+  if (!filter || filter === 'none') return;
   const originX = Math.max(0, Math.floor(destX));
   const originY = Math.max(0, Math.floor(destY));
   const pixelWidth = Math.max(1, Math.min(target.canvas.width - originX, Math.round(destWidth)));
   const pixelHeight = Math.max(1, Math.min(target.canvas.height - originY, Math.round(destHeight)));
-  const pixels = target.getImageData(originX, originY, pixelWidth, pixelHeight);
-  applyFilterChain(pixels.data, filter);
-  target.putImageData(pixels, originX, originY);
+  paintFilterPixels(target, filter, originX, originY, pixelWidth, pixelHeight);
 };
 
 type LookRecipe = {
@@ -405,12 +446,14 @@ const blurSurface = (layer: HTMLCanvasElement | null, source: HTMLCanvasElement,
     copy.width = source.width;
     copy.height = source.height;
   }
-  const layerContext = copy.getContext('2d');
+  const layerContext = copy.getContext('2d', { willReadFrequently: true });
   if (!layerContext) return null;
-  layerContext.clearRect(0, 0, copy.width, copy.height);
-  layerContext.filter = `blur(${radius.toFixed(2)}px)`;
-  layerContext.drawImage(source, 0, 0);
   layerContext.filter = 'none';
+  layerContext.clearRect(0, 0, copy.width, copy.height);
+  layerContext.drawImage(source, 0, 0);
+  const frame = layerContext.getImageData(0, 0, copy.width, copy.height);
+  boxBlur(frame.data, copy.width, copy.height, radius);
+  layerContext.putImageData(frame, 0, 0);
   return copy;
 };
 
@@ -588,9 +631,9 @@ const paintFilterPreviews = (source: HTMLImageElement | null = originalImage): v
     const side = Math.min(source.naturalWidth, source.naturalHeight);
     const originX = (source.naturalWidth - side) / 2;
     const originY = (source.naturalHeight - side) / 2;
-    thumbContext.filter = lookFilter(thumb.dataset.filterPreview ?? 'original', 100);
-    thumbContext.drawImage(source, originX, originY, side, side, 0, 0, size, size);
     thumbContext.filter = 'none';
+    thumbContext.drawImage(source, originX, originY, side, side, 0, 0, size, size);
+    paintFilterPixels(thumbContext, lookFilter(thumb.dataset.filterPreview ?? 'original', 100));
     thumb.classList.add('ready');
   });
 };
@@ -912,9 +955,9 @@ const drawVideoFrame = (): boolean => {
   videoCanvas.height = Math.max(1, Math.round(videoPreview.videoHeight * scale));
   const videoContext = videoCanvas.getContext('2d');
   if (!videoContext) return false;
-  videoContext.filter = videoLooks[videoFilter?.value ?? 'original'] ?? 'none';
-  videoContext.drawImage(videoPreview, 0, 0, videoCanvas.width, videoCanvas.height);
   videoContext.filter = 'none';
+  videoContext.drawImage(videoPreview, 0, 0, videoCanvas.width, videoCanvas.height);
+  paintFilterPixels(videoContext, videoLooks[videoFilter?.value ?? 'original'] ?? 'none');
   return true;
 };
 
@@ -923,8 +966,10 @@ const downloadBlob = (blob: Blob, fileName: string): void => {
   const link = document.createElement('a');
   link.href = url;
   link.download = fileName;
+  document.body.append(link);
   link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 4000);
 };
 
 batchUpload?.addEventListener('change', () => {
@@ -963,9 +1008,8 @@ batchExportButton?.addEventListener('click', async () => {
         continue;
       }
       const value = Number(enhanceSlider?.value ?? 100) / 100;
-      outputContext.filter = composeCanvasFilters(lookFilter(photoFilter?.value ?? 'original'), `brightness(${value}) contrast(${value})`);
-      outputContext.drawImage(image, 0, 0, output.width, output.height);
       outputContext.filter = 'none';
+      drawFilteredSource(outputContext, image, composeCanvasFilters(lookFilter(photoFilter?.value ?? 'original'), `brightness(${value}) contrast(${value}) saturate(${value})`), 0, 0, image.naturalWidth, image.naturalHeight, 0, 0, output.width, output.height);
       applyPhotoAdjustments(outputContext, output);
       const blob = await new Promise<Blob | null>((resolve) => output.toBlob(resolve, 'image/png'));
       if (blob) {
@@ -1713,9 +1757,18 @@ const drawSceneBehindPerson = (
   if (!personContext) return;
   personContext.drawImage(canvas, 0, 0);
   personContext.globalCompositeOperation = 'destination-in';
-  personContext.filter = `blur(${Math.max(1, width * 0.003)}px)`;
+  personContext.filter = 'none';
+  const feather = document.createElement('canvas');
+  feather.width = personMask.width;
+  feather.height = personMask.height;
+  const featherContext = feather.getContext('2d', { willReadFrequently: true });
+  const maskSource = featherContext ? feather : personMask;
+  if (featherContext) {
+    featherContext.drawImage(personMask, 0, 0);
+    paintFilterPixels(featherContext, `blur(${Math.max(1, personMask.width * 0.004).toFixed(2)}px)`);
+  }
   personContext.drawImage(
-    personMask,
+    maskSource,
     (sourceX / originalImage.naturalWidth) * personMask.width,
     (sourceY / originalImage.naturalHeight) * personMask.height,
     (sourceWidth / originalImage.naturalWidth) * personMask.width,
@@ -1753,8 +1806,9 @@ const paintHomeEffect = (): void => {
     blurred.height = height;
     const blurredContext = blurred.getContext('2d');
     if (!blurredContext) return;
-    blurredContext.filter = `blur(${amount}px)`;
+    blurredContext.filter = 'none';
     blurredContext.drawImage(sharp, 0, 0);
+    paintFilterPixels(blurredContext, `blur(${amount}px)`);
     context.save();
     context.filter = 'none';
     context.drawImage(blurred, 0, 0);
@@ -2004,9 +2058,9 @@ const render = (): void => {
       const softContext = soft.getContext('2d');
       if (softContext) {
         const blurRadius = 1.8 + Math.min(smooth, 60) * 0.05;
-        softContext.filter = `blur(${blurRadius.toFixed(2)}px)`;
-        softContext.drawImage(sharp, 0, 0);
         softContext.filter = 'none';
+        softContext.drawImage(sharp, 0, 0);
+        paintFilterPixels(softContext, `blur(${blurRadius.toFixed(2)}px)`);
         const polish = Math.min(smooth, 60) / 100;
         context.save();
         context.beginPath();
@@ -2024,8 +2078,9 @@ const render = (): void => {
           warm.height = height;
           const warmContext = warm.getContext('2d');
           if (warmContext) {
-            warmContext.filter = 'brightness(1.08) saturate(1.06)';
+            warmContext.filter = 'none';
             warmContext.drawImage(sharp, 0, 0);
+            paintFilterPixels(warmContext, 'brightness(1.08) saturate(1.06)');
             context.globalCompositeOperation = 'soft-light';
             context.globalAlpha = 0.14 + glow * 0.2;
             context.fillStyle = 'rgb(255, 214, 196)';
@@ -2392,22 +2447,40 @@ byId<HTMLButtonElement>('cameraCapture')?.addEventListener('click', captureCamer
 document.querySelectorAll<HTMLButtonElement>('[data-open-tools]').forEach((button) => {
   button.addEventListener('click', openTools);
 });
+let lastLookTap = 0;
+const selectLook = (chip: HTMLButtonElement): void => {
+  const now = Date.now();
+  if (now - lastLookTap < 350) return;
+  lastLookTap = now;
+  if (!chip.dataset.look || !photoFilter) return;
+  activeHomeEffect = null;
+  const title = byId<HTMLElement>('editorTitle');
+  if (title) title.textContent = 'Filters';
+  photoFilter.value = chip.dataset.look;
+  console.log('filter', chip.dataset.look);
+  syncFilterChips();
+  if (creativeControls) creativeControls.hidden = false;
+  showEditor();
+  if (originalImage) render();
+  else {
+    showToast('Choose your photo. This look will be applied to it.');
+    requestPhoto();
+  }
+};
 document.querySelectorAll<HTMLButtonElement>('[data-look]').forEach((chip) => {
-  chip.addEventListener('click', () => {
-    if (!chip.dataset.look || !photoFilter) return;
-    activeHomeEffect = null;
-    const title = byId<HTMLElement>('editorTitle');
-    if (title) title.textContent = 'Filters';
-    photoFilter.value = chip.dataset.look;
-    console.log('filter', chip.dataset.look);
-    syncFilterChips();
-    if (creativeControls) creativeControls.hidden = false;
-    showEditor();
-    if (originalImage) render();
-    else {
-      showToast('Choose a photo to preview this filter.');
-      upload?.click();
-    }
+  let startX = 0;
+  let startY = 0;
+  chip.addEventListener('pointerdown', (event) => {
+    startX = event.clientX;
+    startY = event.clientY;
+  });
+  chip.addEventListener('pointerup', (event) => {
+    if (Math.hypot(event.clientX - startX, event.clientY - startY) > 12) return;
+    selectLook(chip);
+  });
+  chip.addEventListener('click', (event) => {
+    event.preventDefault();
+    selectLook(chip);
   });
 });
 
@@ -2542,17 +2615,22 @@ document.querySelectorAll<HTMLButtonElement>('[data-bg-scene]').forEach((button)
 
 downloadButton?.addEventListener('click', () => {
   if (!canvas || !originalImage) return;
-  canvas.toBlob((blob) => {
+  canvas.toBlob(async (blob) => {
     if (!blob) {
       showToast('The edited photo could not be exported.');
       return;
     }
-    const downloadUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = 'editsbeauty-edit.jpg';
-    link.click();
-    URL.revokeObjectURL(downloadUrl);
+    const file = new File([blob], 'editsbeauty-edit.jpg', { type: 'image/jpeg' });
+    if (phoneDevice && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'EditsBeauty' });
+        showToast('Saved editsbeauty-edit.jpg');
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      }
+    }
+    downloadBlob(blob, 'editsbeauty-edit.jpg');
     showToast('Saved editsbeauty-edit.jpg');
   }, 'image/jpeg', 0.95);
 });
