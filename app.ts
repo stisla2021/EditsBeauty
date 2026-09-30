@@ -2225,6 +2225,18 @@ const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): P
 };
 
 let pendingSmooth: string | null = null;
+let pendingApply: string | null = null;
+
+const showYourPhoto = (src: string): void => {
+  const thumb = byId<HTMLImageElement>('yourPhotoThumb');
+  const status = byId<HTMLElement>('yourPhotoStatus');
+  if (thumb) {
+    thumb.hidden = false;
+    thumb.src = src;
+    thumb.alt = 'Your selected photo';
+  }
+  if (status) status.textContent = 'Your photo is selected. Tap a picture to apply that look.';
+};
 
 const openPhoto = (src: string): void => {
   if (!canvas) return;
@@ -2261,10 +2273,14 @@ const openPhoto = (src: string): void => {
     if (faceDetectionStatus) faceDetectionStatus.textContent = 'Detecting face landmarks on this device…';
     byId<HTMLElement>('canvasStage')?.classList.add('has-photo');
     showEditor();
+    showYourPhoto(src);
     if (pendingCrop) {
       pendingCrop = false;
       openCrop();
     }
+    const chosen = pendingApply;
+    pendingApply = null;
+    if (chosen) applyChosenLook(chosen);
     if (pendingPortrait) openPortrait(pendingPortrait);
     void detectFaceMesh(image).then((landmarks) => {
       if (generation !== imageGeneration) return;
@@ -3338,11 +3354,76 @@ document.querySelectorAll<HTMLButtonElement>('[data-guide-prompt]').forEach((but
   });
 });
 
-document.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button) => {
+const sampleLooks: Array<{ kind: string; label: string }> = [
+  { kind: 'smooth-skin', label: 'Smooth' },
+  { kind: 'lipstick', label: 'Lipstick' },
+  { kind: 'eyelashes', label: 'Lashes' },
+  { kind: 'vivid', label: 'Vivid' },
+  { kind: 'noir', label: 'Noir' },
+  { kind: 'golden-hour', label: 'Golden' },
+  { kind: 'warm', label: 'Warm' },
+  { kind: 'glow', label: 'Glow' },
+  { kind: 'acne', label: 'Clear skin' },
+  { kind: 'film', label: 'Film' },
+  { kind: 'dramatic', label: 'Dramatic' },
+  { kind: 'cool', label: 'Cool' },
+  { kind: 'double-chin', label: 'Jawline' },
+  { kind: 'chrome', label: 'Chrome' },
+  { kind: 'fade', label: 'Fade' },
+  { kind: 'slim', label: 'Slim' },
+  { kind: 'red-light', label: 'Red light' },
+  { kind: 'instant', label: 'Instant' },
+  { kind: 'silvertone', label: 'Silver' },
+  { kind: 'mono', label: 'Mono' },
+  { kind: 'vivid-warm', label: 'Vivid warm' },
+  { kind: 'vivid-cool', label: 'Vivid cool' },
+  { kind: 'dramatic-warm', label: 'Drama warm' },
+  { kind: 'dramatic-cool', label: 'Drama cool' },
+  { kind: 'transfer', label: 'Transfer' },
+  { kind: 'smooth-skin', label: 'Smooth' },
+  { kind: 'lipstick', label: 'Lipstick' },
+  { kind: 'glow', label: 'Glow' },
+  { kind: 'noir', label: 'Noir' },
+  { kind: 'golden-hour', label: 'Golden' },
+];
+
+const applyChosenLook = (kind: string): void => {
+  if (!originalImage) {
+    pendingApply = kind;
+    showToast('Choose your photo. This look will be applied to it.');
+    requestPhoto();
+    return;
+  }
+  if (isHomeEffect(kind)) {
+    beginHomeEffect(kind);
+    return;
+  }
+  if (!(kind in lookRecipes) || !photoFilter) return;
+  activeHomeEffect = null;
+  photoFilter.value = kind;
+  syncFilterChips();
+  showEditor();
+  setStudioTab('filters');
+  render();
+  showToast('Applied to your photo.');
+};
+
+byId<HTMLButtonElement>('choosePhoto')?.addEventListener('click', requestPhoto);
+byId<HTMLButtonElement>('guideClear')?.addEventListener('click', () => {
+  guideLog?.replaceChildren();
+  showToast('Chat deleted.');
+});
+
+document.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button, index) => {
+  const item = sampleLooks[index];
+  if (!item) return;
+  const span = button.querySelector('span');
+  if (span) span.textContent = item.label;
   button.addEventListener('click', () => {
-    const src = button.dataset.sample;
-    if (!src) return;
-    openPhoto(src);
-    setStudioTab('adjust');
+    document.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((other) => {
+      other.setAttribute('aria-pressed', 'false');
+    });
+    button.setAttribute('aria-pressed', 'true');
+    applyChosenLook(item.kind);
   });
 });

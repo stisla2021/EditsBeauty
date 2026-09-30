@@ -121,41 +121,6 @@ if ('serviceWorker' in navigator) {
   }).catch(() => undefined);
 }
 
-const settingKeys = [
-  'editsbeauty-theme',
-  'editsbeauty-save-album',
-  'editsbeauty-sticker-optimize',
-  'editsbeauty-heic',
-  'editsbeauty-resolution',
-  'editsbeauty-live-format',
-  'editsbeauty-language',
-  'editsbeauty-id',
-];
-
-const coreFiles = [
-  './',
-  './index.html',
-  './about.html',
-  './faq.html',
-  './privacy.html',
-  './privacy-policy.html',
-  './contact.html',
-  './terms.html',
-  './licensing.html',
-  './copyright.html',
-  './fontlicense.html',
-  './settings.html',
-  './style.css',
-  './manifest.json',
-  './images/logo.png',
-  './images/logo-192.png',
-  './images/logo-512.png',
-  './images/EditsBeauty.jpeg',
-  './assets/index.js',
-  './assets/menu.js',
-  './sw.js',
-];
-
 const readSetting = (key: string, fallback: string): string => {
   try {
     return localStorage.getItem(key) ?? fallback;
@@ -203,34 +168,16 @@ const responseBytes = async (response: Response): Promise<number> => {
 
 const measureStorageBytes = async (): Promise<number> => {
   let counted = 0;
-  if ('caches' in window) {
-    const names = await caches.keys();
-    for (const name of names) {
-      const cache = await caches.open(name);
-      for (const request of await cache.keys()) {
-        const response = await cache.match(request);
-        if (response) counted += await responseBytes(response);
-      }
+  if (!('caches' in window)) return 0;
+  const names = await caches.keys();
+  for (const name of names) {
+    const cache = await caches.open(name);
+    for (const request of await cache.keys()) {
+      const response = await cache.match(request);
+      if (response) counted += await responseBytes(response);
     }
   }
-  try {
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const key = localStorage.key(index);
-      if (!key) continue;
-      counted += new Blob([key, localStorage.getItem(key) ?? '']).size;
-    }
-  } catch {
-    // Storage can be unavailable in a private window.
-  }
-  let estimated = 0;
-  if (navigator.storage?.estimate) {
-    try {
-      estimated = (await navigator.storage.estimate()).usage ?? 0;
-    } catch {
-      estimated = 0;
-    }
-  }
-  return Math.max(counted, estimated);
+  return counted;
 };
 
 const showCacheSize = async (): Promise<void> => {
@@ -246,69 +193,20 @@ const showCacheSize = async (): Promise<void> => {
   }
 };
 
-const modelFiles = [
-  'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh_solution_packed_assets.data',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh_solution_packed_assets_loader.js',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh_solution_simd_wasm_bin.js',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh_solution_simd_wasm_bin.wasm',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh_solution_wasm_bin.js',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh_solution_wasm_bin.wasm',
-];
-
-const keepCached = (url: URL): boolean => {
-  if (url.hostname === 'cdn.jsdelivr.net' && url.pathname.includes('/@mediapipe/')) return true;
-  if (url.hostname === 'images.unsplash.com') return true;
-  const relative = url.pathname === '/' ? './' : `.${url.pathname}`;
-  return coreFiles.includes(relative);
-};
-
-const restoreCoreCache = async (): Promise<void> => {
-  const saved: Array<{ request: Request; response: Response }> = [];
-  if (!('caches' in window)) return;
-  const names = await caches.keys();
-  for (const name of names) {
-    const cache = await caches.open(name);
-    for (const request of await cache.keys()) {
-      if (!keepCached(new URL(request.url))) continue;
-      const match = await cache.match(request);
-      if (match) saved.push({ request, response: match.clone() });
-    }
-  }
-  await Promise.all(names.map((name) => caches.delete(name)));
-  const fresh = await caches.open('editsbeauty-shell-v9');
-  for (const item of saved) await fresh.put(item.request, item.response);
-  if (navigator.onLine) {
-    await Promise.all([...coreFiles, ...modelFiles].map(async (path) => {
-      try {
-        const response = await fetch(path, { cache: 'reload' });
-        if (response.ok) await fresh.put(path, response);
-      } catch {
-        // The copied file stays in place when the network is off.
-      }
-    }));
-  }
-};
-
 const clearAppCache = async (): Promise<void> => {
-  await restoreCoreCache();
+  if ('caches' in window) {
+    const names = await caches.keys();
+    await Promise.all(names.map((name) => caches.delete(name)));
+  }
   try {
-    const kept = new Map<string, string>();
-    settingKeys.forEach((key) => {
-      const value = localStorage.getItem(key);
-      if (value !== null) kept.set(key, value);
-    });
-    localStorage.clear();
-    kept.forEach((value, key) => localStorage.setItem(key, value));
     sessionStorage.clear();
   } catch {
-    // Keep going when a storage area cannot be cleared.
+    // Keep going when storage cannot be cleared.
   }
   cacheMeasure += 1;
   const cacheSize = document.getElementById('cacheSize');
-  if (cacheSize) cacheSize.textContent = '…';
-  showMenuToast('Cache cleared successfully!');
-  await showCacheSize();
+  if (cacheSize) cacheSize.textContent = '0 B';
+  showMenuToast('Cache cleared. It is 0 B again.');
 };
 
 const bindSettings = (): void => {
@@ -384,7 +282,7 @@ const bindSettings = (): void => {
   });
 
   if (cacheSize) {
-    cacheSize.textContent = '…';
+    cacheSize.textContent = '0 B';
     void showCacheSize();
   }
 };

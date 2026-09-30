@@ -12,7 +12,8 @@ Version V1.0.0. Copyright (c) StISLA2021.
 - **Adjust** has Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Move the sliders yourself any time.
 - **Filters** are the looks, including Vivid and Noir, plus Smooth. Past 60, Smooth keeps the same softness and adds a warm finish.
 - **Backgrounds** under Adjust, then More tools: Beach, City, Studio, Garden, Sunset, Mountains, Forest, Night, Cafe, Sky, Flowers, and Ocean. The person stays. The scene is a real photo.
-- **Example portraits** are 30 different people. Tap Edit to open that photo in Adjust.
+- **Choose your photo**, then tap an example portrait to apply that look to your picture. The example does not replace your photo.
+- **Delete chat** in the AI guide clears that conversation. Cache starts at 0 B. **Clear Cache** in Settings deletes stored files and returns the size to 0 B. Photos are not stored in the cache.
 
 ## Run it locally
 

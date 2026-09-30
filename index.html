@@ -220,7 +220,12 @@
     </section>
     <section class="vibes-section home-section" aria-labelledby="portraitsTitle">
       <h2 id="portraitsTitle">Example portraits</h2>
-      <p class="tool-note">Tap any photo to open that person in Adjust.</p>
+      <p class="tool-note">Choose your photo, then tap a picture to apply that look to it.</p>
+      <div class="your-photo">
+        <button type="button" id="choosePhoto">Choose your photo</button>
+        <img id="yourPhotoThumb" alt="" hidden>
+        <p id="yourPhotoStatus">No photo selected.</p>
+      </div>
       <div class="vibes-slider" data-auto-slider>
         <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
         <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
@@ -579,7 +584,10 @@
     <div class="guide-card" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
       <header class="guide-bar">
         <h2 id="guideTitle">AI guide</h2>
-        <button type="button" id="guideClose">Close</button>
+        <div class="guide-actions">
+          <button type="button" id="guideClear">Delete chat</button>
+          <button type="button" id="guideClose">Close</button>
+        </div>
       </header>
       <div class="guide-log" id="guideLog"></div>
       <div class="guide-prompts">
