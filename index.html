@@ -55,7 +55,7 @@
       <header class="studio-bar">
         <button class="studio-back" id="studioBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
         <h1 id="editorTitle">Filters</h1>
-        <button class="studio-save" id="downloadBtn" type="button" disabled>Save</button>
+        <button class="studio-save" id="downloadBtn" type="button" disabled>Download</button>
       </header>
       <aside class="studio-rail" aria-label="Tools">
         <button type="button" data-studio-tab="filters">Filters</button>
@@ -169,36 +169,36 @@
     <section class="vibes-section home-section" aria-labelledby="faceDetailsTitle">
       <h2 id="faceDetailsTitle">Face Details</h2>
       <div class="vibes-slider" data-auto-slider>
-        <button class="vibe-card" type="button" data-tool="Hair"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=70" alt="Lipstick look"><span>LIPSTICK</span></button>
-        <button class="vibe-card" type="button" data-tool="Augmentation"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&h=480&q=70" alt="Eyelash look"><span>EYELASHES</span></button>
-        <button class="vibe-card" type="button" data-tool="Face Volume"><img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=360&h=480&q=70" alt="Jawline look"><span>DOUBLE CHIN</span></button>
-        <button class="vibe-card" type="button" data-tool="Retouch"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&h=480&q=70" alt="Clear skin look"><span>ACNE</span></button>
+        <button class="vibe-card" type="button" data-effect="lipstick"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=70" alt="Lipstick look"><span>LIPSTICK</span></button>
+        <button class="vibe-card" type="button" data-effect="eyelashes"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&h=480&q=70" alt="Eyelash look"><span>EYELASHES</span></button>
+        <button class="vibe-card" type="button" data-effect="double-chin"><img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=360&h=480&q=70" alt="Jawline look"><span>DOUBLE CHIN</span></button>
+        <button class="vibe-card" type="button" data-effect="acne"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&h=480&q=70" alt="Clear skin look"><span>ACNE</span></button>
       </div>
     </section>
     <section class="vibes-section" aria-labelledby="vibesTitle">
       <h2 id="vibesTitle">Better Vibes</h2>
       <div class="vibes-slider" data-auto-slider>
-        <button class="vibe-card" type="button" data-ai="retouch" aria-label="AI Retouch">
+        <button class="vibe-card" type="button" data-effect="ai-retouch" aria-label="AI Retouch">
           <video src="https://download.samplelib.com/mp4/sample-5s.mp4" poster="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&h=480&q=80" width="140" height="190" autoplay muted loop playsinline webkit-playsinline preload="metadata"></video>
           <em class="ai-badge" aria-hidden="true">AI</em>
           <span>AI Retouch</span>
         </button>
-        <button class="vibe-card" type="button" data-ai="background" aria-label="AI BG Change">
+        <button class="vibe-card" type="button" data-effect="ai-bg" aria-label="AI BG Change">
           <video src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" poster="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=360&h=480&q=80" width="140" height="190" autoplay muted loop playsinline webkit-playsinline preload="metadata"></video>
           <em class="ai-badge" aria-hidden="true">AI</em>
           <span>AI BG Change</span>
         </button>
-        <button class="vibe-card" type="button" data-filter="cool"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=80" alt="Portrait beside a car"><span>RED CAR LIGHT</span></button>
-        <button class="vibe-card" type="button" data-filter="warm"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&h=480&q=80" alt="Golden-hour portrait"><span>GOLDEN HOUR</span></button>
+        <button class="vibe-card" type="button" data-effect="red-light"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=80" alt="Portrait beside a car"><span>RED CAR LIGHT</span></button>
+        <button class="vibe-card" type="button" data-effect="golden-hour"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&h=480&q=80" alt="Golden-hour portrait"><span>GOLDEN HOUR</span></button>
       </div>
     </section>
     <section class="vibes-section home-section" aria-labelledby="nextLevelTitle">
       <h2 id="nextLevelTitle">Next-Level Editing</h2>
       <div class="vibes-slider" data-auto-slider>
-        <button class="vibe-card" type="button" data-tool="Body Tuner"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=360&h=480&q=70" alt="Slim look"><i class="compare-line" aria-hidden="true"></i><span>Slim</span></button>
-        <button class="vibe-card" type="button" data-tool="Remover"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=360&h=480&q=70" alt="Remove people"><i class="compare-line" aria-hidden="true"></i><span>Remover-People</span></button>
-        <button class="vibe-card" type="button" data-tool="Body Tuner"><img src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=360&h=480&q=70" alt="Body tuner"><i class="compare-line" aria-hidden="true"></i><span>Body Tuner</span></button>
-        <button class="vibe-card" type="button" data-tool="Remover"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=360&h=480&q=70" alt="Removal"><i class="compare-line" aria-hidden="true"></i><span>Removal</span></button>
+        <button class="vibe-card" type="button" data-effect="slim"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=360&h=480&q=70" alt="Slim look"><i class="compare-line" aria-hidden="true"></i><span>Slim</span></button>
+        <button class="vibe-card" type="button" data-effect="remover"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=360&h=480&q=70" alt="Remove people"><i class="compare-line" aria-hidden="true"></i><span>Remover-People</span></button>
+        <button class="vibe-card" type="button" data-effect="body"><img src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=360&h=480&q=70" alt="Body tuner"><i class="compare-line" aria-hidden="true"></i><span>Body Tuner</span></button>
+        <button class="vibe-card" type="button" data-effect="removal"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=360&h=480&q=70" alt="Removal"><i class="compare-line" aria-hidden="true"></i><span>Removal</span></button>
       </div>
     </section>
     <section class="vibes-section home-section" aria-labelledby="outfitsTitle">

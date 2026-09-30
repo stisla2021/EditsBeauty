@@ -317,6 +317,48 @@ const showEditor = (): void => {
   stage?.classList.toggle('has-photo', Boolean(originalImage));
 };
 
+type HomeEffect = 'lipstick' | 'eyelashes' | 'double-chin' | 'acne' | 'ai-retouch' | 'ai-bg' | 'red-light' | 'golden-hour' | 'slim' | 'body' | 'remover' | 'removal';
+
+const homeEffectLabel: Record<HomeEffect, string> = {
+  lipstick: 'LIPSTICK',
+  eyelashes: 'EYELASHES',
+  'double-chin': 'DOUBLE CHIN',
+  acne: 'ACNE',
+  'ai-retouch': 'AI Retouch',
+  'ai-bg': 'AI BG Change',
+  'red-light': 'RED CAR LIGHT',
+  'golden-hour': 'GOLDEN HOUR',
+  slim: 'Slim',
+  body: 'Body Tuner',
+  remover: 'Remover-People',
+  removal: 'Removal',
+};
+
+let activeHomeEffect: HomeEffect | null = null;
+
+const isHomeEffect = (value: string): value is HomeEffect => Object.prototype.hasOwnProperty.call(homeEffectLabel, value);
+
+const requestPhoto = (): void => {
+  if (!upload) return;
+  upload.value = '';
+  upload.click();
+};
+
+const beginHomeEffect = (effect: HomeEffect): void => {
+  activeHomeEffect = effect;
+  const title = byId<HTMLElement>('editorTitle');
+  if (title) title.textContent = homeEffectLabel[effect];
+  closeTools();
+  setStudioTab('filters');
+  if (originalImage) {
+    render();
+    showToast(`${homeEffectLabel[effect]} applied.`);
+    return;
+  }
+  showToast('Choose a photo.');
+  requestPhoto();
+};
+
 const closeStudio = (): void => {
   if (editorPanel) editorPanel.hidden = true;
   const cropScreen = byId<HTMLElement>('cropScreen');
@@ -926,7 +968,13 @@ byId<HTMLButtonElement>('sheetStart')?.addEventListener('click', () => {
   closeTools();
   setStudioTab('filters');
 });
-byId<HTMLButtonElement>('startEditing')?.addEventListener('click', () => setStudioTab('filters'));
+byId<HTMLButtonElement>('startEditing')?.addEventListener('click', () => {
+  activeHomeEffect = null;
+  const title = byId<HTMLElement>('editorTitle');
+  if (title) title.textContent = 'Filters';
+  setStudioTab('filters');
+  if (!originalImage) requestPhoto();
+});
 byId<HTMLButtonElement>('studioBack')?.addEventListener('click', closeStudio);
 backdrop?.addEventListener('click', closeTools);
 document.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -1338,6 +1386,150 @@ const drawSceneBehindPerson = (
   context.restore();
 };
 
+const paintHomeEffect = (): void => {
+  if (!activeHomeEffect || !context || !canvas) return;
+  const width = canvas.width;
+  const height = canvas.height;
+  const effect = activeHomeEffect;
+  const snapshot = (): HTMLCanvasElement => {
+    const copy = document.createElement('canvas');
+    copy.width = width;
+    copy.height = height;
+    copy.getContext('2d')?.drawImage(canvas, 0, 0);
+    return copy;
+  };
+  const blurBehindSubject = (amount: number, radiusX: number, radiusY: number): void => {
+    const sharp = snapshot();
+    const blurred = document.createElement('canvas');
+    blurred.width = width;
+    blurred.height = height;
+    const blurredContext = blurred.getContext('2d');
+    if (!blurredContext) return;
+    blurredContext.filter = `blur(${amount}px)`;
+    blurredContext.drawImage(sharp, 0, 0);
+    context.save();
+    context.filter = 'none';
+    context.drawImage(blurred, 0, 0);
+    context.beginPath();
+    context.ellipse(width * 0.5, height * 0.46, width * radiusX, height * radiusY, 0, 0, Math.PI * 2);
+    context.clip();
+    context.drawImage(sharp, 0, 0);
+    context.restore();
+  };
+  if (effect === 'eyelashes') {
+    context.save();
+    context.globalCompositeOperation = 'multiply';
+    context.fillStyle = 'rgba(18, 10, 14, 0.72)';
+    context.beginPath();
+    context.ellipse(width * 0.38, height * 0.4, width * 0.09, height * 0.016, -0.2, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.ellipse(width * 0.62, height * 0.4, width * 0.09, height * 0.016, 0.2, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+    return;
+  }
+  if (effect === 'acne' || effect === 'ai-retouch') {
+    const soft = snapshot();
+    const softContext = soft.getContext('2d');
+    if (!softContext) return;
+    softContext.clearRect(0, 0, width, height);
+    softContext.filter = 'blur(7px)';
+    softContext.drawImage(canvas, 0, 0);
+    context.save();
+    context.beginPath();
+    context.ellipse(width * 0.5, height * 0.46, width * 0.3, height * 0.34, 0, 0, Math.PI * 2);
+    context.clip();
+    context.globalAlpha = effect === 'ai-retouch' ? 0.62 : 0.5;
+    context.drawImage(soft, 0, 0);
+    context.restore();
+    if (effect === 'ai-retouch') {
+      context.save();
+      context.globalCompositeOperation = 'soft-light';
+      context.fillStyle = 'rgba(255, 228, 206, 0.35)';
+      context.fillRect(0, 0, width, height);
+      context.restore();
+    }
+    return;
+  }
+  if (effect === 'double-chin' || effect === 'body') {
+    try {
+      const source = context.getImageData(0, 0, width, height);
+      const output = context.createImageData(width, height);
+      output.data.set(source.data);
+      const centerX = width * (effect === 'body' ? 0.5 : 0.5);
+      const centerY = height * (effect === 'body' ? 0.62 : 0.74);
+      const radiusX = width * (effect === 'body' ? 0.28 : 0.24);
+      const radiusY = height * (effect === 'body' ? 0.16 : 0.1);
+      const pull = height * (effect === 'body' ? 0.02 : 0.04);
+      for (let y = Math.max(0, Math.floor(centerY - radiusY)); y < Math.min(height, Math.ceil(centerY + radiusY)); y += 1) {
+        for (let x = Math.max(0, Math.floor(centerX - radiusX)); x < Math.min(width, Math.ceil(centerX + radiusX)); x += 1) {
+          const nx = (x - centerX) / radiusX;
+          const ny = (y - centerY) / radiusY;
+          const distance = nx * nx + ny * ny;
+          if (distance >= 1) continue;
+          const sampleY = Math.max(0, Math.min(height - 1, Math.round(y + (1 - distance) * pull)));
+          const from = (sampleY * width + x) * 4;
+          const to = (y * width + x) * 4;
+          output.data[to] = source.data[from];
+          output.data[to + 1] = source.data[from + 1];
+          output.data[to + 2] = source.data[from + 2];
+          output.data[to + 3] = source.data[from + 3];
+        }
+      }
+      context.putImageData(output, 0, 0);
+    } catch {
+      showToast('This photo could not be reshaped in the browser.');
+    }
+    return;
+  }
+  if (effect === 'ai-bg' || effect === 'remover' || effect === 'removal') {
+    blurBehindSubject(effect === 'ai-bg' ? 18 : 14, effect === 'removal' ? 0.22 : 0.28, effect === 'removal' ? 0.32 : 0.38);
+    return;
+  }
+  if (effect === 'slim') {
+    const sharp = snapshot();
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = '#f4f4f5';
+    context.fillRect(0, 0, width, height);
+    const drawnWidth = width * 0.88;
+    context.drawImage(sharp, (width - drawnWidth) / 2, 0, drawnWidth, height);
+    return;
+  }
+  if (effect === 'lipstick') {
+    context.save();
+    context.globalCompositeOperation = 'multiply';
+    context.fillStyle = 'rgba(176, 24, 48, 0.75)';
+    context.beginPath();
+    context.ellipse(width * 0.5, height * 0.58, width * 0.07, height * 0.016, 0, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+    return;
+  }
+  if (effect === 'red-light') {
+    context.save();
+    context.globalCompositeOperation = 'screen';
+    const glow = context.createRadialGradient(width * 0.12, height * 0.35, width * 0.02, width * 0.2, height * 0.4, width * 0.55);
+    glow.addColorStop(0, 'rgba(255, 36, 64, 0.55)');
+    glow.addColorStop(1, 'rgba(255, 36, 64, 0)');
+    context.fillStyle = glow;
+    context.fillRect(0, 0, width, height);
+    context.globalCompositeOperation = 'soft-light';
+    context.fillStyle = 'rgba(70, 130, 255, 0.28)';
+    context.fillRect(width * 0.35, 0, width * 0.65, height);
+    context.restore();
+    return;
+  }
+  context.save();
+  context.globalCompositeOperation = 'soft-light';
+  const warm = context.createLinearGradient(0, 0, 0, height);
+  warm.addColorStop(0, 'rgba(255, 186, 72, 0.55)');
+  warm.addColorStop(1, 'rgba(214, 96, 32, 0.35)');
+  context.fillStyle = warm;
+  context.fillRect(0, 0, width, height);
+  context.restore();
+};
+
 const render = (): void => {
   if (!originalImage || !context || !canvas) return;
   const sourceImage = originalImage;
@@ -1578,6 +1770,7 @@ const render = (): void => {
     context.stroke();
     context.restore();
   });
+  paintHomeEffect();
   updatePortraitGuides();
 };
 
@@ -1887,6 +2080,11 @@ document.querySelectorAll<HTMLDivElement>('[data-auto-slider]').forEach((slider)
   slider.addEventListener('touchstart', pause, { passive: true });
   slider.querySelectorAll<HTMLButtonElement>('.vibe-card').forEach((card) => {
     card.addEventListener('click', () => {
+      const effect = card.dataset.effect ?? '';
+      if (isHomeEffect(effect)) {
+        beginHomeEffect(effect);
+        return;
+      }
       if (card.dataset.tool) return;
       if (card.dataset.ai === 'retouch') {
         openPortrait('retouch');
