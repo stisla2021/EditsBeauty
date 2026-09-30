@@ -17,7 +17,7 @@ type SelfieSegmentationInstance = {
   close?: () => void;
 };
 type SelfieSegmentationConstructor = new (options: { locateFile: (file: string) => string }) => SelfieSegmentationInstance;
-type BackgroundScene = 'beach' | 'city' | 'studio';
+type BackgroundScene = 'beach' | 'city' | 'studio' | 'garden' | 'sunset' | 'mountains' | 'forest' | 'night' | 'cafe' | 'sky' | 'flowers' | 'ocean';
 
 const byId = <T extends HTMLElement>(id: string): T | null =>
   document.getElementById(id) as T | null;
@@ -360,42 +360,214 @@ const lookFilter = (look: string, intensity = filterIntensityValue()): string =>
 
 const sliderNumber = (id: string): number => Number(byId<HTMLInputElement>(id)?.value ?? 0);
 
-const adjustFilter = (): string => {
-  const brightness = sliderNumber('adjustBrightness');
-  const contrast = sliderNumber('adjustContrast');
-  const exposure = sliderNumber('adjustExposure');
-  const warmth = sliderNumber('adjustWarmth');
-  const saturation = sliderNumber('adjustSaturation');
-  const parts = [
-    `brightness(${(1 + brightness / 200).toFixed(3)})`,
-    `contrast(${(1 + contrast / 200).toFixed(3)})`,
-    `saturate(${Math.max(0, 1 + saturation / 100).toFixed(3)})`,
-  ];
-  if (exposure) parts.push(`brightness(${Math.pow(2, exposure / 100).toFixed(3)})`);
-  if (warmth > 0) parts.push(`sepia(${(warmth / 280).toFixed(3)}) saturate(${(1 + warmth / 400).toFixed(3)})`);
-  if (warmth < 0) parts.push(`hue-rotate(${(warmth / 4).toFixed(2)}deg)`);
-  return parts.join(' ');
+const adjustControlIds = [
+  'adjustExposure',
+  'adjustBrilliance',
+  'adjustHighlights',
+  'adjustShadows',
+  'adjustContrast',
+  'adjustBrightness',
+  'adjustBlackPoint',
+  'adjustSaturation',
+  'adjustVibrance',
+  'adjustWarmth',
+  'adjustTint',
+  'adjustSharpness',
+  'adjustDefinition',
+  'adjustNoise',
+  'adjustVignette',
+] as const;
+
+const autoAdjustRecipe: Record<(typeof adjustControlIds)[number], number> = {
+  adjustExposure: 10,
+  adjustBrilliance: 18,
+  adjustHighlights: -14,
+  adjustShadows: 20,
+  adjustContrast: 8,
+  adjustBrightness: 4,
+  adjustBlackPoint: 6,
+  adjustSaturation: 4,
+  adjustVibrance: 16,
+  adjustWarmth: 6,
+  adjustTint: 0,
+  adjustSharpness: 16,
+  adjustDefinition: 12,
+  adjustNoise: 0,
+  adjustVignette: 8,
 };
 
-let sharpnessLayer: HTMLCanvasElement | null = null;
-const applySharpness = (amount: number): void => {
-  if (!context || !canvas || amount <= 0) return;
-  if (!sharpnessLayer) sharpnessLayer = document.createElement('canvas');
-  if (sharpnessLayer.width !== canvas.width || sharpnessLayer.height !== canvas.height) {
-    sharpnessLayer.width = canvas.width;
-    sharpnessLayer.height = canvas.height;
+let fineBlurLayer: HTMLCanvasElement | null = null;
+let broadBlurLayer: HTMLCanvasElement | null = null;
+
+const blurSurface = (layer: HTMLCanvasElement | null, source: HTMLCanvasElement, radius: number): HTMLCanvasElement | null => {
+  const copy = layer ?? document.createElement('canvas');
+  if (copy.width !== source.width || copy.height !== source.height) {
+    copy.width = source.width;
+    copy.height = source.height;
   }
-  const layerContext = sharpnessLayer.getContext('2d');
-  if (!layerContext) return;
-  layerContext.clearRect(0, 0, sharpnessLayer.width, sharpnessLayer.height);
-  layerContext.filter = `contrast(${(1 + amount / 80).toFixed(3)})`;
-  layerContext.drawImage(canvas, 0, 0);
+  const layerContext = copy.getContext('2d');
+  if (!layerContext) return null;
+  layerContext.clearRect(0, 0, copy.width, copy.height);
+  layerContext.filter = `blur(${radius.toFixed(2)}px)`;
+  layerContext.drawImage(source, 0, 0);
   layerContext.filter = 'none';
-  context.save();
-  context.globalCompositeOperation = 'overlay';
-  context.globalAlpha = Math.min(0.85, amount / 100);
-  context.drawImage(sharpnessLayer, 0, 0);
-  context.restore();
+  return copy;
+};
+
+const applyPhotoAdjustments = (target: CanvasRenderingContext2D, surface: HTMLCanvasElement): void => {
+  const width = surface.width;
+  const height = surface.height;
+  if (!width || !height) return;
+  const exposure = sliderNumber('adjustExposure') / 100;
+  const brilliance = sliderNumber('adjustBrilliance') / 100;
+  const highlights = sliderNumber('adjustHighlights') / 100;
+  const shadows = sliderNumber('adjustShadows') / 100;
+  const contrast = sliderNumber('adjustContrast') / 100;
+  const brightness = sliderNumber('adjustBrightness') / 100;
+  const blackPoint = sliderNumber('adjustBlackPoint') / 100;
+  const saturation = sliderNumber('adjustSaturation') / 100;
+  const vibrance = sliderNumber('adjustVibrance') / 100;
+  const warmth = sliderNumber('adjustWarmth') / 100;
+  const tint = sliderNumber('adjustTint') / 100;
+  const sharpness = sliderNumber('adjustSharpness') / 100;
+  const definition = sliderNumber('adjustDefinition') / 100;
+  const noise = sliderNumber('adjustNoise') / 100;
+  const vignette = sliderNumber('adjustVignette') / 100;
+  const colorEdit = exposure || brilliance || highlights || shadows || contrast || brightness || blackPoint || saturation || vibrance || warmth || tint || vignette;
+  if (colorEdit) {
+    try {
+      const frame = target.getImageData(0, 0, width, height);
+      const data = frame.data;
+      const expGain = Math.pow(2, exposure * 1.15);
+      const contrastScale = 1 + contrast * 0.9;
+      const satScale = Math.max(0, 1 + saturation);
+      for (let y = 0; y < height; y += 1) {
+        const ny = y / height - 0.5;
+        for (let x = 0; x < width; x += 1) {
+          const index = (y * width + x) * 4;
+          let r = data[index] / 255;
+          let g = data[index + 1] / 255;
+          let b = data[index + 2] / 255;
+          r = r * expGain + brightness * 0.38;
+          g = g * expGain + brightness * 0.38;
+          b = b * expGain + brightness * 0.38;
+          let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          if (brilliance) {
+            const shadowLift = Math.max(0, 0.58 - luma) * brilliance * 0.7;
+            const highlightRoll = Math.max(0, luma - 0.62) * brilliance * 0.35;
+            r += shadowLift - highlightRoll;
+            g += shadowLift - highlightRoll;
+            b += shadowLift - highlightRoll;
+            luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          }
+          if (shadows) {
+            const mask = Math.max(0, 0.62 - luma) / 0.62;
+            const lift = shadows * 0.55 * mask * mask;
+            r += lift;
+            g += lift;
+            b += lift;
+            luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          }
+          if (highlights) {
+            const mask = Math.max(0, luma - 0.42) / 0.58;
+            const lift = highlights * 0.5 * mask * mask;
+            r += lift;
+            g += lift;
+            b += lift;
+          }
+          if (blackPoint > 0) {
+            const crush = blackPoint * 0.42;
+            const scale = 1 / Math.max(0.2, 1 - crush);
+            r = (r - crush) * scale;
+            g = (g - crush) * scale;
+            b = (b - crush) * scale;
+          } else if (blackPoint < 0) {
+            const lift = -blackPoint * 0.32;
+            r = r * (1 - lift) + lift;
+            g = g * (1 - lift) + lift;
+            b = b * (1 - lift) + lift;
+          }
+          r = (r - 0.5) * contrastScale + 0.5;
+          g = (g - 0.5) * contrastScale + 0.5;
+          b = (b - 0.5) * contrastScale + 0.5;
+          r += warmth * 0.16;
+          b -= warmth * 0.16;
+          r += tint * 0.1;
+          b += tint * 0.08;
+          g -= tint * 0.12;
+          const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          r = gray + (r - gray) * satScale;
+          g = gray + (g - gray) * satScale;
+          b = gray + (b - gray) * satScale;
+          if (vibrance) {
+            const dull = 1 - Math.min(1, (Math.max(r, g, b) - Math.min(r, g, b)) * 1.7);
+            const skin = r > g && g > b * 0.9 && r > 0.25 ? 0.4 : 1;
+            const boost = 1 + vibrance * 0.95 * dull * skin;
+            r = gray + (r - gray) * boost;
+            g = gray + (g - gray) * boost;
+            b = gray + (b - gray) * boost;
+          }
+          if (vignette) {
+            const dist = Math.hypot((x / width - 0.5) * 1.15, ny * 1.2);
+            const edge = Math.max(0, dist - 0.28) / 0.72;
+            const factor = 1 - vignette * 0.85 * edge * edge;
+            r *= factor;
+            g *= factor;
+            b *= factor;
+          }
+          data[index] = clampByte(r * 255);
+          data[index + 1] = clampByte(g * 255);
+          data[index + 2] = clampByte(b * 255);
+        }
+      }
+      target.putImageData(frame, 0, 0);
+    } catch {
+      showToast('This photo is too large for these adjustments in the browser.');
+      return;
+    }
+  }
+  if (!sharpness && !definition && !noise) return;
+  const fine = sharpness || noise ? blurSurface(fineBlurLayer, surface, 1.15) : null;
+  if (fine) fineBlurLayer = fine;
+  const broad = definition ? blurSurface(broadBlurLayer, surface, 6.5) : null;
+  if (broad) broadBlurLayer = broad;
+  const fineContext = fine?.getContext('2d');
+  const broadContext = broad?.getContext('2d');
+  try {
+    const frame = target.getImageData(0, 0, width, height);
+    const fineData = fineContext?.getImageData(0, 0, width, height).data;
+    const broadData = broadContext?.getImageData(0, 0, width, height).data;
+    const data = frame.data;
+    const noiseMix = noise * 0.62;
+    const sharpGain = sharpness * 1.25;
+    const definitionGain = definition * 0.95;
+    for (let index = 0; index < data.length; index += 4) {
+      let r = data[index];
+      let g = data[index + 1];
+      let b = data[index + 2];
+      if (fineData && noiseMix) {
+        r = r * (1 - noiseMix) + fineData[index] * noiseMix;
+        g = g * (1 - noiseMix) + fineData[index + 1] * noiseMix;
+        b = b * (1 - noiseMix) + fineData[index + 2] * noiseMix;
+      }
+      if (fineData && sharpGain) {
+        r += (r - fineData[index]) * sharpGain;
+        g += (g - fineData[index + 1]) * sharpGain;
+        b += (b - fineData[index + 2]) * sharpGain;
+      }
+      if (broadData && definitionGain) {
+        r += (r - broadData[index]) * definitionGain;
+        g += (g - broadData[index + 1]) * definitionGain;
+        b += (b - broadData[index + 2]) * definitionGain;
+      }
+      data[index] = clampByte(r);
+      data[index + 1] = clampByte(g);
+      data[index + 2] = clampByte(b);
+    }
+    target.putImageData(frame, 0, 0);
+  } catch {
+    showToast('This photo is too large for these adjustments in the browser.');
+  }
 };
 
 const syncFilterChips = (): void => {
@@ -477,6 +649,24 @@ const requestPhoto = (): void => {
 };
 
 const beginHomeEffect = (effect: HomeEffect): void => {
+  if (effect === 'ai-bg') {
+    activeHomeEffect = null;
+    console.log('filter', effect);
+    closeTools();
+    showEditor();
+    setStudioTab('adjust');
+    const more = byId<HTMLDetailsElement>('moreTools');
+    if (more) more.open = true;
+    const title = byId<HTMLElement>('editorTitle');
+    if (title) title.textContent = homeEffectLabel[effect];
+    if (originalImage) {
+      void selectBackgroundScene('studio', true);
+      return;
+    }
+    showToast('Choose a photo, then pick a background.');
+    requestPhoto();
+    return;
+  }
   activeHomeEffect = effect;
   console.log('filter', effect);
   closeTools();
@@ -773,9 +963,10 @@ batchExportButton?.addEventListener('click', async () => {
         continue;
       }
       const value = Number(enhanceSlider?.value ?? 100) / 100;
-      outputContext.filter = composeCanvasFilters(lookFilter(photoFilter?.value ?? 'original'), `brightness(${value}) contrast(${value})`, adjustFilter());
+      outputContext.filter = composeCanvasFilters(lookFilter(photoFilter?.value ?? 'original'), `brightness(${value}) contrast(${value})`);
       outputContext.drawImage(image, 0, 0, output.width, output.height);
       outputContext.filter = 'none';
+      applyPhotoAdjustments(outputContext, output);
       const blob = await new Promise<Blob | null>((resolve) => output.toBlob(resolve, 'image/png'));
       if (blob) {
         const name = file.name.replace(/\.[^.]+$/, '') || 'photo';
@@ -1283,12 +1474,31 @@ const sceneLabels: Record<BackgroundScene, string> = {
   beach: 'Beach',
   city: 'City',
   studio: 'Studio',
+  garden: 'Garden',
+  sunset: 'Sunset',
+  mountains: 'Mountains',
+  forest: 'Forest',
+  night: 'Night',
+  cafe: 'Cafe',
+  sky: 'Sky',
+  flowers: 'Flowers',
+  ocean: 'Ocean',
 };
 const sceneUrls: Record<BackgroundScene, string> = {
   beach: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80',
   city: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=1600&q=80',
   studio: 'https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?auto=format&fit=crop&w=1600&q=80',
+  garden: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1600&q=80',
+  sunset: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1600&q=80',
+  mountains: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80',
+  forest: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80',
+  night: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1600&q=80',
+  cafe: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=80',
+  sky: 'https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=1600&q=80',
+  flowers: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=80',
+  ocean: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&w=1600&q=80',
 };
+const isBackgroundScene = (value: string): value is BackgroundScene => Object.prototype.hasOwnProperty.call(sceneLabels, value);
 const sceneLoads = new Map<BackgroundScene, Promise<HTMLImageElement | null>>();
 const loadedSceneImages = new Map<BackgroundScene, HTMLImageElement>();
 let selfieSegmenterPromise: Promise<SelfieSegmentationInstance | null> | null = null;
@@ -1636,8 +1846,8 @@ const paintHomeEffect = (): void => {
     }
     return;
   }
-  if (effect === 'ai-bg' || effect === 'remover' || effect === 'removal') {
-    blurBehindSubject(effect === 'ai-bg' ? 28 : 18, effect === 'removal' ? 0.22 : 0.28, effect === 'removal' ? 0.32 : 0.38);
+  if (effect === 'remover' || effect === 'removal') {
+    blurBehindSubject(18, effect === 'removal' ? 0.22 : 0.28, effect === 'removal' ? 0.32 : 0.38);
     return;
   }
   if (effect === 'slim') {
@@ -1702,7 +1912,7 @@ const render = (): void => {
   const enhancementFilter = aiEnhanceEnabled
     ? 'brightness(1.1) contrast(1.15) saturate(1.2)'
     : `brightness(${enhancement}) contrast(${enhancement}) saturate(${enhancement})`;
-  const selectedFilter = composeCanvasFilters(lookFilter(photoFilter?.value ?? 'original'), enhancementFilter, adjustFilter());
+  const selectedFilter = composeCanvasFilters(lookFilter(photoFilter?.value ?? 'original'), enhancementFilter);
   if (photoRatio?.value.startsWith('expand-')) {
     const scale = Math.min(width / originalImage.naturalWidth, height / originalImage.naturalHeight);
     sourceWidth = originalImage.naturalWidth;
@@ -1735,7 +1945,7 @@ const render = (): void => {
     drawFilteredSource(context, originalImage, selectedFilter, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
   }
   context.filter = 'none';
-  applySharpness(sliderNumber('adjustSharpness'));
+  applyPhotoAdjustments(context, canvas);
 
   const tolerance = Number(cutoutTolerance?.value ?? 0) * 4.4;
   const hairAmount = Number(hairStrength?.value ?? 0) / 100;
@@ -1782,22 +1992,57 @@ const render = (): void => {
 
   const smooth = Number(smoothSlider?.value ?? 0);
   if (smooth > 0) {
-    const source = document.createElement('canvas');
-    source.width = width;
-    source.height = height;
-    const sourceContext = source.getContext('2d');
-    if (sourceContext) {
-      sourceContext.filter = `blur(${(3 + smooth / 6).toFixed(2)}px)`;
-      sourceContext.drawImage(canvas, 0, 0);
-      sourceContext.filter = 'none';
-      context.save();
-      context.beginPath();
-      context.ellipse(width * 0.5, height * 0.46, width * 0.36, height * 0.42, 0, 0, Math.PI * 2);
-      context.clip();
-      context.globalAlpha = 0.4 + (smooth / 100) * 0.55;
-      context.drawImage(source, 0, 0);
-      context.restore();
-      context.filter = 'none';
+    const sharp = document.createElement('canvas');
+    sharp.width = width;
+    sharp.height = height;
+    const sharpContext = sharp.getContext('2d');
+    if (sharpContext) {
+      sharpContext.drawImage(canvas, 0, 0);
+      const soft = document.createElement('canvas');
+      soft.width = width;
+      soft.height = height;
+      const softContext = soft.getContext('2d');
+      if (softContext) {
+        const blurRadius = 1.8 + Math.min(smooth, 60) * 0.05;
+        softContext.filter = `blur(${blurRadius.toFixed(2)}px)`;
+        softContext.drawImage(sharp, 0, 0);
+        softContext.filter = 'none';
+        const polish = Math.min(smooth, 60) / 100;
+        context.save();
+        context.beginPath();
+        context.ellipse(width * 0.5, height * 0.46, width * 0.3, height * 0.36, 0, 0, Math.PI * 2);
+        context.clip();
+        context.globalAlpha = 0.2 + polish * 0.28;
+        context.drawImage(soft, 0, 0);
+        context.globalCompositeOperation = 'soft-light';
+        context.globalAlpha = 0.62;
+        context.drawImage(sharp, 0, 0);
+        if (smooth > 60) {
+          const glow = (smooth - 60) / 40;
+          const warm = document.createElement('canvas');
+          warm.width = width;
+          warm.height = height;
+          const warmContext = warm.getContext('2d');
+          if (warmContext) {
+            warmContext.filter = 'brightness(1.08) saturate(1.06)';
+            warmContext.drawImage(sharp, 0, 0);
+            context.globalCompositeOperation = 'soft-light';
+            context.globalAlpha = 0.14 + glow * 0.2;
+            context.fillStyle = 'rgb(255, 214, 196)';
+            context.fillRect(0, 0, width, height);
+            context.globalCompositeOperation = 'source-over';
+            context.globalAlpha = 0.1 + glow * 0.14;
+            context.drawImage(warm, 0, 0);
+            context.globalCompositeOperation = 'soft-light';
+            context.globalAlpha = 0.5;
+            context.drawImage(sharp, 0, 0);
+          }
+        }
+        context.restore();
+        context.filter = 'none';
+        context.globalAlpha = 1;
+        context.globalCompositeOperation = 'source-over';
+      }
     }
   }
 
@@ -1941,7 +2186,7 @@ const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): P
     byId<HTMLElement>('backgroundScenes')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   if (!originalImage) {
-    if (backgroundStatus) backgroundStatus.textContent = 'Choose a photo, then pick Beach, City, or Studio.';
+    if (backgroundStatus) backgroundStatus.textContent = 'Choose a photo, then pick a scene.';
     showToast('Choose a photo to change the background.');
     upload?.click();
     return;
@@ -1979,6 +2224,8 @@ const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): P
   if (backgroundStatus) backgroundStatus.textContent = `${sceneLabels[scene]} is behind the person.`;
 };
 
+let pendingSmooth: string | null = null;
+
 const openPhoto = (src: string): void => {
   if (!canvas) return;
   closeCamera();
@@ -2002,9 +2249,12 @@ const openPhoto = (src: string): void => {
     canvas.classList.add('has-image');
     if (emptyState) emptyState.hidden = true;
     if (downloadButton) downloadButton.disabled = false;
-    if (smoothSlider) smoothSlider.value = '0';
+    const smoothAmount = pendingSmooth ?? '0';
+    pendingSmooth = null;
+    if (smoothSlider) smoothSlider.value = smoothAmount;
     if (noseSlider) noseSlider.value = '0';
-    if (smoothValue) smoothValue.value = '0';
+    if (smoothValue) smoothValue.value = smoothAmount;
+    if (smoothSlider) paintRange(smoothSlider);
     if (noseValue) noseValue.value = '0';
     render();
     paintFilterPreviews();
@@ -2024,6 +2274,7 @@ const openPhoto = (src: string): void => {
     if (activeBackgroundScene) void selectBackgroundScene(activeBackgroundScene, false);
   };
   image.onerror = () => showToast('That image could not be opened. Try another photo.');
+  if (/^https?:/i.test(src)) image.crossOrigin = 'anonymous';
   image.src = src;
 };
 
@@ -2180,10 +2431,70 @@ const paintRange = (input: HTMLInputElement): void => {
   const max = Number(input.max);
   const span = max - min;
   const pct = span === 0 ? 0 : ((Number(input.value) - min) / span) * 100;
+  if (min < 0 && max > 0) {
+    const zero = ((0 - min) / span) * 100;
+    input.classList.add('from-center');
+    input.style.setProperty('--fill-start', `${Math.min(zero, pct)}%`);
+    input.style.setProperty('--fill-end', `${Math.max(zero, pct)}%`);
+    return;
+  }
+  input.classList.remove('from-center');
   input.style.setProperty('--fill', `${pct}%`);
 };
 
-['filterIntensity', 'adjustBrightness', 'adjustContrast', 'adjustExposure', 'adjustWarmth', 'adjustSaturation', 'adjustSharpness'].forEach((id) => {
+const formatAdjustValue = (id: string, value: string): string => {
+  const amount = Number(value);
+  if (id === 'adjustNoise') return String(amount);
+  if (amount > 0) return `+${amount}`;
+  return String(amount);
+};
+
+let applyingAuto = false;
+const paintAdjustControl = (input: HTMLInputElement, draw: boolean): void => {
+  paintRange(input);
+  const output = byId<HTMLOutputElement>(`${input.id}Val`);
+  if (output) output.value = formatAdjustValue(input.id, input.value);
+  if (!applyingAuto) byId<HTMLButtonElement>('adjustAuto')?.setAttribute('aria-pressed', 'false');
+  if (draw) {
+    console.log('filter', input.id, input.value);
+    render();
+  }
+};
+
+adjustControlIds.forEach((id) => {
+  const input = byId<HTMLInputElement>(id);
+  if (!input) return;
+  const paint = (): void => paintAdjustControl(input, true);
+  input.addEventListener('input', paint);
+  input.addEventListener('change', paint);
+  paintAdjustControl(input, false);
+});
+
+const setAdjustControl = (id: string, value: number, draw: boolean): void => {
+  const input = byId<HTMLInputElement>(id);
+  if (!input) return;
+  const min = Number(input.min);
+  const max = Number(input.max);
+  input.value = String(Math.max(min, Math.min(max, Math.round(value))));
+  paintAdjustControl(input, draw);
+};
+
+const applyAutoAdjust = (on: boolean): void => {
+  applyingAuto = true;
+  adjustControlIds.forEach((id) => setAdjustControl(id, on ? autoAdjustRecipe[id] : 0, false));
+  applyingAuto = false;
+  byId<HTMLButtonElement>('adjustAuto')?.setAttribute('aria-pressed', String(on));
+  showEditor();
+  setStudioTab('adjust');
+  render();
+};
+
+byId<HTMLButtonElement>('adjustAuto')?.addEventListener('click', () => {
+  const button = byId<HTMLButtonElement>('adjustAuto');
+  applyAutoAdjust(button?.getAttribute('aria-pressed') !== 'true');
+});
+
+['filterIntensity'].forEach((id) => {
   const input = byId<HTMLInputElement>(id);
   const output = byId<HTMLOutputElement>(`${id}Val`);
   const paint = (): void => {
@@ -2208,8 +2519,8 @@ byId<HTMLButtonElement>('resetBtn')?.addEventListener('click', () => {
 
 document.querySelectorAll<HTMLButtonElement>('[data-bg-scene]').forEach((button) => {
   button.addEventListener('click', () => {
-    const scene = button.dataset.bgScene;
-    if (scene === 'beach' || scene === 'city' || scene === 'studio') void selectBackgroundScene(scene, true);
+    const scene = button.dataset.bgScene ?? '';
+    if (isBackgroundScene(scene)) void selectBackgroundScene(scene, true);
   });
 });
 
@@ -2734,4 +3045,304 @@ window.addEventListener('pointerup', endCropDrag);
 window.addEventListener('pointercancel', endCropDrag);
 window.addEventListener('resize', () => {
   if (cropScreenEl && !cropScreenEl.hidden) paintCropPreview();
+});
+
+const guidePanel = byId<HTMLElement>('guidePanel');
+const guideLog = byId<HTMLElement>('guideLog');
+const guideForm = byId<HTMLFormElement>('guideForm');
+const guideInput = byId<HTMLInputElement>('guideInput');
+
+const guideLine = (role: 'you' | 'guide', text: string): void => {
+  if (!guideLog) return;
+  const line = document.createElement('p');
+  line.className = role === 'you' ? 'guide-you' : 'guide-reply';
+  line.textContent = text;
+  guideLog.append(line);
+  guideLog.scrollTop = guideLog.scrollHeight;
+};
+
+const openGuide = (): void => {
+  if (!guidePanel) return;
+  guidePanel.hidden = false;
+  if (guideLog && guideLog.childElementCount === 0) {
+    guideLine('guide', 'Ask me to edit the photo and I will use the tools on this device. You can also move every slider yourself. Try “edit my photo”, “brighten the lighting”, “smooth my skin”, “make it vivid”, or “background garden”. I do not create a new picture on a server.');
+  }
+  guideInput?.focus();
+};
+
+const closeGuide = (): void => {
+  if (guidePanel) guidePanel.hidden = true;
+};
+
+const openBackgroundTools = (): void => {
+  if (creativeControls) creativeControls.hidden = false;
+  showEditor();
+  setStudioTab('adjust');
+  const more = byId<HTMLDetailsElement>('moreTools');
+  if (more) more.open = true;
+  const title = byId<HTMLElement>('editorTitle');
+  if (title) title.textContent = 'AI BG Change';
+};
+
+const applyGuideLook = (look: string): void => {
+  activeHomeEffect = null;
+  if (photoFilter) photoFilter.value = look;
+  syncFilterChips();
+  console.log('filter', look);
+  showEditor();
+  setStudioTab('filters');
+  const title = byId<HTMLElement>('editorTitle');
+  if (title) title.textContent = 'Filters';
+  if (originalImage) render();
+  else {
+    showToast('Choose a photo to preview this look.');
+    upload?.click();
+  }
+};
+
+const sceneFromRequest = (text: string): BackgroundScene | null => {
+  const aliases: Array<[RegExp, BackgroundScene]> = [
+    [/\b(ocean|sea)\b/, 'ocean'],
+    [/\bmountains?\b/, 'mountains'],
+    [/\bflowers?\b/, 'flowers'],
+    [/\b(cafe|coffee)\b/, 'cafe'],
+    [/\b(night|stars)\b/, 'night'],
+    [/\b(garden|meadow)\b/, 'garden'],
+    [/\b(sunset|dusk)\b/, 'sunset'],
+    [/\bforest\b/, 'forest'],
+    [/\bsky\b/, 'sky'],
+    [/\bbeach\b/, 'beach'],
+    [/\bcity\b/, 'city'],
+    [/\bstudio\b/, 'studio'],
+  ];
+  const match = aliases.find(([pattern]) => pattern.test(text));
+  return match ? match[1] : null;
+};
+
+const lookFromRequest = (text: string): string | null => {
+  const aliases: Array<[RegExp, string]> = [
+    [/\bvivid warm\b|\bvivid-warm\b/, 'vivid-warm'],
+    [/\bvivid cool\b|\bvivid-cool\b/, 'vivid-cool'],
+    [/\bdramatic warm\b|\bdramatic-warm\b/, 'dramatic-warm'],
+    [/\bdramatic cool\b|\bdramatic-cool\b/, 'dramatic-cool'],
+    [/\bsilver\b/, 'silvertone'],
+    [/\bblack and white\b|\bmono\b/, 'mono'],
+    [/\bvivid\b/, 'vivid'],
+    [/\bdramatic\b/, 'dramatic'],
+    [/\bnoir\b/, 'noir'],
+    [/\bfilm\b/, 'film'],
+    [/\bwarm\b/, 'warm'],
+    [/\bglow\b/, 'glow'],
+    [/\bcool\b/, 'cool'],
+    [/\bfade\b/, 'fade'],
+    [/\binstant\b/, 'instant'],
+    [/\btransfer\b/, 'transfer'],
+    [/\bchrome\b/, 'chrome'],
+    [/\boriginal\b/, 'original'],
+  ];
+  const match = aliases.find(([pattern]) => pattern.test(text));
+  return match && match[1] in lookRecipes ? match[1] : null;
+};
+
+const answerGuide = (raw: string): void => {
+  const text = raw.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!text) return;
+  guideLine('you', raw.trim());
+  const asksHow = /^(how|what|where|why)\b/.test(text) || /\bhow do i\b/.test(text);
+  if (asksHow && !/\b(please|can you|do it)\b/.test(text)) {
+    guideLine('guide', 'Choose a photo with Start Editing, the camera, or an example portrait. Then ask me to edit it, or use the tools yourself. I can smooth skin, apply a look, change the background, and set Adjust: Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Save downloads editsbeauty-edit.jpg.');
+    return;
+  }
+  if (/\b(save|download|export)\b/.test(text) && !/\b(edit|smooth|vivid|noir|background|bright|warm|exposure)\b/.test(text)) {
+    if (downloadButton && originalImage && !downloadButton.disabled) downloadButton.click();
+    else showToast('Choose a photo before saving.');
+    guideLine('guide', originalImage
+      ? 'I saved the photo as editsbeauty-edit.jpg. Save at the top right does the same thing. The original file on your device stays as it was.'
+      : 'Choose a photo first. After the edit, tap Save at the top right. The download is editsbeauty-edit.jpg.');
+    return;
+  }
+  const done: string[] = [];
+  const needsPhoto = (): void => {
+    if (originalImage) return;
+    showToast('Choose a photo, or tap an example portrait.');
+    requestPhoto();
+  };
+  if (/\b(reset|undo|start over)\b/.test(text) || /\bclear (the )?(edit|adjustments|filters|everything)\b/.test(text)) {
+    activeHomeEffect = null;
+    applyingAuto = true;
+    adjustControlIds.forEach((id) => setAdjustControl(id, 0, false));
+    applyingAuto = false;
+    byId<HTMLButtonElement>('adjustAuto')?.setAttribute('aria-pressed', 'false');
+    if (photoFilter) photoFilter.value = 'original';
+    syncFilterChips();
+    pendingSmooth = '0';
+    if (smoothSlider) {
+      smoothSlider.value = '0';
+      if (smoothValue) smoothValue.value = '0';
+      paintRange(smoothSlider);
+    }
+    activeBackgroundScene = null;
+    setSceneButtons(null);
+    if (backgroundStatus) backgroundStatus.textContent = 'Pick a scene. The person stays, and the photo behind them changes on this device.';
+    done.push('cleared the previous edit');
+  }
+  const effectMatch: Array<[RegExp, HomeEffect]> = [
+    [/\blipstick\b|\blips\b/, 'lipstick'],
+    [/\beyelash/, 'eyelashes'],
+    [/\bacne\b|\bpimple|\bblemishes\b/, 'acne'],
+    [/\bdouble chin\b|\bjawline\b/, 'double-chin'],
+    [/\bgolden hour\b/, 'golden-hour'],
+    [/\bred (car )?light\b/, 'red-light'],
+    [/\bslim(mer)?\b/, 'slim'],
+    [/\bbody\b/, 'body'],
+  ];
+  const effect = effectMatch.find(([pattern]) => pattern.test(text))?.[1] ?? null;
+  const scene = (/\b(background|bg|behind)\b/.test(text) || /\b(beach|city|studio|garden|sunset|mountains?|forest|night|cafe|coffee|sky|flowers?|ocean|sea)\b/.test(text))
+    ? sceneFromRequest(text)
+    : null;
+  const wantsBackground = scene !== null || /\b(background|bg|behind)\b/.test(text);
+  const look = lookFromRequest(text);
+  const vagueEdit = /\b(edit|retouch|improve|beautify)\b/.test(text) && /\b(photo|picture|image|portrait|face|skin|me|my|this|it|person|people)\b/.test(text)
+    || /\bmake (me|it|this|her|him|them) (look )?(better|beautiful|pretty|nicer)\b/.test(text);
+  const adjustPlans: Array<[RegExp, string, string, number]> = [
+    [/\bexposure\b/, 'adjustExposure', 'Exposure', 24],
+    [/\bbrilliance\b/, 'adjustBrilliance', 'Brilliance', 20],
+    [/\bhighlights?\b/, 'adjustHighlights', 'Highlights', -16],
+    [/\bshadows?\b/, 'adjustShadows', 'Shadows', 22],
+    [/\bcontrast\b/, 'adjustContrast', 'Contrast', 18],
+    [/\bbrightness\b/, 'adjustBrightness', 'Brightness', 22],
+    [/\bblack point\b/, 'adjustBlackPoint', 'Black Point', 12],
+    [/\bvibrance\b|\bpop\b|\bcolorful\b/, 'adjustVibrance', 'Vibrance', 24],
+    [/\bwarmth\b|\bwarmer\b/, 'adjustWarmth', 'Warmth', 22],
+    [/\bcooler\b/, 'adjustWarmth', 'Warmth', -22],
+    [/\btint\b/, 'adjustTint', 'Tint', 16],
+    [/\bsharp(ness|er)?\b/, 'adjustSharpness', 'Sharpness', 28],
+    [/\bdefinition\b|\bclarity\b/, 'adjustDefinition', 'Definition', 20],
+    [/\bnoise\b/, 'adjustNoise', 'Noise Reduction', 40],
+    [/\bvignette\b/, 'adjustVignette', 'Vignette', 24],
+    [/\bsaturation\b|\bmore color\b/, 'adjustSaturation', 'Saturation', 20],
+  ];
+  const namedAdjust = adjustPlans.filter(([pattern]) => pattern.test(text));
+  const lighting = /\b(lighting|light)\b/.test(text) && !/\bred (car )?light\b/.test(text);
+  const wantsSmooth = /\b(smooth|softer skin|soft skin)\b/.test(text) || (vagueEdit && !look && namedAdjust.length === 0 && !effect);
+  if (/\bauto\b/.test(text)) {
+    applyAutoAdjust(true);
+    done.push('Auto');
+  } else if (vagueEdit && !look && namedAdjust.length === 0 && !effect && !wantsBackground) {
+    activeHomeEffect = null;
+    applyingAuto = true;
+    setAdjustControl('adjustExposure', 8, false);
+    setAdjustControl('adjustBrilliance', 16, false);
+    setAdjustControl('adjustHighlights', -10, false);
+    setAdjustControl('adjustShadows', 18, false);
+    setAdjustControl('adjustContrast', 6, false);
+    setAdjustControl('adjustVibrance', 12, false);
+    setAdjustControl('adjustWarmth', 8, false);
+    setAdjustControl('adjustSharpness', 14, false);
+    setAdjustControl('adjustDefinition', 10, false);
+    applyingAuto = false;
+    showEditor();
+    setStudioTab('adjust');
+    done.push('a portrait edit with softer skin, warmer light, and clearer detail');
+  } else if (lighting && namedAdjust.length === 0) {
+    activeHomeEffect = null;
+    applyingAuto = true;
+    setAdjustControl('adjustExposure', 16, false);
+    setAdjustControl('adjustShadows', 18, false);
+    setAdjustControl('adjustBrilliance', 14, false);
+    applyingAuto = false;
+    showEditor();
+    setStudioTab('adjust');
+    done.push('brighter lighting');
+  }
+  namedAdjust.forEach(([pattern, id, label, fallback]) => {
+    const at = text.search(pattern);
+    const windowText = text.slice(Math.max(0, at - 16), at + 28);
+    const numbered = windowText.match(/-?\d{1,3}/);
+    let amount = numbered ? Number(numbered[0]) : fallback;
+    if (!numbered && /\b(less|lower|decrease|reduce)\b/.test(windowText)) amount = -Math.abs(fallback);
+    setAdjustControl(id, amount, false);
+    done.push(`${label} ${amount > 0 ? `+${amount}` : amount}`);
+  });
+  if (/\b(brighter|brighten)\b/.test(text) && !lighting && !/\bbrightness\b/.test(text)) {
+    setAdjustControl('adjustBrightness', 22, false);
+    done.push('Brightness +22');
+  }
+  if (/\b(darker|too bright)\b/.test(text) && !/\bbrightness\b/.test(text)) {
+    setAdjustControl('adjustBrightness', -22, false);
+    done.push('Brightness -22');
+  }
+  if (look) {
+    activeHomeEffect = null;
+    if (photoFilter) photoFilter.value = look;
+    syncFilterChips();
+    done.push(`${look.replace(/-/g, ' ')} look`);
+  }
+  if (effect) {
+    activeHomeEffect = effect;
+    done.push(homeEffectLabel[effect]);
+  }
+  if (wantsSmooth && smoothSlider) {
+    const named = text.match(/\bsmooth(?:\s+\w+){0,2}\s+(\d{1,3})\b/);
+    const amount = named ? Math.max(0, Math.min(100, Number(named[1]))) : 72;
+    pendingSmooth = String(amount);
+    smoothSlider.value = String(amount);
+    if (smoothValue) smoothValue.value = String(amount);
+    paintRange(smoothSlider);
+    byId<HTMLButtonElement>('smoothToggle')?.setAttribute('aria-pressed', 'true');
+    done.push(`smooth ${amount}`);
+  }
+  if (done.length === 0 && !wantsBackground) {
+    guideLine('guide', 'Tell me the edit. For example: “edit my photo”, “brighten the lighting”, “smooth my skin”, “make it noir”, “add lipstick”, or “background beach”. The same controls stay on the page if you want to do it by hand.');
+    return;
+  }
+  showEditor();
+  if (wantsBackground || namedAdjust.length > 0 || lighting || (vagueEdit && !look)) setStudioTab('adjust');
+  else if (look || effect || wantsSmooth) setStudioTab('filters');
+  if (done.some((item) => item !== 'cleared the previous edit') || wantsBackground) needsPhoto();
+  if (originalImage) render();
+  if (wantsBackground) {
+    openBackgroundTools();
+    if (scene) {
+      void selectBackgroundScene(scene, true);
+      done.push(`${sceneLabels[scene]} background`);
+    } else {
+      done.push('opened the backgrounds');
+    }
+  }
+  if (/\b(save|download|export)\b/.test(text) && originalImage && !wantsBackground && downloadButton && !downloadButton.disabled) {
+    downloadButton.click();
+    done.push('saved editsbeauty-edit.jpg');
+  }
+  const summary = done.join(', ');
+  guideLine('guide', scene && wantsBackground
+    ? `I am editing the photo: ${summary}. The person stays and the scene is placed behind them on this device. You can still change any slider by hand. Save is at the top right.`
+    : `I edited the photo: ${summary}. You can still change any slider, look, or background by hand. Save is at the top right.`);
+};
+
+byId<HTMLButtonElement>('homeGuide')?.addEventListener('click', openGuide);
+byId<HTMLButtonElement>('guideLaunch')?.addEventListener('click', openGuide);
+byId<HTMLButtonElement>('guideClose')?.addEventListener('click', closeGuide);
+guidePanel?.addEventListener('click', (event) => {
+  if (event.target === guidePanel) closeGuide();
+});
+guideForm?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const value = guideInput?.value ?? '';
+  if (guideInput) guideInput.value = '';
+  answerGuide(value);
+});
+document.querySelectorAll<HTMLButtonElement>('[data-guide-prompt]').forEach((button) => {
+  button.addEventListener('click', () => {
+    answerGuide(button.dataset.guidePrompt ?? button.textContent ?? '');
+  });
+});
+
+document.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const src = button.dataset.sample;
+    if (!src) return;
+    openPhoto(src);
+    setStudioTab('adjust');
+  });
 });

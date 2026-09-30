@@ -57,12 +57,14 @@
     <h1 class="visually-hidden">EditsBeauty free photo editor</h1>
     <div class="top-edit">
       <button class="start-pill" id="startEditing" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z"/><path d="M18 13l.6 1.8L20.5 16l-1.9.7L18 18.5l-.6-1.8L15.5 16l1.9-.7L18 13z"/></svg> Start Editing</button>
+      <button class="start-pill guide-home" id="homeGuide" type="button">Ask AI</button>
     </div>
 
     <section class="studio" id="editor" aria-labelledby="editorTitle" hidden>
       <header class="studio-bar">
         <button class="studio-back" id="studioBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
         <p class="studio-title" id="editorTitle">Filters</p>
+        <button class="studio-guide" id="guideLaunch" type="button">AI</button>
         <button class="studio-save" id="downloadBtn" type="button" disabled>Save</button>
       </header>
       <aside class="studio-rail" aria-label="Tools">
@@ -115,9 +117,6 @@
               <button class="filter-chip" type="button" data-look="cool"><span class="thumb look-cool"><canvas data-filter-preview="cool" width="112" height="112"></canvas></span><span>Cool</span></button>
             </div>
             <label class="range-control" for="filterIntensity"><span>Intensity</span><output id="filterIntensityVal">100%</output><input type="range" id="filterIntensity" min="0" max="100" value="100"></label>
-            <label class="range-control" for="adjustBrightness"><span>Brightness</span><output id="adjustBrightnessVal">0%</output><input type="range" id="adjustBrightness" min="-100" max="100" value="0"></label>
-            <label class="range-control" for="adjustContrast"><span>Contrast</span><output id="adjustContrastVal">0%</output><input type="range" id="adjustContrast" min="-100" max="100" value="0"></label>
-            <label class="range-control" for="adjustSaturation"><span>Saturation</span><output id="adjustSaturationVal">0%</output><input type="range" id="adjustSaturation" min="-100" max="100" value="0"></label>
             <div id="smoothSlot">
               <div class="smooth-row" id="smoothControl">
                 <button class="smooth-icon" id="smoothToggle" type="button" aria-pressed="false" aria-label="Smooth skin">
@@ -130,10 +129,23 @@
           </div>
         </div>
         <div class="sheet-panel" id="panelAdjust" hidden>
-          <div class="adjust-grid">
-            <label class="range-control" for="adjustExposure"><span>Exposure</span><output id="adjustExposureVal">0%</output><input type="range" id="adjustExposure" min="-100" max="100" value="0"></label>
-            <label class="range-control" for="adjustWarmth"><span>Warmth</span><output id="adjustWarmthVal">0%</output><input type="range" id="adjustWarmth" min="-100" max="100" value="0"></label>
-            <label class="range-control" for="adjustSharpness"><span>Sharpness</span><output id="adjustSharpnessVal">0%</output><input type="range" id="adjustSharpness" min="0" max="100" value="0"></label>
+          <div class="adjust-list">
+            <button class="adjust-auto" id="adjustAuto" type="button" aria-pressed="false">Auto</button>
+            <label class="range-control" for="adjustExposure"><span>Exposure</span><output id="adjustExposureVal">0</output><input type="range" id="adjustExposure" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustBrilliance"><span>Brilliance</span><output id="adjustBrillianceVal">0</output><input type="range" id="adjustBrilliance" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustHighlights"><span>Highlights</span><output id="adjustHighlightsVal">0</output><input type="range" id="adjustHighlights" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustShadows"><span>Shadows</span><output id="adjustShadowsVal">0</output><input type="range" id="adjustShadows" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustContrast"><span>Contrast</span><output id="adjustContrastVal">0</output><input type="range" id="adjustContrast" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustBrightness"><span>Brightness</span><output id="adjustBrightnessVal">0</output><input type="range" id="adjustBrightness" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustBlackPoint"><span>Black Point</span><output id="adjustBlackPointVal">0</output><input type="range" id="adjustBlackPoint" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustSaturation"><span>Saturation</span><output id="adjustSaturationVal">0</output><input type="range" id="adjustSaturation" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustVibrance"><span>Vibrance</span><output id="adjustVibranceVal">0</output><input type="range" id="adjustVibrance" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustWarmth"><span>Warmth</span><output id="adjustWarmthVal">0</output><input type="range" id="adjustWarmth" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustTint"><span>Tint</span><output id="adjustTintVal">0</output><input type="range" id="adjustTint" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustSharpness"><span>Sharpness</span><output id="adjustSharpnessVal">0</output><input type="range" id="adjustSharpness" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustDefinition"><span>Definition</span><output id="adjustDefinitionVal">0</output><input type="range" id="adjustDefinition" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustNoise"><span>Noise Reduction</span><output id="adjustNoiseVal">0</output><input type="range" id="adjustNoise" min="0" max="100" value="0"></label>
+            <label class="range-control" for="adjustVignette"><span>Vignette</span><output id="adjustVignetteVal">0</output><input type="range" id="adjustVignette" min="-100" max="100" value="0"></label>
           </div>
           <details class="more-tools" id="moreTools">
             <summary>More tools</summary>
@@ -155,8 +167,17 @@
             <button class="secondary-button" type="button" data-bg-scene="beach" aria-pressed="false">Beach</button>
             <button class="secondary-button" type="button" data-bg-scene="city" aria-pressed="false">City</button>
             <button class="secondary-button" type="button" data-bg-scene="studio" aria-pressed="false">Studio</button>
+            <button class="secondary-button" type="button" data-bg-scene="garden" aria-pressed="false">Garden</button>
+            <button class="secondary-button" type="button" data-bg-scene="sunset" aria-pressed="false">Sunset</button>
+            <button class="secondary-button" type="button" data-bg-scene="mountains" aria-pressed="false">Mountains</button>
+            <button class="secondary-button" type="button" data-bg-scene="forest" aria-pressed="false">Forest</button>
+            <button class="secondary-button" type="button" data-bg-scene="night" aria-pressed="false">Night</button>
+            <button class="secondary-button" type="button" data-bg-scene="cafe" aria-pressed="false">Cafe</button>
+            <button class="secondary-button" type="button" data-bg-scene="sky" aria-pressed="false">Sky</button>
+            <button class="secondary-button" type="button" data-bg-scene="flowers" aria-pressed="false">Flowers</button>
+            <button class="secondary-button" type="button" data-bg-scene="ocean" aria-pressed="false">Ocean</button>
           </div>
-          <p class="tool-note" id="backgroundStatus" aria-live="polite">Pick Beach, City, or Studio.</p>
+          <p class="tool-note" id="backgroundStatus" aria-live="polite">Pick a scene. The person stays, and the photo behind them changes on this device.</p>
         </div>
         <div class="design-controls">
           <label class="grid-setting" for="overlayText">Text overlay<input id="overlayText" type="text" maxlength="80" placeholder="Add a caption"></label>
@@ -194,7 +215,43 @@
         <button class="vibe-card" type="button" data-effect="lipstick"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=70" alt="Lipstick look"><span>LIPSTICK</span></button>
         <button class="vibe-card" type="button" data-effect="eyelashes"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&h=480&q=70" alt="Eyelash look"><span>EYELASHES</span></button>
         <button class="vibe-card" type="button" data-effect="double-chin"><img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=360&h=480&q=70" alt="Jawline look"><span>DOUBLE CHIN</span></button>
-        <button class="vibe-card" type="button" data-effect="acne"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&h=480&q=70" alt="Clear skin look"><span>ACNE</span></button>
+        <button class="vibe-card" type="button" data-effect="acne"><img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=360&h=480&q=70" alt="Clear skin look"><span>ACNE</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="portraitsTitle">
+      <h2 id="portraitsTitle">Example portraits</h2>
+      <p class="tool-note">Tap any photo to open that person in Adjust.</p>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1548142813-c348350df52b?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1548142813-c348350df52b?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1496345875659-11f7dd282d1d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1496345875659-11f7dd282d1d?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1479936343636-73cdc5aae0c3?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1479936343636-73cdc5aae0c3?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1535295972055-1c762f4483e5?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1535295972055-1c762f4483e5?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1524502397800-2eeaad7c3fe5?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1524502397800-2eeaad7c3fe5?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1545167622-3a6ac756afa4?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1545167622-3a6ac756afa4?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1570158268183-d296b2892211?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1570158268183-d296b2892211?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
       </div>
     </section>
     <section class="vibes-section" aria-labelledby="vibesTitle">
@@ -210,8 +267,8 @@
           <em class="ai-badge" aria-hidden="true">AI</em>
           <span>AI BG Change</span>
         </button>
-        <button class="vibe-card" type="button" data-effect="red-light"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=80" alt="Portrait beside a car"><span>RED CAR LIGHT</span></button>
-        <button class="vibe-card" type="button" data-effect="golden-hour"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&h=480&q=80" alt="Golden-hour portrait"><span>GOLDEN HOUR</span></button>
+        <button class="vibe-card" type="button" data-effect="red-light"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=360&h=480&q=80" alt="Portrait beside a car"><span>RED CAR LIGHT</span></button>
+        <button class="vibe-card" type="button" data-effect="golden-hour"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=360&h=480&q=80" alt="Golden-hour portrait"><span>GOLDEN HOUR</span></button>
       </div>
     </section>
     <section class="vibes-section home-section" aria-labelledby="nextLevelTitle">
@@ -229,14 +286,14 @@
         <button class="vibe-card" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=360&h=480&q=70" alt="Custom outfit one"><span>Custom Outfit</span></button>
         <button class="vibe-card" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=360&h=480&q=70" alt="Custom outfit two"><span>Custom Outfit</span></button>
         <button class="vibe-card" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=360&h=480&q=70" alt="Custom outfit three"><span>Custom Outfit</span></button>
-        <button class="vibe-card" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=70" alt="Custom outfit four"><span>Custom Outfit</span></button>
+        <button class="vibe-card" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=360&h=480&q=70" alt="Custom outfit four"><span>Custom Outfit</span></button>
       </div>
     </section>
     <section class="vibes-section home-section" aria-labelledby="trendingTitle">
       <h2 id="trendingTitle">Trending Now</h2>
       <div class="vibes-slider" data-auto-slider>
         <button class="vibe-card" type="button" data-tool="AI Filter"><img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&h=480&q=70" alt="VI look"><span>VI</span></button>
-        <button class="vibe-card" type="button" data-tool="Filters"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=70" alt="Paper craft look"><span>PAPER CRAFT</span></button>
+        <button class="vibe-card" type="button" data-tool="Filters"><img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=360&h=480&q=70" alt="Paper craft look"><span>PAPER CRAFT</span></button>
         <button class="vibe-card" type="button" data-tool="Filters"><img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=360&h=480&q=70" alt="Retro kitchen look"><span>RETRO KITCHEN</span></button>
         <button class="vibe-card" type="button" data-tool="Filters"><img src="https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=360&h=480&q=70" alt="Story look"><span>STORY</span></button>
       </div>
@@ -252,8 +309,8 @@
       <h2 id="looksTitle">Men's Looksmaxing</h2>
       <div class="vibes-slider" data-auto-slider>
         <button class="vibe-card" type="button" data-tool="Hair"><img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=360&h=480&q=70" alt="Hot nerd look"><span>Hot Nerd</span></button>
-        <button class="vibe-card" type="button" data-tool="ID Photo"><img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=360&h=480&q=70" alt="Dating app photo"><span>Dating App Pfp</span></button>
-        <button class="vibe-card" type="button" data-tool="AI Filter"><img src="https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=360&h=480&q=70" alt="Mod look"><span>Mod</span></button>
+        <button class="vibe-card" type="button" data-tool="ID Photo"><img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=360&h=480&q=70" alt="Dating app photo"><span>Dating App Pfp</span></button>
+        <button class="vibe-card" type="button" data-tool="AI Filter"><img src="https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=360&h=480&q=70" alt="Mod look"><span>Mod</span></button>
         <button class="vibe-card" type="button" data-tool="Hair"><img src="https://images.unsplash.com/photo-1504257432389-52343af06ae3?auto=format&fit=crop&w=360&h=480&q=70" alt="Hairstyles"><span>Hairstyles</span></button>
       </div>
     </section>
@@ -261,8 +318,8 @@
       <h2 id="retouchTitle">One Tap Retouch</h2>
       <div class="vibes-slider" data-auto-slider>
         <button class="vibe-card" type="button" data-tool="Retouch"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&h=480&q=70" alt="Firming"><span>FIRMING</span></button>
-        <button class="vibe-card" type="button" data-tool="Face Volume"><img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&h=480&q=70" alt="Deep contour"><span>DEEP CONTOUR</span></button>
-        <button class="vibe-card" type="button" data-tool="AI Filter"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=70" alt="Sunkissed"><span>SUNKISSED</span></button>
+        <button class="vibe-card" type="button" data-tool="Face Volume"><img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=360&h=480&q=70" alt="Deep contour"><span>DEEP CONTOUR</span></button>
+        <button class="vibe-card" type="button" data-tool="AI Filter"><img src="https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&w=360&h=480&q=70" alt="Sunkissed"><span>SUNKISSED</span></button>
       </div>
     </section>
     <section class="vibes-section home-section" aria-labelledby="pfpTitle">
@@ -351,7 +408,7 @@
     <section class="home-note" aria-labelledby="publisherTitle">
       <h2 id="publisherTitle">A free editor from Jalangbam</h2>
       <p>EditsBeauty is published by StISLA2021 in Jalangbam, The Gambia. It edits a photo in this browser. The picture is not uploaded to an EditsBeauty server, and it is dropped when you leave the page. Save writes a JPEG to your device.</p>
-      <p>Start Editing opens your photo. Face Details, filters, brightness, contrast, and saturation then paint on the canvas. The longer explanation of each look is on <a href="about.html">About Us</a>. Questions about privacy, the editor, or a photo are answered on <a href="faq.html">FAQ</a> and <a href="contact.html">Contact Us</a>.</p>
+      <p>Start Editing opens your photo. Face Details and the filter looks paint on the canvas. Adjust holds Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Example portraits opens a different person in Adjust. The longer explanation of each look is on <a href="about.html">About Us</a>. Questions about privacy, the editor, or a photo are answered on <a href="faq.html">FAQ</a> and <a href="contact.html">Contact Us</a>.</p>
     </section>
   </main>
 
@@ -518,6 +575,28 @@
     </div>
   </section>
 
+  <section class="guide-panel" id="guidePanel" hidden>
+    <div class="guide-card" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+      <header class="guide-bar">
+        <h2 id="guideTitle">AI guide</h2>
+        <button type="button" id="guideClose">Close</button>
+      </header>
+      <div class="guide-log" id="guideLog"></div>
+      <div class="guide-prompts">
+        <button type="button" data-guide-prompt="Edit my photo">Edit my photo</button>
+        <button type="button" data-guide-prompt="Brighten the lighting">Brighten the lighting</button>
+        <button type="button" data-guide-prompt="Smooth my skin">Smooth my skin</button>
+        <button type="button" data-guide-prompt="Make it vivid">Make it vivid</button>
+        <button type="button" data-guide-prompt="Change the background to a garden">Garden background</button>
+        <button type="button" data-guide-prompt="How do I save?">How do I save?</button>
+      </div>
+      <form class="guide-form" id="guideForm">
+        <label class="visually-hidden" for="guideInput">Ask the guide to use a tool</label>
+        <input id="guideInput" type="text" maxlength="160" placeholder="Ask AI to edit the photo" autocomplete="off">
+        <button type="submit">Ask</button>
+      </form>
+    </div>
+  </section>
   <script type="module" src="./menu.ts"></script>
   <script type="module" src="./app.ts"></script>
   <footer class="site-footer">
