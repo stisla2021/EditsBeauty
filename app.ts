@@ -618,6 +618,9 @@ const syncFilterChips = (): void => {
   document.querySelectorAll<HTMLButtonElement>('[data-look]').forEach((chip) => {
     chip.setAttribute('aria-pressed', String(chip.dataset.look === current));
   });
+  document.querySelectorAll<HTMLButtonElement>('[data-adjust-look]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.adjustLook === current));
+  });
 };
 
 const paintFilterPreviews = (source: HTMLImageElement | null = originalImage): void => {
@@ -2762,6 +2765,23 @@ const applyAutoAdjust = (on: boolean): void => {
 byId<HTMLButtonElement>('adjustAuto')?.addEventListener('click', () => {
   const button = byId<HTMLButtonElement>('adjustAuto');
   applyAutoAdjust(button?.getAttribute('aria-pressed') !== 'true');
+});
+document.querySelectorAll<HTMLButtonElement>('[data-adjust-look]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const look = button.dataset.adjustLook;
+    if (!look || !photoFilter || !(look in lookRecipes)) return;
+    activeHomeEffect = null;
+    photoFilter.value = look;
+    syncFilterChips();
+    showEditor();
+    setStudioTab('adjust');
+    if (originalImage) render();
+    else {
+      pendingApply = look;
+      showToast('Choose your photo. B/W or Noir will be applied to it.');
+      requestPhoto();
+    }
+  });
 });
 
 ['filterIntensity'].forEach((id) => {

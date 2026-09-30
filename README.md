@@ -9,7 +9,7 @@ Version V1.0.0. Copyright (c) StISLA2021.
 ## What you can do
 
 - **Ask AI** on the home page, or **AI** in the editor. Ask it to edit a photo, brighten the lighting, smooth skin, apply a look, change the background, or save. It uses the tools already in the editor. It does not send the picture to a server or generate a new one.
-- **Adjust** has Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Move the sliders yourself any time.
+- **Adjust** has Auto, Color, B/W, Noir, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Move the sliders yourself any time.
 - **Filters** are the looks, including Vivid and Noir, plus Smooth. Past 60, Smooth keeps the same softness and adds a warm finish.
 - **Backgrounds** under Adjust, then More tools: Beach, City, Studio, Garden, Sunset, Mountains, Forest, Night, Cafe, Sky, Flowers, and Ocean. The person stays. The scene is a real photo.
 - **Choose your photo**, then tap an example portrait to apply that look to your picture. The example does not replace your photo.
