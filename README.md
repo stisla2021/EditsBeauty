@@ -13,7 +13,8 @@ Version V1.0.0. Copyright (c) StISLA2021.
 - **Filters** are the looks, including Vivid and Noir, plus Smooth. Past 60, Smooth keeps the same softness and adds a warm finish.
 - **Backgrounds** under Adjust, then More tools: Beach, City, Studio, Garden, Sunset, Mountains, Forest, Night, Cafe, Sky, Flowers, and Ocean. The person stays. The scene is a real photo.
 - **Choose your photo**, then tap an example portrait to apply that look to your picture. The example does not replace your photo.
-- **Delete chat** in the AI guide clears that conversation. Cache starts at 0 B. **Clear Cache** in Settings deletes stored files and returns the size to 0 B. Photos are not stored in the cache.
+- **Ask AI** accepts a dropped photo and a task, including a named background such as beach, garden, or night. **Delete chat** clears that conversation.
+- The **camera** has Portrait, Live, and Video. Filters, Adjust, crop, and the camera still open offline after the app has been visited once. **Clear Cache** in Settings deletes stored files and returns the size to 0 B.
 
 ## Run it locally
 

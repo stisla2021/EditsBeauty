@@ -572,7 +572,13 @@
       <button class="camera-icon-button" id="cameraFlip" type="button" aria-label="Flip camera"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8a8 8 0 0 1 14-2M20 16a8 8 0 0 1-14 2"/><path d="M16 3l2 3-3 1M8 21l-2-3 3-1"/></svg></button>
     </div>
     <div class="camera-bottom">
+      <div class="camera-modes" role="group" aria-label="Camera mode">
+        <button type="button" data-camera-mode="portrait" aria-pressed="true">Portrait</button>
+        <button type="button" data-camera-mode="live" aria-pressed="false">Live</button>
+        <button type="button" data-camera-mode="video" aria-pressed="false">Video</button>
+      </div>
       <button class="camera-shutter" id="cameraCapture" type="button" aria-label="Capture photo"><span></span></button>
+      <p class="camera-status" id="cameraStatus">Portrait</p>
     </div>
     <div class="camera-fallback" id="cameraFallback" hidden>
       <p>Camera permission was denied. Upload a photo instead.</p>
@@ -589,6 +595,12 @@
           <button type="button" id="guideClose">Close</button>
         </div>
       </header>
+      <div class="guide-drop" id="guideDrop">
+        <img id="guideThumb" alt="" hidden>
+        <p id="guideDropText">Drop your photo here, then tell me the edit or the background you want.</p>
+        <label class="guide-file" for="guidePhoto">Choose photo</label>
+        <input id="guidePhoto" type="file" accept="image/*" hidden>
+      </div>
       <div class="guide-log" id="guideLog"></div>
       <div class="guide-prompts">
         <button type="button" data-guide-prompt="Edit my photo">Edit my photo</button>

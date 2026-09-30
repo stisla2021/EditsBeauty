@@ -143,7 +143,7 @@ const syncOfflinePill = (): void => {
   if (!offlinePill) return;
   offlinePill.hidden = false;
   const online = navigator.onLine;
-  offlinePill.textContent = online ? 'Online' : 'Offline mode - all tools work';
+  offlinePill.textContent = online ? 'Online' : 'Offline. Filters, Adjust, crop, and the camera still work.';
   offlinePill.classList.toggle('is-online', online);
   offlinePill.classList.toggle('is-offline', !online);
 };
@@ -2268,8 +2268,14 @@ const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): P
   if (!sceneImage || !mask) {
     activeBackgroundScene = null;
     setSceneButtons(null);
-    if (backgroundStatus) backgroundStatus.textContent = 'The on-device model could not separate the person. Try another photo.';
-    showToast('AI background change could not finish.');
+    const offline = !navigator.onLine;
+    const reason = offline
+      ? 'Background change needs a connection for the scene photo and the person cutout. Filters, Adjust, and crop still work offline.'
+      : !mask
+        ? 'The on-device model could not separate the person. Try another photo with one person.'
+        : 'That scene photo did not load. Try the background again.';
+    if (backgroundStatus) backgroundStatus.textContent = reason;
+    showToast(offline ? 'Background needs a connection.' : 'AI background change could not finish.');
     render();
     return;
   }
@@ -2281,6 +2287,9 @@ const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): P
 
 let pendingSmooth: string | null = null;
 let pendingApply: string | null = null;
+let pendingGuideRequest: string | null = null;
+let pendingPortraitFinish = false;
+let photoLoading = false;
 
 const showYourPhoto = (src: string): void => {
   const thumb = byId<HTMLImageElement>('yourPhotoThumb');
@@ -2291,10 +2300,19 @@ const showYourPhoto = (src: string): void => {
     thumb.alt = 'Your selected photo';
   }
   if (status) status.textContent = 'Your photo is selected. Tap a picture to apply that look.';
+  const guideThumb = byId<HTMLImageElement>('guideThumb');
+  const guideDropText = byId<HTMLElement>('guideDropText');
+  if (guideThumb) {
+    guideThumb.hidden = false;
+    guideThumb.src = src;
+    guideThumb.alt = 'Photo for the AI guide';
+  }
+  if (guideDropText) guideDropText.textContent = 'Photo ready. Tell me the edit, such as “beach background” or “smooth my skin”.';
 };
 
 const openPhoto = (src: string): void => {
   if (!canvas) return;
+  photoLoading = true;
   closeCamera();
   if (imageUrl?.startsWith('blob:')) URL.revokeObjectURL(imageUrl);
   imageUrl = src.startsWith('blob:') ? src : null;
@@ -2336,7 +2354,18 @@ const openPhoto = (src: string): void => {
     const chosen = pendingApply;
     pendingApply = null;
     if (chosen) applyChosenLook(chosen);
+    if (pendingPortraitFinish) {
+      pendingPortraitFinish = false;
+      setAdjustControl('adjustExposure', 6, false);
+      setAdjustControl('adjustBrilliance', 14, false);
+      setAdjustControl('adjustWarmth', 8, false);
+      render();
+    }
     if (pendingPortrait) openPortrait(pendingPortrait);
+    photoLoading = false;
+    const queued = pendingGuideRequest;
+    pendingGuideRequest = null;
+    if (queued) answerGuide(queued);
     void detectFaceMesh(image).then((landmarks) => {
       if (generation !== imageGeneration) return;
       faceMeshLandmarks = landmarks;
@@ -2344,7 +2373,10 @@ const openPhoto = (src: string): void => {
     });
     if (activeBackgroundScene) void selectBackgroundScene(activeBackgroundScene, false);
   };
-  image.onerror = () => showToast('That image could not be opened. Try another photo.');
+  image.onerror = () => {
+    photoLoading = false;
+    showToast('That image could not be opened. Try another photo.');
+  };
   if (/^https?:/i.test(src)) image.crossOrigin = 'anonymous';
   image.src = src;
 };
@@ -2358,11 +2390,35 @@ upload?.addEventListener('change', () => {
 const cameraView = byId<HTMLElement>('cameraView');
 const cameraVideo = byId<HTMLVideoElement>('cameraVideo');
 const cameraFallback = byId<HTMLElement>('cameraFallback');
+const cameraStatus = byId<HTMLElement>('cameraStatus');
+const cameraShutter = byId<HTMLButtonElement>('cameraCapture');
+type CameraMode = 'portrait' | 'live' | 'video';
+let cameraMode: CameraMode = 'portrait';
 let cameraStream: MediaStream | null = null;
 let cameraFacing: 'user' | 'environment' = 'user';
 let cameraSession = 0;
+let cameraRecorder: MediaRecorder | null = null;
+let cameraChunks: Blob[] = [];
+let cameraRecording = false;
+let liveStopTimer = 0;
+
+const cameraModeLabel: Record<CameraMode, string> = {
+  portrait: 'Portrait',
+  live: 'Live',
+  video: 'Video',
+};
+
+const stopCameraRecorder = (): void => {
+  window.clearTimeout(liveStopTimer);
+  if (cameraRecorder && cameraRecorder.state !== 'inactive') cameraRecorder.stop();
+  cameraRecorder = null;
+  cameraRecording = false;
+  cameraShutter?.classList.remove('is-recording');
+  if (cameraShutter) cameraShutter.setAttribute('aria-label', cameraMode === 'video' ? 'Record video' : 'Capture photo');
+};
 
 const stopCamera = (): void => {
+  stopCameraRecorder();
   cameraStream?.getTracks().forEach((track) => track.stop());
   cameraStream = null;
   if (cameraVideo) cameraVideo.srcObject = null;
@@ -2375,6 +2431,76 @@ function closeCamera(): void {
   if (cameraFallback) cameraFallback.hidden = true;
 }
 
+const setCameraMode = (mode: CameraMode): void => {
+  const was = cameraMode;
+  cameraMode = mode;
+  document.querySelectorAll<HTMLButtonElement>('[data-camera-mode]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.cameraMode === mode));
+  });
+  if (cameraStatus) cameraStatus.textContent = cameraModeLabel[mode];
+  if (cameraShutter) cameraShutter.setAttribute('aria-label', mode === 'video' ? 'Record video' : 'Capture photo');
+  if (was !== mode && cameraView && !cameraView.hidden) void openCamera();
+};
+
+const stillFromCamera = (): string | null => {
+  if (!cameraVideo?.videoWidth) return null;
+  const shot = document.createElement('canvas');
+  shot.width = cameraVideo.videoWidth;
+  shot.height = cameraVideo.videoHeight;
+  const shotContext = shot.getContext('2d');
+  if (!shotContext) return null;
+  shotContext.drawImage(cameraVideo, 0, 0);
+  return shot.toDataURL('image/jpeg', 0.92);
+};
+
+const openCapturedVideo = (blob: Blob, note: string): void => {
+  if (videoUrl) URL.revokeObjectURL(videoUrl);
+  videoUrl = URL.createObjectURL(blob);
+  if (videoPreview) {
+    videoPreview.src = videoUrl;
+    videoPreview.load();
+  }
+  if (videoStudio) videoStudio.hidden = false;
+  if (videoStatus) videoStatus.textContent = note;
+  if (videoScreenshotButton) videoScreenshotButton.disabled = false;
+  if (startVideoExportButton) startVideoExportButton.disabled = false;
+};
+
+const recorderMime = (): string => {
+  const types = ['video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  return types.find((type) => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) ?? '';
+};
+
+const startCameraRecording = (ms: number | null, onStop: (blob: Blob) => void): void => {
+  if (!cameraStream || typeof MediaRecorder === 'undefined') {
+    showToast('This phone cannot record video in the browser.');
+    return;
+  }
+  cameraChunks = [];
+  const mime = recorderMime();
+  try {
+    cameraRecorder = mime ? new MediaRecorder(cameraStream, { mimeType: mime }) : new MediaRecorder(cameraStream);
+  } catch {
+    showToast('This phone cannot record video in the browser.');
+    return;
+  }
+  cameraRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) cameraChunks.push(event.data);
+  };
+  cameraRecorder.onstop = () => {
+    const blob = new Blob(cameraChunks, { type: cameraRecorder?.mimeType || mime || 'video/webm' });
+    cameraRecording = false;
+    cameraShutter?.classList.remove('is-recording');
+    if (blob.size > 0) onStop(blob);
+    else showToast('The recording was empty. Try again.');
+  };
+  cameraRecorder.start();
+  cameraRecording = true;
+  cameraShutter?.classList.add('is-recording');
+  if (cameraStatus) cameraStatus.textContent = ms ? 'Live…' : 'Recording…';
+  if (ms) liveStopTimer = window.setTimeout(() => stopCameraRecorder(), ms);
+};
+
 async function openCamera(): Promise<void> {
   if (!cameraView || !cameraVideo) return;
   const session = cameraSession + 1;
@@ -2382,15 +2508,22 @@ async function openCamera(): Promise<void> {
   cameraView.hidden = false;
   if (cameraFallback) cameraFallback.hidden = true;
   stopCamera();
+  if (cameraStatus) cameraStatus.textContent = cameraModeLabel[cameraMode];
   if (!navigator.mediaDevices?.getUserMedia) {
     if (cameraFallback) cameraFallback.hidden = false;
     return;
   }
-  const constraints: MediaStreamConstraints = cameraFacing === 'environment'
-    ? { video: { facingMode: { ideal: 'environment' } }, audio: false }
-    : { video: true, audio: false };
+  const video = cameraFacing === 'environment'
+    ? { facingMode: { ideal: 'environment' } }
+    : { facingMode: { ideal: 'user' } };
+  const withAudio = cameraMode !== 'portrait';
   try {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video, audio: withAudio });
+    } catch {
+      stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+    }
     if (session !== cameraSession) {
       stream.getTracks().forEach((track) => track.stop());
       return;
@@ -2411,19 +2544,61 @@ async function openCamera(): Promise<void> {
 }
 
 const captureCamera = (): void => {
+  if (cameraMode === 'video') {
+    if (cameraRecording) {
+      const still = stillFromCamera();
+      const mime = cameraRecorder?.mimeType || 'video/webm';
+      if (cameraRecorder) {
+        cameraRecorder.onstop = () => {
+          const blob = new Blob(cameraChunks, { type: mime });
+          cameraRecording = false;
+          cameraShutter?.classList.remove('is-recording');
+          closeCamera();
+          if (blob.size > 0) openCapturedVideo(blob, 'Video recorded on this device. Pick a look, then export.');
+          if (still) openPhoto(still);
+          showToast('Video is in Video Studio. A still from it is open to edit.');
+        };
+      }
+      stopCameraRecorder();
+      return;
+    }
+    startCameraRecording(null, (blob) => {
+      closeCamera();
+      openCapturedVideo(blob, 'Video recorded on this device. Pick a look, then export.');
+      showToast('Video is in Video Studio.');
+    });
+    return;
+  }
   if (!cameraVideo || !cameraVideo.videoWidth) {
     showToast('The camera preview is not ready yet.');
     return;
   }
-  const shot = document.createElement('canvas');
-  shot.width = cameraVideo.videoWidth;
-  shot.height = cameraVideo.videoHeight;
-  const shotContext = shot.getContext('2d');
-  if (!shotContext) return;
-  shotContext.drawImage(cameraVideo, 0, 0);
+  if (cameraMode === 'live') {
+    const still = stillFromCamera();
+    const session = cameraSession;
+    startCameraRecording(3000, (blob) => {
+      openCapturedVideo(blob, 'Live clip recorded on this device, about 3 seconds.');
+    });
+    window.setTimeout(() => {
+      if (session !== cameraSession) return;
+      closeCamera();
+      if (still) {
+        pendingSmooth = '48';
+        pendingPortraitFinish = true;
+        openPhoto(still);
+        setStudioTab('filters');
+      }
+      showToast('Live still is open. The short clip is in Video Studio.');
+    }, 3200);
+    return;
+  }
+  const still = stillFromCamera();
+  if (!still) return;
+  pendingSmooth = '48';
+  pendingPortraitFinish = true;
   closeCamera();
   setStudioTab('filters');
-  openPhoto(shot.toDataURL('image/jpeg', 0.92));
+  openPhoto(still);
 };
 
 byId<HTMLButtonElement>('navHome')?.addEventListener('click', () => {
@@ -2437,6 +2612,12 @@ byId<HTMLButtonElement>('navCamera')?.addEventListener('click', () => {
 });
 byId<HTMLButtonElement>('navTemplates')?.addEventListener('click', () => {
   document.getElementById('templatesSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.querySelectorAll<HTMLButtonElement>('[data-camera-mode]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const mode = button.dataset.cameraMode;
+    if (mode === 'portrait' || mode === 'live' || mode === 'video') setCameraMode(mode);
+  });
 });
 byId<HTMLButtonElement>('cameraClose')?.addEventListener('click', closeCamera);
 byId<HTMLButtonElement>('cameraFlip')?.addEventListener('click', () => {
@@ -3159,7 +3340,7 @@ const openGuide = (): void => {
   if (!guidePanel) return;
   guidePanel.hidden = false;
   if (guideLog && guideLog.childElementCount === 0) {
-    guideLine('guide', 'Ask me to edit the photo and I will use the tools on this device. You can also move every slider yourself. Try “edit my photo”, “brighten the lighting”, “smooth my skin”, “make it vivid”, or “background garden”. I do not create a new picture on a server.');
+    guideLine('guide', 'Drop your photo here, then tell me the task. I can smooth skin, apply a look, or change the background to beach, city, studio, garden, sunset, mountains, forest, night, cafe, sky, flowers, or ocean. It runs on this device. I do not create a new picture on a server.');
   }
   guideInput?.focus();
 };
@@ -3196,18 +3377,18 @@ const applyGuideLook = (look: string): void => {
 
 const sceneFromRequest = (text: string): BackgroundScene | null => {
   const aliases: Array<[RegExp, BackgroundScene]> = [
-    [/\b(ocean|sea)\b/, 'ocean'],
-    [/\bmountains?\b/, 'mountains'],
-    [/\bflowers?\b/, 'flowers'],
-    [/\b(cafe|coffee)\b/, 'cafe'],
-    [/\b(night|stars)\b/, 'night'],
-    [/\b(garden|meadow)\b/, 'garden'],
-    [/\b(sunset|dusk)\b/, 'sunset'],
-    [/\bforest\b/, 'forest'],
-    [/\bsky\b/, 'sky'],
-    [/\bbeach\b/, 'beach'],
-    [/\bcity\b/, 'city'],
-    [/\bstudio\b/, 'studio'],
+    [/\b(ocean|sea|waves|shore)\b/, 'ocean'],
+    [/\b(mountains?|hills?|alps)\b/, 'mountains'],
+    [/\b(flowers?|floral|blossoms?)\b/, 'flowers'],
+    [/\b(cafe|coffee shop|coffee)\b/, 'cafe'],
+    [/\b(night|stars|midnight|city lights)\b/, 'night'],
+    [/\b(garden|meadow|park)\b/, 'garden'],
+    [/\b(sunset|dusk|golden sky)\b/, 'sunset'],
+    [/\b(forest|woods|trees)\b/, 'forest'],
+    [/\b(sky|clouds)\b/, 'sky'],
+    [/\b(beach|sand|seaside)\b/, 'beach'],
+    [/\b(city|downtown|skyline)\b/, 'city'],
+    [/\b(studio|plain background|white background)\b/, 'studio'],
   ];
   const match = aliases.find(([pattern]) => pattern.test(text));
   return match ? match[1] : null;
@@ -3239,9 +3420,16 @@ const lookFromRequest = (text: string): string | null => {
 };
 
 const answerGuide = (raw: string): void => {
-  const text = raw.trim().toLowerCase().replace(/\s+/g, ' ');
-  if (!text) return;
-  guideLine('you', raw.trim());
+  const typed = raw.trim();
+  if (!typed) return;
+  if (!originalImage && photoLoading) {
+    pendingGuideRequest = typed;
+    guideLine('you', typed);
+    guideLine('guide', 'The photo is opening. I will do that as soon as it is ready.');
+    return;
+  }
+  const text = typed.toLowerCase().replace(/\s+/g, ' ');
+  guideLine('you', typed);
   const asksHow = /^(how|what|where|why)\b/.test(text) || /\bhow do i\b/.test(text);
   if (asksHow && !/\b(please|can you|do it)\b/.test(text)) {
     guideLine('guide', 'Choose a photo with Start Editing, the camera, or an example portrait. Then ask me to edit it, or use the tools yourself. I can smooth skin, apply a look, change the background, and set Adjust: Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Save downloads editsbeauty-edit.jpg.');
@@ -3291,9 +3479,7 @@ const answerGuide = (raw: string): void => {
     [/\bbody\b/, 'body'],
   ];
   const effect = effectMatch.find(([pattern]) => pattern.test(text))?.[1] ?? null;
-  const scene = (/\b(background|bg|behind)\b/.test(text) || /\b(beach|city|studio|garden|sunset|mountains?|forest|night|cafe|coffee|sky|flowers?|ocean|sea)\b/.test(text))
-    ? sceneFromRequest(text)
-    : null;
+  const scene = sceneFromRequest(text);
   const wantsBackground = scene !== null || /\b(background|bg|behind)\b/.test(text);
   const look = lookFromRequest(text);
   const vagueEdit = /\b(edit|retouch|improve|beautify)\b/.test(text) && /\b(photo|picture|image|portrait|face|skin|me|my|this|it|person|people)\b/.test(text)
@@ -3398,7 +3584,7 @@ const answerGuide = (raw: string): void => {
   if (wantsBackground) {
     openBackgroundTools();
     if (scene) {
-      void selectBackgroundScene(scene, true);
+      void selectBackgroundScene(scene, false);
       done.push(`${sceneLabels[scene]} background`);
     } else {
       done.push('opened the backgrounds');
@@ -3409,9 +3595,12 @@ const answerGuide = (raw: string): void => {
     done.push('saved editsbeauty-edit.jpg');
   }
   const summary = done.join(', ');
+  const sceneList = 'Beach, city, studio, garden, sunset, mountains, forest, night, cafe, sky, flowers, or ocean.';
   guideLine('guide', scene && wantsBackground
-    ? `I am editing the photo: ${summary}. The person stays and the scene is placed behind them on this device. You can still change any slider by hand. Save is at the top right.`
-    : `I edited the photo: ${summary}. You can still change any slider, look, or background by hand. Save is at the top right.`);
+    ? `I am putting ${sceneLabels[scene]} behind the person: ${summary}. The cutout runs on this device. You can still change any slider by hand.`
+    : wantsBackground
+      ? `Tell me which background you want. ${sceneList}`
+      : `I edited the photo: ${summary}. You can still change any slider, look, or background by hand. Save is at the top right.`);
 };
 
 byId<HTMLButtonElement>('homeGuide')?.addEventListener('click', openGuide);
@@ -3425,6 +3614,39 @@ guideForm?.addEventListener('submit', (event) => {
   const value = guideInput?.value ?? '';
   if (guideInput) guideInput.value = '';
   answerGuide(value);
+});
+
+const takeGuidePhoto = (file: File | undefined): void => {
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('Drop a photo, then tell me the edit.');
+    return;
+  }
+  openGuide();
+  openPhoto(URL.createObjectURL(file));
+  guideLine('guide', 'Photo added on this device. Tell me the task. You can name a background: beach, city, studio, garden, sunset, mountains, forest, night, cafe, sky, flowers, or ocean.');
+};
+
+const guideDrop = byId<HTMLElement>('guideDrop');
+const guidePhoto = byId<HTMLInputElement>('guidePhoto');
+guidePhoto?.addEventListener('change', () => {
+  takeGuidePhoto(guidePhoto.files?.[0]);
+  guidePhoto.value = '';
+});
+guideDrop?.addEventListener('dragover', (event) => {
+  event.preventDefault();
+  guideDrop.classList.add('is-over');
+});
+guideDrop?.addEventListener('dragleave', () => guideDrop.classList.remove('is-over'));
+guideDrop?.addEventListener('drop', (event) => {
+  event.preventDefault();
+  guideDrop.classList.remove('is-over');
+  takeGuidePhoto(event.dataTransfer?.files?.[0]);
+});
+guidePanel?.addEventListener('paste', (event) => {
+  const file = Array.from(event.clipboardData?.files ?? []).find((item) => item.type.startsWith('image/'));
+  if (!file) return;
+  event.preventDefault();
+  takeGuidePhoto(file);
 });
 document.querySelectorAll<HTMLButtonElement>('[data-guide-prompt]').forEach((button) => {
   button.addEventListener('click', () => {

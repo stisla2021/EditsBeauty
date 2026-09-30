@@ -154,6 +154,13 @@ main.container, .page.container { width: min(100% - 32px, 1120px); max-width: 11
 .guide-bar h2 { margin: 0; font-size: 1.125rem; }
 .guide-bar button, .guide-form button, .guide-prompts button { min-height: 44px; border-radius: 999px; cursor: pointer; }
 .guide-bar button { padding: 0 0.9rem; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+.guide-drop { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 0.65rem; min-height: 72px; padding: 0.55rem; border: 1.5px dashed var(--line); border-radius: 0.9rem; background: var(--page); }
+.guide-drop.is-over { border-color: #ff2d78; background: #fff4f8; }
+.guide-drop p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.guide-drop img { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; }
+.guide-drop img[hidden] { display: none; }
+.guide-drop:has(img[hidden]) { grid-template-columns: 1fr auto; }
+.guide-file { display: inline-flex; align-items: center; min-height: 44px; padding: 0 0.8rem; border-radius: 999px; background: #111; color: #fff; font-size: 13px; font-weight: 750; cursor: pointer; }
 .guide-log { display: grid; gap: 0.5rem; min-height: 4.5rem; }
 .guide-log p { margin: 0; line-height: 1.4; }
 .guide-you { justify-self: end; max-width: 90%; padding: 0.55rem 0.75rem; border-radius: 0.8rem; background: #111; color: #fff; }
@@ -371,7 +378,12 @@ body.dark .canvas-stage { background: #302c31; }
 .camera-view video { width: 100%; height: 100%; object-fit: cover; background: #111; }
 .camera-top, .camera-bottom { position: absolute; z-index: 2; right: 0; left: 0; display: flex; align-items: center; justify-content: space-between; padding: max(16px, env(safe-area-inset-top)) 18px 16px; }
 .camera-view:has(.camera-fallback:not([hidden])) .camera-bottom { visibility: hidden; }
-.camera-bottom { bottom: 0; justify-content: center; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+.camera-bottom { bottom: 0; flex-direction: column; justify-content: flex-end; gap: 10px; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+.camera-modes { display: flex; gap: 8px; }
+.camera-modes button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: rgb(255 255 255 / 20%); color: #fff; font-weight: 700; cursor: pointer; }
+.camera-modes button[aria-pressed="true"] { background: #fff; color: #111; }
+.camera-status { margin: 0; color: #fff; font-size: 13px; font-weight: 650; }
+.camera-shutter.is-recording span { width: 28px; height: 28px; border-radius: 8px; background: #ff3b30; }
 .camera-top { top: 0; }
 .camera-icon-button, .camera-shutter { display: grid; place-items: center; border: 0; color: #fff; cursor: pointer; }
 .camera-icon-button { width: 44px; height: 44px; border-radius: 50%; background: rgb(0 0 0 / 45%); }
