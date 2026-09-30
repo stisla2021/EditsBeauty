@@ -241,7 +241,7 @@ const restoreCoreCache = async (): Promise<void> => {
     }
   }
   await Promise.all(names.map((name) => caches.delete(name)));
-  const fresh = await caches.open('editsbeauty-shell-v6');
+  const fresh = await caches.open('editsbeauty-shell-v7');
   for (const item of saved) await fresh.put(item.request, item.response);
   if (navigator.onLine) {
     void Promise.all([...coreFiles, ...modelFiles].map(async (path) => {

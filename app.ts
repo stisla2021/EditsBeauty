@@ -236,14 +236,15 @@ const adjustFilter = (): string => {
   const exposure = sliderNumber('adjustExposure');
   const warmth = sliderNumber('adjustWarmth');
   const saturation = sliderNumber('adjustSaturation');
-  const parts: string[] = [];
-  if (brightness) parts.push(`brightness(${(1 + brightness / 200).toFixed(3)})`);
+  const parts = [
+    `brightness(${(1 + brightness / 200).toFixed(3)})`,
+    `contrast(${(1 + contrast / 200).toFixed(3)})`,
+    `saturate(${Math.max(0, 1 + saturation / 100).toFixed(3)})`,
+  ];
   if (exposure) parts.push(`brightness(${Math.pow(2, exposure / 100).toFixed(3)})`);
-  if (contrast) parts.push(`contrast(${(1 + contrast / 200).toFixed(3)})`);
-  if (saturation) parts.push(`saturate(${Math.max(0, 1 + saturation / 100).toFixed(3)})`);
   if (warmth > 0) parts.push(`sepia(${(warmth / 280).toFixed(3)}) saturate(${(1 + warmth / 400).toFixed(3)})`);
   if (warmth < 0) parts.push(`hue-rotate(${(warmth / 4).toFixed(2)}deg)`);
-  return parts.join(' ') || 'none';
+  return parts.join(' ');
 };
 
 let sharpnessLayer: HTMLCanvasElement | null = null;
@@ -346,10 +347,12 @@ const requestPhoto = (): void => {
 
 const beginHomeEffect = (effect: HomeEffect): void => {
   activeHomeEffect = effect;
-  const title = byId<HTMLElement>('editorTitle');
-  if (title) title.textContent = homeEffectLabel[effect];
+  console.log('filter', effect);
   closeTools();
   setStudioTab('filters');
+  const title = byId<HTMLElement>('editorTitle');
+  if (title) title.textContent = homeEffectLabel[effect];
+  canvas?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   if (originalImage) {
     render();
     showToast(`${homeEffectLabel[effect]} applied.`);
@@ -386,7 +389,7 @@ const setStudioTab = (tab: 'adjust' | 'filters' | 'crop'): void => {
   if (filters) filters.hidden = tab !== 'filters';
   if (adjust) adjust.hidden = tab !== 'adjust';
   const title = byId<HTMLElement>('editorTitle');
-  if (title) title.textContent = tab === 'filters' ? 'Filters' : 'Adjust';
+  if (title) title.textContent = activeHomeEffect ? homeEffectLabel[activeHomeEffect] : tab === 'filters' ? 'Filters' : 'Adjust';
   document.querySelectorAll<HTMLButtonElement>('[data-studio-tab]').forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.studioTab === tab));
   });
@@ -1419,12 +1422,12 @@ const paintHomeEffect = (): void => {
   if (effect === 'eyelashes') {
     context.save();
     context.globalCompositeOperation = 'multiply';
-    context.fillStyle = 'rgba(18, 10, 14, 0.72)';
+    context.fillStyle = 'rgba(8, 4, 6, 0.9)';
     context.beginPath();
-    context.ellipse(width * 0.38, height * 0.4, width * 0.09, height * 0.016, -0.2, 0, Math.PI * 2);
+    context.ellipse(width * 0.38, height * 0.4, width * 0.11, height * 0.028, -0.2, 0, Math.PI * 2);
     context.fill();
     context.beginPath();
-    context.ellipse(width * 0.62, height * 0.4, width * 0.09, height * 0.016, 0.2, 0, Math.PI * 2);
+    context.ellipse(width * 0.62, height * 0.4, width * 0.11, height * 0.028, 0.2, 0, Math.PI * 2);
     context.fill();
     context.restore();
     return;
@@ -1434,15 +1437,25 @@ const paintHomeEffect = (): void => {
     const softContext = soft.getContext('2d');
     if (!softContext) return;
     softContext.clearRect(0, 0, width, height);
-    softContext.filter = 'blur(7px)';
+    softContext.filter = 'blur(14px)';
     softContext.drawImage(canvas, 0, 0);
     context.save();
     context.beginPath();
     context.ellipse(width * 0.5, height * 0.46, width * 0.3, height * 0.34, 0, 0, Math.PI * 2);
     context.clip();
-    context.globalAlpha = effect === 'ai-retouch' ? 0.62 : 0.5;
+    context.globalAlpha = effect === 'ai-retouch' ? 0.78 : 0.72;
     context.drawImage(soft, 0, 0);
     context.restore();
+    if (effect === 'acne') {
+      context.save();
+      context.beginPath();
+      context.ellipse(width * 0.5, height * 0.46, width * 0.3, height * 0.34, 0, 0, Math.PI * 2);
+      context.clip();
+      context.globalCompositeOperation = 'soft-light';
+      context.fillStyle = 'rgba(255, 214, 196, 0.7)';
+      context.fillRect(0, 0, width, height);
+      context.restore();
+    }
     if (effect === 'ai-retouch') {
       context.save();
       context.globalCompositeOperation = 'soft-light';
@@ -1461,7 +1474,7 @@ const paintHomeEffect = (): void => {
       const centerY = height * (effect === 'body' ? 0.62 : 0.74);
       const radiusX = width * (effect === 'body' ? 0.28 : 0.24);
       const radiusY = height * (effect === 'body' ? 0.16 : 0.1);
-      const pull = height * (effect === 'body' ? 0.02 : 0.04);
+      const pull = height * (effect === 'body' ? 0.06 : 0.1);
       for (let y = Math.max(0, Math.floor(centerY - radiusY)); y < Math.min(height, Math.ceil(centerY + radiusY)); y += 1) {
         for (let x = Math.max(0, Math.floor(centerX - radiusX)); x < Math.min(width, Math.ceil(centerX + radiusX)); x += 1) {
           const nx = (x - centerX) / radiusX;
@@ -1484,7 +1497,7 @@ const paintHomeEffect = (): void => {
     return;
   }
   if (effect === 'ai-bg' || effect === 'remover' || effect === 'removal') {
-    blurBehindSubject(effect === 'ai-bg' ? 18 : 14, effect === 'removal' ? 0.22 : 0.28, effect === 'removal' ? 0.32 : 0.38);
+    blurBehindSubject(effect === 'ai-bg' ? 28 : 18, effect === 'removal' ? 0.22 : 0.28, effect === 'removal' ? 0.32 : 0.38);
     return;
   }
   if (effect === 'slim') {
@@ -1923,8 +1936,10 @@ async function openCamera(): Promise<void> {
   } catch {
     if (session !== cameraSession) return;
     stopCamera();
-    if (cameraFallback) cameraFallback.hidden = false;
-    showToast('Camera permission is needed, or upload a photo instead.');
+    closeCamera();
+    setStudioTab('filters');
+    showToast('Camera permission is needed. Choose a photo instead.');
+    if (!originalImage) requestPhoto();
   }
 }
 
@@ -1939,6 +1954,8 @@ const captureCamera = (): void => {
   const shotContext = shot.getContext('2d');
   if (!shotContext) return;
   shotContext.drawImage(cameraVideo, 0, 0);
+  closeCamera();
+  setStudioTab('filters');
   openPhoto(shot.toDataURL('image/jpeg', 0.92));
 };
 
@@ -1946,7 +1963,11 @@ byId<HTMLButtonElement>('navHome')?.addEventListener('click', () => {
   closeCamera();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
-byId<HTMLButtonElement>('navCamera')?.addEventListener('click', () => { void openCamera(); });
+byId<HTMLButtonElement>('navCamera')?.addEventListener('click', () => {
+  console.log('filter', 'camera');
+  setStudioTab('filters');
+  void openCamera();
+});
 byId<HTMLButtonElement>('navTemplates')?.addEventListener('click', () => {
   document.getElementById('templatesSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
@@ -1963,6 +1984,7 @@ document.querySelectorAll<HTMLButtonElement>('[data-look]').forEach((chip) => {
   chip.addEventListener('click', () => {
     if (!chip.dataset.look || !photoFilter) return;
     photoFilter.value = chip.dataset.look;
+    console.log('filter', chip.dataset.look);
     syncFilterChips();
     if (creativeControls) creativeControls.hidden = false;
     showEditor();
@@ -2011,7 +2033,8 @@ const paintRange = (input: HTMLInputElement): void => {
     if (!input) return;
     paintRange(input);
     if (output) output.value = `${input.value}%`;
-    scheduleRender();
+    console.log('filter', id, input.value);
+    render();
   };
   input?.addEventListener('input', paint);
   input?.addEventListener('change', paint);
