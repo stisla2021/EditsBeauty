@@ -1244,7 +1244,7 @@ outputBindings.forEach(([input, outputId, format]) => {
     if (input === enhanceSlider) aiEnhanceEnabled = false;
     const output = byId<HTMLOutputElement>(outputId);
     if (output) output.value = format(input.value);
-    render();
+    scheduleRender();
   });
 });
 
@@ -1261,7 +1261,7 @@ aiEnhanceButton?.addEventListener('click', () => {
 [photoFilter, hairTint, cutoutColor, editBackground, timestampToggle].forEach((control) => {
   control?.addEventListener('input', () => {
     if (control === photoFilter) syncFilterChips();
-    render();
+    scheduleRender();
   });
   control?.addEventListener('change', () => {
     if (control === photoFilter) syncFilterChips();
@@ -1333,9 +1333,13 @@ canvas?.addEventListener('pointermove', (event: PointerEvent) => {
   const point = brushPoint(event);
   if (!point) return;
   currentBrush.points.push(point);
-  render();
+  scheduleRender();
 });
-const endBrush = (): void => { currentBrush = null; };
+const endBrush = (): void => {
+  const wasDrawing = currentBrush !== null;
+  currentBrush = null;
+  if (wasDrawing) render();
+};
 canvas?.addEventListener('pointerup', endBrush);
 canvas?.addEventListener('pointercancel', endBrush);
 
@@ -2856,7 +2860,7 @@ const paintSmooth = (): void => {
   byId<HTMLButtonElement>('smoothToggle')?.setAttribute('aria-pressed', String(amount > 0));
   if (brushChip) brushChip.style.filter = `blur(${Math.min(1.5, amount / 50)}px)`;
   console.log('filter', 'smooth', amount);
-  render();
+  scheduleRender();
 };
 smoothSlider?.addEventListener('input', paintSmooth);
 smoothSlider?.addEventListener('change', paintSmooth);
@@ -2880,13 +2884,14 @@ const paintTeeth = (): void => {
   if (teethValue) teethValue.value = String(amount);
   if (teethSlider) paintRange(teethSlider);
   byId<HTMLButtonElement>('teethToggle')?.setAttribute('aria-pressed', String(amount > 0));
-  if (originalImage) render();
+  if (originalImage) scheduleRender();
   else pendingTeeth = String(amount);
 };
 
 teethSlider?.addEventListener('input', paintTeeth);
 teethSlider?.addEventListener('change', () => {
   paintTeeth();
+  if (originalImage) render();
   const amount = Number(teethSlider?.value ?? 0);
   if (amount <= 0) return;
   if (!originalImage) {
@@ -2905,6 +2910,7 @@ byId<HTMLButtonElement>('smoothToggle')?.addEventListener('click', () => {
   console.log('filter', 'smooth');
   smoothSlider.value = Number(smoothSlider.value) > 0 ? '0' : '80';
   paintSmooth();
+  render();
 });
 noseSlider?.addEventListener('input', () => {
   if (noseValue) noseValue.value = noseSlider.value;
@@ -2942,7 +2948,7 @@ const paintAdjustControl = (input: HTMLInputElement, draw: boolean): void => {
   if (!applyingAuto) byId<HTMLButtonElement>('adjustAuto')?.setAttribute('aria-pressed', 'false');
   if (draw) {
     console.log('filter', input.id, input.value);
-    render();
+    scheduleRender();
   }
 };
 
@@ -2987,7 +2993,7 @@ byId<HTMLButtonElement>('adjustAuto')?.addEventListener('click', () => {
     paintRange(input);
     if (output) output.value = `${input.value}%`;
     console.log('filter', id, input.value);
-    render();
+    scheduleRender();
   };
   input?.addEventListener('input', paint);
   input?.addEventListener('change', paint);
@@ -3565,6 +3571,29 @@ const guideLine = (role: 'you' | 'guide', text: string): void => {
   guideLog.scrollTop = guideLog.scrollHeight;
 };
 
+const guideResult = (text: string): void => {
+  if (!guideLog) return;
+  const block = document.createElement('div');
+  block.className = 'guide-result';
+  const line = document.createElement('p');
+  line.className = 'guide-reply';
+  line.textContent = text;
+  block.append(line);
+  if (canvas && originalImage && canvas.width > 0 && canvas.height > 0) {
+    try {
+      const picture = document.createElement('img');
+      picture.className = 'guide-result-photo';
+      picture.alt = 'Edited photo';
+      picture.src = canvas.toDataURL('image/jpeg', 0.85);
+      block.append(picture);
+    } catch {
+      // A photo from another site can block the copy. The editor still shows the edit.
+    }
+  }
+  guideLog.append(block);
+  guideLog.scrollTop = guideLog.scrollHeight;
+};
+
 const openGuide = (): void => {
   if (!guidePanel) return;
   guidePanel.hidden = false;
@@ -3647,7 +3676,7 @@ const lookFromRequest = (text: string): string | null => {
   return match && match[1] in lookRecipes ? match[1] : null;
 };
 
-const answerGuide = (raw: string): void => {
+const answerGuide = async (raw: string): Promise<void> => {
   const typed = raw.trim();
   if (!typed) return;
   if (!originalImage && photoLoading) {
@@ -3666,9 +3695,8 @@ const answerGuide = (raw: string): void => {
   if (/\b(save|download|export)\b/.test(text) && !/\b(edit|smooth|vivid|noir|background|bright|warm|exposure|teeth|tooth)\b/.test(text)) {
     if (downloadButton && originalImage && !downloadButton.disabled) downloadButton.click();
     else showToast('Choose a photo before saving.');
-    guideLine('guide', originalImage
-      ? 'I saved the photo as editsbeauty-edit.jpg. Save at the top right does the same thing. The original file on your device stays as it was.'
-      : 'Choose a photo first. After the edit, tap Save at the top right. The download is editsbeauty-edit.jpg.');
+    if (originalImage) guideResult('I saved the photo as editsbeauty-edit.jpg. Here is the edited picture. Save at the top right does the same thing.');
+    else guideLine('guide', 'Choose a photo first. After the edit, tap Save at the top right. The download is editsbeauty-edit.jpg.');
     return;
   }
   const done: string[] = [];
@@ -3820,26 +3848,34 @@ const answerGuide = (raw: string): void => {
   else if (look || effect || wantsSmooth || wantsTeeth) setStudioTab('filters');
   if (done.some((item) => item !== 'cleared the previous edit') || wantsBackground) needsPhoto();
   if (originalImage) render();
+  let backgroundReady = false;
   if (wantsBackground) {
     openBackgroundTools();
     if (scene) {
-      void selectBackgroundScene(scene, false);
-      done.push(`${sceneLabels[scene]} background`);
+      await selectBackgroundScene(scene, false);
+      backgroundReady = activeBackgroundScene === scene;
+      if (backgroundReady) done.push(`${sceneLabels[scene]} background`);
     } else {
       done.push('opened the backgrounds');
     }
   }
+  if (originalImage && !backgroundReady) render();
   if (/\b(save|download|export)\b/.test(text) && originalImage && !wantsBackground && downloadButton && !downloadButton.disabled) {
     downloadButton.click();
     done.push('saved editsbeauty-edit.jpg');
   }
   const summary = done.join(', ');
   const sceneList = 'Beach, city, studio, garden, sunset, mountains, forest, night, cafe, sky, flowers, or ocean.';
-  guideLine('guide', scene && wantsBackground
-    ? `I am putting ${sceneLabels[scene]} behind the person: ${summary}. The cutout runs on this device. You can still change any slider by hand.`
-    : wantsBackground
-      ? `Tell me which background you want. ${sceneList}`
-      : `I edited the photo: ${summary}. You can still change any slider, look, or background by hand. Save is at the top right.`);
+  const waitingForScene = wantsBackground && !scene && done.every((item) => item === 'opened the backgrounds');
+  if (waitingForScene) {
+    guideLine('guide', `Tell me which background you want. ${sceneList}`);
+    return;
+  }
+  const reply = backgroundReady && scene
+    ? `Here is the edited picture. I put ${sceneLabels[scene]} behind the person: ${summary}.`
+    : `Here is the edited picture: ${summary}. You can still change any slider, look, or background by hand. Save is at the top right.`;
+  if (originalImage) guideResult(reply);
+  else guideLine('guide', reply);
 };
 
 byId<HTMLButtonElement>('homeGuide')?.addEventListener('click', openGuide);
