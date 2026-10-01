@@ -1,93 +1,170 @@
 <!DOCTYPE html>
 <!-- Copyright (c) StISLA2021 -->
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f3f2f5">
-  <title>EditsBeauty - Photo Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>EditsBeauty - Free Photo Editor</title>
+  <meta name="description" content="EditsBeauty is a free browser photo editor for selfies and portraits. Smooth skin, adjust brightness, and save the picture on your device. Published by StISLA2021 in Jalangbam, The Gambia.">
+  <link rel="canonical" href="https://editsbeauty.vercel.app/">
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="EditsBeauty">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="logo-192.png">
-  <link rel="apple-touch-icon" href="logo.png">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo-192.png">
+  <link rel="apple-touch-icon" href="images/logo-192.png">
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous" defer></script>
   <link rel="stylesheet" href="style.css">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7160015922473007" crossorigin="anonymous"></script>
+  <script>
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      window.__editsbeautyInstall = event;
+      document.documentElement.dataset.installable = 'true';
+    });
+  </script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <p class="offline-pill" id="offlinePill">Online</p>
   <div class="splash" id="splash" aria-label="EditsBeauty loading">
-    <img class="app-face" src="logo.png" alt="EditsBeauty">
+    <img class="app-face" src="images/logo.png" alt="EditsBeauty">
   </div>
 
   <nav class="navbar">
     <a class="logo" href="index.html"><span class="brand-mark brand-mark-small" aria-hidden="true">e</span><span>EditsBeauty</span></a>
-    <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <button class="hamburger" id="hamburger" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Open menu"><span></span><span></span><span></span></button>
     <ul class="nav-links" id="navLinks">
-      <li><a href="about.html">About</a></li>
-      <li><a href="privacy.html">Privacy</a></li>
+      <li><button class="nav-share" id="shareApp" type="button">Share app</button></li>
+      <li><a href="about.html">About Us</a></li>
+      <li><a href="privacy-policy.html">Privacy Policy</a></li>
+      <li><a href="terms.html">Terms and Conditions</a></li>
+      <li><a href="index.html#feedback">Feedback</a></li>
+      <li><a href="contact.html">Contact Us</a></li>
       <li><a href="settings.html">Settings</a></li>
+      <li class="theme-setting">
+        <p>Theme</p>
+        <div class="theme-options">
+          <button class="theme-option" id="systemTheme" type="button" aria-pressed="true">System</button>
+          <button class="theme-option" id="lightTheme" type="button">Light</button>
+          <button class="theme-option" id="darkTheme" type="button">Dark</button>
+        </div>
+      </li>
     </ul>
   </nav>
 
-  <main class="container home">
-    <section class="banner-slider" aria-label="Featured edits">
-      <article class="banner active" data-banner>
-        <img class="banner-image" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1200&q=85" alt="Portrait with long blonde hair" fetchpriority="high">
-        <div class="banner-shade"></div>
-        <div class="banner-copy"><p class="banner-kicker">SALON FINISH, YOUR WAY</p><h1>Root<br>Touch-up</h1><p>Refresh your look in seconds.</p></div>
-        <figure class="before-tile"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=240&h=180&q=75" alt="Before root touch-up"><figcaption>Before</figcaption></figure>
-        <button class="banner-try" type="button" data-tool="Hair">Try Now</button>
-      </article>
-      <article class="banner" data-banner>
-        <img class="banner-image" src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1200&q=85" alt="Portrait in natural light" loading="lazy">
-        <div class="banner-shade"></div>
-        <div class="banner-copy"><p class="banner-kicker">COLOR, REIMAGINED</p><h1>AI<br>Filter</h1><p>Find a new mood for your portrait.</p></div>
-        <figure class="before-tile"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=240&h=180&q=75" alt="Before filter"><figcaption>Before</figcaption></figure>
-        <button class="banner-try" type="button" data-tool="AI Filter">Try Now</button>
-      </article>
-      <article class="banner" data-banner>
-        <img class="banner-image" src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=1200&q=85" alt="Portrait with a confident pose" loading="lazy">
-        <div class="banner-shade"></div>
-        <div class="banner-copy"><p class="banner-kicker">SUBTLE SHAPE CONTROL</p><h1>Body<br>Tuner</h1><p>Make gentle, natural adjustments.</p></div>
-        <figure class="before-tile"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=240&h=180&q=75" alt="Before body tuning"><figcaption>Before</figcaption></figure>
-        <button class="banner-try" type="button" data-tool="Body Tuner">Try Now</button>
-      </article>
-      <div class="banner-pagination" aria-label="Choose featured edit">
-        <button class="banner-dot active" type="button" aria-label="Root Touch-up" aria-pressed="true"></button>
-        <button class="banner-dot" type="button" aria-label="AI Filter" aria-pressed="false"></button>
-        <button class="banner-dot" type="button" aria-label="Body Tuner" aria-pressed="false"></button>
-      </div>
-    </section>
-    <label class="home-start flex items-center justify-center gap-3 shadow-lg" for="upload"><span class="sparkle">✦</span> Start Editing</label>
+  <main class="container home" id="main">
+    <h1 class="visually-hidden">EditsBeauty free photo editor</h1>
+    <div class="top-edit">
+      <button class="start-pill" id="startEditing" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z"/><path d="M18 13l.6 1.8L20.5 16l-1.9.7L18 18.5l-.6-1.8L15.5 16l1.9-.7L18 13z"/></svg> Start Editing</button>
+      <button class="start-pill guide-home" id="homeGuide" type="button">Ask AI</button>
+    </div>
 
-    <section class="editor" id="editor" aria-labelledby="editorTitle" hidden>
-      <div class="section-heading">
-        <div><p class="eyebrow">PHOTO STUDIO</p><h1 id="editorTitle">Your edit, your way.</h1></div>
-        <button class="icon-button" id="openTools" type="button" aria-label="Open tools">＋</button>
-      </div>
-      <div class="canvas-stage" id="canvasStage">
+    <section class="studio" id="editor" aria-labelledby="editorTitle" hidden>
+      <header class="studio-bar">
+        <button class="studio-back" id="studioBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+        <p class="studio-title" id="editorTitle">Filters</p>
+        <button class="studio-guide" id="guideLaunch" type="button">AI</button>
+        <button class="studio-save" id="downloadBtn" type="button" disabled>Save</button>
+      </header>
+      <aside class="studio-rail" aria-label="Tools">
+        <button type="button" data-studio-tab="filters">Filters</button>
+        <button type="button" data-studio-tab="adjust">Adjust</button>
+        <button type="button" data-studio-tab="crop">Crop</button>
+        <button type="button" data-tool="Retouch">Retouch</button>
+        <button type="button" data-tool="Teeth">Teeth</button>
+        <button type="button" data-tool="Narrow">Narrow</button>
+        <button type="button" data-tool="Background">Background</button>
+        <button type="button" data-tool="Enhance">Enhance</button>
+        <button type="button" data-tool="Cutout">Cutout</button>
+        <button type="button" data-tool="Body Tuner">Body Tuner</button>
+        <button type="button" data-tool="Text">Text</button>
+        <button type="button" data-tool="Stickers">Stickers</button>
+        <button type="button" data-tool="Brushes">Brushes</button>
+      </aside>
+      <div class="studio-stage" id="canvasStage">
         <div class="empty-state" id="emptyState">
-          <span class="upload-glyph" aria-hidden="true">↑</span>
-          <h2>Start with a photo</h2>
-          <p>Choose an image to retouch on this device.</p>
-          <label class="primary-button" for="upload">Choose photo</label>
+          <label class="choose-box" for="upload">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>
+            Choose photo
+          </label>
         </div>
         <canvas id="canvas" aria-label="Photo editing preview"></canvas>
+        <p class="ai-loading" id="aiLoading" hidden>AI Loading...</p>
       </div>
-      <div class="editor-actions">
-        <label class="secondary-button" for="upload">Choose photo</label>
-        <button class="secondary-button" id="downloadBtn" type="button" disabled>Save image</button>
-      </div>
-      <input type="file" id="upload" accept="image/*" capture="environment" hidden>
-      <div class="controls" id="editControls" hidden>
-        <label class="range-control" for="smooth"><span>Smooth Retouch</span><output id="smoothVal">0</output><input type="range" id="smooth" min="0" max="100" value="0"></label>
-        <label class="range-control" for="nose"><span>Narrow Nose</span><output id="noseVal">0</output><input type="range" id="nose" min="0" max="50" value="0"></label>
-        <button class="text-button" id="resetBtn" type="button">Reset adjustments</button>
-      </div>
-      <div class="controls creative-controls" id="creativeControls" hidden>
-        <p class="face-detection-status" id="faceDetectionStatus" aria-live="polite">Face detection runs locally when MediaPipe is available.</p>
-        <p class="tool-note">AI Filter and Enhance use on-device effects; no external image-generation model is connected.</p>
-        <label class="grid-setting">Filter<select id="photoFilter"><option value="original">Original</option><option value="beauty">Beauty</option><option value="soft">Soft</option><option value="pink">Pink</option><option value="film">Film</option><option value="warm">Warm</option><option value="golden">Golden</option><option value="glow">Glow</option><option value="pop">Pop</option><option value="vintage">Vintage</option><option value="matte">Matte</option><option value="mono">Monochrome</option><option value="cool">Cool</option></select></label>
+      <input type="file" id="upload" accept="image/*" hidden>
+      <div class="studio-sheet creative-controls" id="creativeControls">
+        <label class="grid-setting visually-hidden">Filter<select id="photoFilter"><option value="original">Original</option><option value="vivid">Vivid</option><option value="vivid-warm">Vivid Warm</option><option value="vivid-cool">Vivid Cool</option><option value="dramatic">Dramatic</option><option value="dramatic-warm">Dramatic Warm</option><option value="dramatic-cool">Dramatic Cool</option><option value="mono">B/W</option><option value="silvertone">Silvertone</option><option value="noir">B/W</option><option value="fade">Fade</option><option value="instant">Instant</option><option value="transfer">Transfer</option><option value="chrome">Chrome</option><option value="film">Film</option><option value="warm">Warm</option><option value="glow">Glow</option><option value="cool">Cool</option><option value="soft">Soft</option><option value="pink">Pink</option><option value="vintage">Vintage</option><option value="pop">Pop</option><option value="matte">Matte</option><option value="golden">Golden</option><option value="beauty">Beauty</option></select></label>
+        <div class="sheet-panel" id="panelFilters">
+          <div class="iphone-filters" id="iphoneFilters">
+            <div class="filter-scroll" id="filterBar" role="listbox" aria-label="Photo filters">
+              <button class="filter-chip" type="button" data-look="original" aria-pressed="true"><span class="thumb look-original"><canvas data-filter-preview="original" width="112" height="112"></canvas></span><span>Original</span></button>
+              <button class="filter-chip" type="button" data-look="vivid"><span class="thumb look-vivid"><canvas data-filter-preview="vivid" width="112" height="112"></canvas></span><span>Vivid</span></button>
+              <button class="filter-chip" type="button" data-look="vivid-warm"><span class="thumb look-vivid-warm"><canvas data-filter-preview="vivid-warm" width="112" height="112"></canvas></span><span>Vivid Warm</span></button>
+              <button class="filter-chip" type="button" data-look="vivid-cool"><span class="thumb look-vivid-cool"><canvas data-filter-preview="vivid-cool" width="112" height="112"></canvas></span><span>Vivid Cool</span></button>
+              <button class="filter-chip" type="button" data-look="dramatic"><span class="thumb look-dramatic"><canvas data-filter-preview="dramatic" width="112" height="112"></canvas></span><span>Dramatic</span></button>
+              <button class="filter-chip" type="button" data-look="dramatic-warm"><span class="thumb look-dramatic-warm"><canvas data-filter-preview="dramatic-warm" width="112" height="112"></canvas></span><span>Dramatic Warm</span></button>
+              <button class="filter-chip" type="button" data-look="dramatic-cool"><span class="thumb look-dramatic-cool"><canvas data-filter-preview="dramatic-cool" width="112" height="112"></canvas></span><span>Dramatic Cool</span></button>
+              <button class="filter-chip" type="button" data-look="mono"><span class="thumb look-mono"><canvas data-filter-preview="mono" width="112" height="112"></canvas></span><span>B/W</span></button>
+              <button class="filter-chip" type="button" data-look="silvertone"><span class="thumb look-silvertone"><canvas data-filter-preview="silvertone" width="112" height="112"></canvas></span><span>Silvertone</span></button>
+              <button class="filter-chip" type="button" data-look="fade"><span class="thumb look-fade"><canvas data-filter-preview="fade" width="112" height="112"></canvas></span><span>Fade</span></button>
+              <button class="filter-chip" type="button" data-look="instant"><span class="thumb look-instant"><canvas data-filter-preview="instant" width="112" height="112"></canvas></span><span>Instant</span></button>
+              <button class="filter-chip" type="button" data-look="transfer"><span class="thumb look-transfer"><canvas data-filter-preview="transfer" width="112" height="112"></canvas></span><span>Transfer</span></button>
+              <button class="filter-chip" type="button" data-look="chrome"><span class="thumb look-chrome"><canvas data-filter-preview="chrome" width="112" height="112"></canvas></span><span>Chrome</span></button>
+              <button class="filter-chip" type="button" data-look="film"><span class="thumb look-film"><canvas data-filter-preview="film" width="112" height="112"></canvas></span><span>Film</span></button>
+              <button class="filter-chip" type="button" data-look="warm"><span class="thumb look-warm"><canvas data-filter-preview="warm" width="112" height="112"></canvas></span><span>Warm</span></button>
+              <button class="filter-chip" type="button" data-look="glow"><span class="thumb look-glow"><canvas data-filter-preview="glow" width="112" height="112"></canvas></span><span>Glow</span></button>
+              <button class="filter-chip" type="button" data-look="cool"><span class="thumb look-cool"><canvas data-filter-preview="cool" width="112" height="112"></canvas></span><span>Cool</span></button>
+              <button class="filter-chip" type="button" data-look="soft"><span class="thumb look-soft"><canvas data-filter-preview="soft" width="112" height="112"></canvas></span><span>Soft</span></button>
+              <button class="filter-chip" type="button" data-look="pink"><span class="thumb look-pink"><canvas data-filter-preview="pink" width="112" height="112"></canvas></span><span>Pink</span></button>
+              <button class="filter-chip" type="button" data-look="vintage"><span class="thumb look-vintage"><canvas data-filter-preview="vintage" width="112" height="112"></canvas></span><span>Vintage</span></button>
+              <button class="filter-chip" type="button" data-look="pop"><span class="thumb look-pop"><canvas data-filter-preview="pop" width="112" height="112"></canvas></span><span>Pop</span></button>
+              <button class="filter-chip" type="button" data-look="matte"><span class="thumb look-matte"><canvas data-filter-preview="matte" width="112" height="112"></canvas></span><span>Matte</span></button>
+              <button class="filter-chip" type="button" data-look="golden"><span class="thumb look-golden"><canvas data-filter-preview="golden" width="112" height="112"></canvas></span><span>Golden</span></button>
+              <button class="filter-chip" type="button" data-look="beauty"><span class="thumb look-beauty"><canvas data-filter-preview="beauty" width="112" height="112"></canvas></span><span>Beauty</span></button>
+            </div>
+            <label class="range-control" for="filterIntensity"><span>Intensity</span><output id="filterIntensityVal">100%</output><input type="range" id="filterIntensity" min="0" max="100" value="100"></label>
+            <div id="smoothSlot">
+              <div class="smooth-row" id="smoothControl">
+                <button class="smooth-icon" id="smoothToggle" type="button" aria-pressed="false" aria-label="Smooth skin">
+                  <span class="brush-chip" id="brushChip" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><path d="M9.2 11.2h.01M14.2 11.2h.01"/><path d="M9.4 14.2c.8.7 1.6 1 2.6 1s1.8-.3 2.6-1"/><path d="M17.5 5.2l.35.9.9.35-.9.35-.35.9-.35-.9-.9-.35.9-.35z"/></svg></span>
+                  <span>Smooth</span>
+                </button>
+                <label class="range-control" for="smooth"><span class="visually-hidden">Smooth amount</span><output id="smoothVal">0</output><input type="range" id="smooth" min="0" max="100" value="0"></label>
+              </div>
+              <div class="smooth-row" id="teethControl">
+                <button class="smooth-icon" id="teethToggle" type="button" aria-pressed="false" aria-label="Whiten teeth">
+                  <span>Teeth</span>
+                </button>
+                <label class="range-control" for="teeth"><span class="visually-hidden">Teeth whitening</span><output id="teethVal">0</output><input type="range" id="teeth" min="0" max="100" value="0"></label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet-panel" id="panelAdjust" hidden>
+          <div class="adjust-list">
+            <button class="adjust-auto" id="adjustAuto" type="button" aria-pressed="false">Auto</button>
+            <label class="range-control" for="adjustExposure"><span>Exposure</span><output id="adjustExposureVal">0</output><input type="range" id="adjustExposure" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustBrilliance"><span>Brilliance</span><output id="adjustBrillianceVal">0</output><input type="range" id="adjustBrilliance" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustHighlights"><span>Highlights</span><output id="adjustHighlightsVal">0</output><input type="range" id="adjustHighlights" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustShadows"><span>Shadows</span><output id="adjustShadowsVal">0</output><input type="range" id="adjustShadows" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustContrast"><span>Contrast</span><output id="adjustContrastVal">0</output><input type="range" id="adjustContrast" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustBrightness"><span>Brightness</span><output id="adjustBrightnessVal">0</output><input type="range" id="adjustBrightness" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustBlackPoint"><span>Black Point</span><output id="adjustBlackPointVal">0</output><input type="range" id="adjustBlackPoint" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustSaturation"><span>Saturation</span><output id="adjustSaturationVal">0</output><input type="range" id="adjustSaturation" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustVibrance"><span>Vibrance</span><output id="adjustVibranceVal">0</output><input type="range" id="adjustVibrance" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustWarmth"><span>Warmth</span><output id="adjustWarmthVal">0</output><input type="range" id="adjustWarmth" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustTint"><span>Tint</span><output id="adjustTintVal">0</output><input type="range" id="adjustTint" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustSharpness"><span>Sharpness</span><output id="adjustSharpnessVal">0</output><input type="range" id="adjustSharpness" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustDefinition"><span>Definition</span><output id="adjustDefinitionVal">0</output><input type="range" id="adjustDefinition" min="-100" max="100" value="0"></label>
+            <label class="range-control" for="adjustNoise"><span>Noise Reduction</span><output id="adjustNoiseVal">0</output><input type="range" id="adjustNoise" min="0" max="100" value="0"></label>
+            <label class="range-control" for="adjustVignette"><span>Vignette</span><output id="adjustVignetteVal">0</output><input type="range" id="adjustVignette" min="-100" max="100" value="0"></label>
+          </div>
+          <details class="more-tools" id="moreTools">
+            <summary>More tools</summary>
+            <div class="more-tools-body">
         <label class="range-control" for="enhance"><span>Enhance</span><output id="enhanceValue">100%</output><input type="range" id="enhance" min="70" max="150" value="100"></label>
         <button class="secondary-button" id="aiEnhance" type="button">AI Enhance</button>
         <label class="grid-setting">Canvas shape<select id="photoRatio"><option value="free">Original ratio</option><option value="id">ID portrait 4:5</option><option value="square">Square crop</option><option value="expand-square">Expand to square</option><option value="expand-portrait">Expand to portrait</option><option value="expand-story">Expand to story</option></select></label>
@@ -124,45 +201,179 @@
           <button class="secondary-button" id="batchExport" type="button" disabled>Export batch</button>
         </div>
         <label class="check-setting"><input id="timestampToggle" type="checkbox"> Add timestamp</label>
+            </div>
+          </details>
+        </div>
+        <nav class="editor-tabs" aria-label="Editor">
+          <button type="button" data-studio-tab="adjust">Adjust</button>
+          <button type="button" data-studio-tab="filters" aria-pressed="true">Filters</button>
+          <button type="button" data-studio-tab="crop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h12"/><path d="M18 21V9a3 3 0 0 0-3-3H3"/></svg>Crop</button>
+        </nav>
       </div>
     </section>
 
-    <section class="quick-tools" aria-label="Home quick tools">
-      <div class="quick-tool-grid">
-        <button class="tool-button" type="button" data-tool="Carousel-temp"><span class="tool-icon">▧</span><span>Carousel-temp</span></button>
-        <button class="tool-button" type="button" data-tool="Film Cam"><span class="tool-icon">◎</span><span>Film Cam</span></button>
-        <button class="tool-button" type="button" data-tool="Apple Mode"><span class="tool-icon">◉</span><span>Apple Mode</span></button>
-        <button class="tool-button" type="button" data-tool="AI video"><span class="tool-icon">▷</span><span>AI video</span></button>
-        <button class="tool-button" type="button" data-tool="Photo Studio"><span class="tool-icon">▣</span><span>Photo Studio</span></button>
-        <button class="tool-button" type="button" data-tool="Glow Cam"><span class="tool-icon">✧</span><span>Glow Cam</span></button>
-        <button class="tool-button" type="button" data-tool="Photo Strip"><span class="tool-icon">▤</span><span>Photo Strip</span></button>
-        <button class="tool-button" id="moreBtn" type="button"><span class="tool-icon">•••</span><span>More</span></button>
+    <section class="vibes-section home-section" aria-labelledby="faceDetailsTitle">
+      <h2 id="faceDetailsTitle">Face Details</h2>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card" type="button" data-effect="smooth-skin"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&h=480&q=70" alt="Smooth skin look"><span>SMOOTH SKIN</span></button>
+        <button class="vibe-card" type="button" data-effect="lipstick"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=70" alt="Lipstick look"><span>LIPSTICK</span></button>
+        <button class="vibe-card" type="button" data-effect="eyelashes"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&h=480&q=70" alt="Eyelash look"><span>EYELASHES</span></button>
+        <button class="vibe-card" type="button" data-effect="double-chin"><img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=360&h=480&q=70" alt="Jawline look"><span>DOUBLE CHIN</span></button>
+        <button class="vibe-card" type="button" data-effect="acne"><img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=360&h=480&q=70" alt="Clear skin look"><span>ACNE</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="portraitsTitle">
+      <h2 id="portraitsTitle">Example portraits</h2>
+      <p class="tool-note">Choose your photo, then tap a picture to apply that look to it.</p>
+      <div class="your-photo">
+        <button type="button" id="choosePhoto">Choose your photo</button>
+        <img id="yourPhotoThumb" alt="" hidden>
+        <p id="yourPhotoStatus">No photo selected.</p>
+      </div>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1548142813-c348350df52b?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1548142813-c348350df52b?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1496345875659-11f7dd282d1d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1496345875659-11f7dd282d1d?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1479936343636-73cdc5aae0c3?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1479936343636-73cdc5aae0c3?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1535295972055-1c762f4483e5?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1535295972055-1c762f4483e5?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1524502397800-2eeaad7c3fe5?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1524502397800-2eeaad7c3fe5?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1545167622-3a6ac756afa4?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1545167622-3a6ac756afa4?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1570158268183-d296b2892211?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1570158268183-d296b2892211?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
+        <button class="vibe-card" type="button" data-sample="https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&amp;fit=crop&amp;w=1200&amp;q=80"><img src="https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&amp;fit=crop&amp;w=360&amp;h=480&amp;q=70" alt="Example portrait"><span>Edit</span></button>
       </div>
     </section>
     <section class="vibes-section" aria-labelledby="vibesTitle">
       <h2 id="vibesTitle">Better Vibes</h2>
       <div class="vibes-slider" data-auto-slider>
-        <button class="vibe-card" type="button" data-ai="retouch" aria-label="AI Retouch">
-          <video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" poster="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&h=480&q=80" width="140" height="190" autoplay muted loop playsinline preload="auto"></video>
+        <button class="vibe-card" type="button" data-effect="ai-retouch" aria-label="AI Retouch">
+          <video src="https://download.samplelib.com/mp4/sample-5s.mp4" poster="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&h=480&q=80" width="140" height="190" autoplay muted loop playsinline webkit-playsinline preload="metadata"></video>
           <em class="ai-badge" aria-hidden="true">AI</em>
           <span>AI Retouch</span>
         </button>
-        <button class="vibe-card" type="button" data-ai="background" aria-label="AI BG Change">
-          <video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" poster="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=360&h=480&q=80" width="140" height="190" autoplay muted loop playsinline preload="auto"></video>
+        <button class="vibe-card" type="button" data-effect="ai-bg" aria-label="AI BG Change">
+          <video src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" poster="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=360&h=480&q=80" width="140" height="190" autoplay muted loop playsinline webkit-playsinline preload="metadata"></video>
           <em class="ai-badge" aria-hidden="true">AI</em>
           <span>AI BG Change</span>
         </button>
-        <button class="vibe-card" type="button" data-filter="cool"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=80" alt="Portrait beside a car"><span>RED CAR LIGHT</span></button>
-        <button class="vibe-card" type="button" data-filter="warm"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&h=480&q=80" alt="Golden-hour portrait"><span>GOLDEN HOUR</span></button>
+        <button class="vibe-card" type="button" data-effect="red-light"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=360&h=480&q=80" alt="Portrait beside a car"><span>RED CAR LIGHT</span></button>
+        <button class="vibe-card" type="button" data-effect="golden-hour"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=360&h=480&q=80" alt="Golden-hour portrait"><span>GOLDEN HOUR</span></button>
       </div>
     </section>
-    <section class="vibes-section" aria-labelledby="nextLevelTitle">
+    <section class="vibes-section home-section" aria-labelledby="nextLevelTitle">
       <h2 id="nextLevelTitle">Next-Level Editing</h2>
       <div class="vibes-slider" data-auto-slider>
-        <button class="vibe-card" type="button" data-filter="glow"><img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=360&h=480&q=80" alt="Soft portrait close-up"><span>SOFT FOCUS</span></button>
-        <button class="vibe-card" type="button" data-filter="warm"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=360&h=480&q=80" alt="Portrait in autumn tones"><span>WARM AUTUMN</span></button>
-        <button class="vibe-card" type="button" data-filter="mono"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&h=480&q=80&sat=-100" alt="Black-and-white portrait"><span>MONOCHROME</span></button>
-        <button class="vibe-card" type="button" data-filter="film"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=80" alt="Film-inspired portrait"><span>GRAIN & GLOW</span></button>
+        <button class="vibe-card" type="button" data-effect="slim"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=360&h=480&q=70" alt="Slim look"><i class="compare-line" aria-hidden="true"></i><span>Slim</span></button>
+        <button class="vibe-card" type="button" data-effect="remover"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=360&h=480&q=70" alt="Remove people"><i class="compare-line" aria-hidden="true"></i><span>Remover-People</span></button>
+        <button class="vibe-card" type="button" data-effect="body"><img src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=360&h=480&q=70" alt="Body tuner"><i class="compare-line" aria-hidden="true"></i><span>Body Tuner</span></button>
+        <button class="vibe-card" type="button" data-effect="removal"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=360&h=480&q=70" alt="Removal"><i class="compare-line" aria-hidden="true"></i><span>Removal</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="outfitsTitle">
+      <h2 id="outfitsTitle">Trending Outfits</h2>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=360&h=480&q=70" alt="Custom outfit one"><span>Custom Outfit</span></button>
+        <button class="vibe-card" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=360&h=480&q=70" alt="Custom outfit two"><span>Custom Outfit</span></button>
+        <button class="vibe-card" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=360&h=480&q=70" alt="Custom outfit three"><span>Custom Outfit</span></button>
+        <button class="vibe-card" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=360&h=480&q=70" alt="Custom outfit four"><span>Custom Outfit</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="trendingTitle">
+      <h2 id="trendingTitle">Trending Now</h2>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card" type="button" data-tool="AI Filter"><img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&h=480&q=70" alt="VI look"><span>VI</span></button>
+        <button class="vibe-card" type="button" data-tool="Filters"><img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=360&h=480&q=70" alt="Paper craft look"><span>PAPER CRAFT</span></button>
+        <button class="vibe-card" type="button" data-tool="Filters"><img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=360&h=480&q=70" alt="Retro kitchen look"><span>RETRO KITCHEN</span></button>
+        <button class="vibe-card" type="button" data-tool="Filters"><img src="https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=360&h=480&q=70" alt="Story look"><span>STORY</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="inkTitle">
+      <h2 id="inkTitle">The Ink Lab</h2>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card card-square" type="button" data-tool="Text"><img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&h=400&q=70" alt="Custom text tattoo"><span>Custom Text Tattoo</span></button>
+        <button class="vibe-card card-square" type="button" data-tool="Brushes"><img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&h=400&q=70" alt="DIY ink"><span>DIY</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="looksTitle">
+      <h2 id="looksTitle">Men's Looksmaxing</h2>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card" type="button" data-tool="Hair"><img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=360&h=480&q=70" alt="Hot nerd look"><span>Hot Nerd</span></button>
+        <button class="vibe-card" type="button" data-tool="ID Photo"><img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=360&h=480&q=70" alt="Dating app photo"><span>Dating App Pfp</span></button>
+        <button class="vibe-card" type="button" data-tool="AI Filter"><img src="https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=360&h=480&q=70" alt="Mod look"><span>Mod</span></button>
+        <button class="vibe-card" type="button" data-tool="Hair"><img src="https://images.unsplash.com/photo-1504257432389-52343af06ae3?auto=format&fit=crop&w=360&h=480&q=70" alt="Hairstyles"><span>Hairstyles</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="retouchTitle">
+      <h2 id="retouchTitle">One Tap Retouch</h2>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card" type="button" data-tool="Retouch"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&h=480&q=70" alt="Firming"><span>FIRMING</span></button>
+        <button class="vibe-card" type="button" data-tool="Face Volume"><img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=360&h=480&q=70" alt="Deep contour"><span>DEEP CONTOUR</span></button>
+        <button class="vibe-card" type="button" data-tool="AI Filter"><img src="https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&w=360&h=480&q=70" alt="Sunkissed"><span>SUNKISSED</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="pfpTitle">
+      <h2 id="pfpTitle">PFP Maker</h2>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card card-square" type="button" data-tool="ID Photo"><img src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=400&h=400&q=70" alt="ID photo outfit change"><span>ID Photo Outfit Change</span></button>
+        <button class="vibe-card card-square" type="button" data-tool="Outfit"><img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=400&h=400&q=70" alt="Outfit change"><span>Outfit Change</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="carouselTitle">
+      <div class="section-head"><h2 id="carouselTitle">Your Carousel Templates</h2><button class="more-link" type="button" data-open-tools>More &gt;</button></div>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card card-square" type="button" data-tool="Photo Grid"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&h=400&q=70" alt="Carousel template one"><span>Carousel</span></button>
+        <button class="vibe-card card-square" type="button" data-tool="Collage"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&h=400&q=70" alt="Carousel template two"><span>Carousel</span></button>
+        <button class="vibe-card card-square" type="button" data-tool="Photo Grid"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&h=400&q=70" alt="Carousel template three"><span>Carousel</span></button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" aria-labelledby="boothTitle">
+      <h2 id="boothTitle">Vintage Photobooth</h2>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card card-tall card-booth" type="button" data-tool="Photo Strip" aria-label="Vintage photo strip">
+          <div class="booth-frames">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=280&h=180&q=70" alt="">
+            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=280&h=180&q=70" alt="">
+            <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=280&h=180&q=70" alt="">
+          </div>
+          <span>PHOTO STRIP</span>
+        </button>
+        <button class="vibe-card card-tall card-booth" type="button" data-tool="Photobooth" aria-label="Vintage photobooth">
+          <div class="booth-frames">
+            <img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=280&h=180&q=70" alt="">
+            <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=280&h=180&q=70" alt="">
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=280&h=180&q=70" alt="">
+          </div>
+          <span>PHOTOBOOTH</span>
+        </button>
+      </div>
+    </section>
+    <section class="vibes-section home-section" id="templatesSection" aria-labelledby="templatesTitle">
+      <div class="section-head"><h2 id="templatesTitle">Templates</h2><button class="more-link" type="button" data-open-tools>More &gt;</button></div>
+      <div class="vibes-slider" data-auto-slider>
+        <button class="vibe-card" type="button" data-tool="Photo Studio"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=360&h=480&q=70" alt="Studio template"><span>Studio</span></button>
+        <button class="vibe-card" type="button" data-tool="Film Cam"><img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=360&h=480&q=70" alt="Film template"><span>Film</span></button>
+        <button class="vibe-card" type="button" data-tool="Glow Cam"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&h=480&q=70" alt="Glow template"><span>Glow</span></button>
+        <button class="vibe-card" type="button" data-tool="Collage"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=360&h=480&q=70" alt="Collage template"><span>Collage</span></button>
       </div>
     </section>
     <section class="grid-studio" id="gridStudio" aria-labelledby="gridTitle" hidden>
@@ -203,6 +414,11 @@
       </div>
       <canvas id="videoCanvas" hidden></canvas>
     </section>
+    <section class="home-note" aria-labelledby="publisherTitle">
+      <h2 id="publisherTitle">A free editor from Jalangbam</h2>
+      <p>EditsBeauty is published by StISLA2021 in Jalangbam, The Gambia. It edits a photo in this browser. The picture is not uploaded to an EditsBeauty server, and it is dropped when you leave the page. Save writes a JPEG to your device.</p>
+      <p>Start Editing opens your photo. Face Details and the filter looks paint on the canvas. Adjust holds Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. B/W is in Filters. Example portraits opens a different person in Adjust. The longer explanation of each look is on <a href="about.html">About Us</a>. Questions about privacy, the editor, or a photo are answered on <a href="faq.html">FAQ</a> and <a href="contact.html">Contact Us</a>.</p>
+    </section>
   </main>
 
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
@@ -210,32 +426,228 @@
     <div class="sheet-header"><div><p class="eyebrow">EDITSBEAUTY</p><h2 id="toolsTitle">Tools</h2></div><button class="icon-button" id="closeTools" type="button" aria-label="Close tools">×</button></div>
     <div class="tool-categories">
       <section class="tool-category"><h3>Trendy</h3><div class="tool-grid">
-        <button class="tool-button" data-tool="Fan Merch"><span class="tool-icon">✧</span><span>Fan Merch</span></button><button class="tool-button" data-tool="ChatEdit"><span class="tool-icon">▢</span><span>ChatEdit</span></button><button class="tool-button" data-tool="Photo Strip"><span class="tool-icon">▤</span><span>Photo Strip</span></button><button class="tool-button" data-tool="Outfit"><span class="tool-icon">◇</span><span>Outfit</span></button>
+        <button class="tool-button" data-tool="Fan Merch"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.6 4.2L18 9l-4.4 1.8L12 15l-1.6-4.2L6 9l4.4-1.8L12 3z"/><path d="M19 14l.7 1.8 1.8.7-1.8.7L19 19l-.7-1.8-1.8-.7 1.8-.7L19 14z"/></svg></span><span>Fan Merch</span></button>
+        <button class="tool-button" data-tool="ChatEdit"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span>ChatEdit</span></button>
+        <button class="tool-button" data-tool="Photo Strip"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="6" height="14" rx="1"/><rect x="11" y="5" width="4" height="14" rx="1"/><rect x="17" y="5" width="4" height="14" rx="1"/></svg></span><span>Photo Strip</span></button>
+        <button class="tool-button" data-tool="Outfit"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4l4 3 4-3 4 3v13H4V7l4-3z"/><path d="M9 21v-6h6v6"/></svg></span><span>Outfit</span></button>
       </div></section>
       <section class="tool-category"><h3>Edits</h3><div class="tool-grid">
-        <button class="tool-button" data-tool="Collage"><span class="tool-icon">▦</span><span>Collage</span></button><button class="tool-button" id="enhanceTool" data-tool="Enhance"><span class="tool-icon">HD</span><span>Enhance</span></button><button class="tool-button" id="cutoutTool" data-tool="Cutout"><span class="tool-icon">✂</span><span>Cutout</span></button><button class="tool-button" data-tool="Remover"><span class="tool-icon">⌁</span><span>Remover</span></button>
-        <button class="tool-button" data-tool="ID Photo"><span class="tool-icon">▣</span><span>ID Photo</span></button><button class="tool-button" id="aiFilterTool" data-tool="AI Filter"><span class="tool-icon">✦</span><span>AI Filter</span></button><button class="tool-button" data-tool="Video Editing"><span class="tool-icon">▷</span><span>Video Editing</span></button>
+        <button class="tool-button" data-tool="Collage"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg></span><span>Collage</span></button>
+        <button class="tool-button" id="enhanceTool" data-tool="Enhance"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><em class="hd-badge">HD</em></span><span>Enhance</span></button>
+        <button class="tool-button" id="cutoutTool" data-tool="Cutout"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.1M14.5 14.5L20 20M8.1 8.9L12 12"/></svg></span><span>Cutout</span></button>
+        <button class="tool-button" data-tool="Remover"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h8M14 5l5 5-8 8H6v-5l8-8z"/></svg></span><span>Remover</span></button>
+        <button class="tool-button" data-tool="ID Photo"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="2"/><path d="M14 10h4M14 14h4"/></svg></span><span>ID Photo</span></button>
+        <button class="tool-button" id="aiFilterTool" data-tool="AI Filter"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3zM6 13l.7 2 2 .7-2 .7L6 18.4 5.3 16.4 3.3 15.7l2-.7L6 13z"/></svg></span><span>AI Filter</span></button>
+        <button class="tool-button" data-tool="Video Editing"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg></span><span>Video Editing</span></button>
       </div></section>
       <section class="tool-category"><h3>Cameras</h3><div class="tool-grid">
-        <button class="tool-button" data-tool="Photobooth"><span class="tool-icon">▤</span><span>Photobooth</span></button><button class="tool-button" data-tool="Film Cam"><span class="tool-icon">◎</span><span>Film Cam</span></button><button class="tool-button" data-tool="Apple Mode"><span class="tool-icon">◉</span><span>Apple Mode</span></button><button class="tool-button" data-tool="Glow Cam"><span class="tool-icon">✧</span><span>Glow Cam</span></button><button class="tool-button" data-tool="Timestamp Cam"><span class="tool-icon">◷</span><span>Timestamp Cam</span></button>
+        <button class="tool-button" data-tool="Photobooth"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h8"/></svg></span><span>Photo<wbr>booth</span></button>
+        <button class="tool-button" data-tool="Film Cam"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h3l2-2h6l2 2h3v12H4z"/><circle cx="12" cy="13" r="3"/></svg></span><span>Film Cam</span></button>
+        <button class="tool-button" data-tool="Apple Mode"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg></span><span>Apple Mode</span></button>
+        <button class="tool-button" data-tool="Glow Cam"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg></span><span>Glow Cam</span></button>
+        <button class="tool-button" data-tool="Timestamp Cam"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></span><span>Timestamp Cam</span></button>
       </div></section>
       <section class="tool-category"><h3>Portraits</h3><div class="tool-grid">
-        <button class="tool-button" id="retouchTool" data-tool="Retouch"><span class="tool-icon">◌</span><span>Retouch</span></button><button class="tool-button" data-tool="Body Tuner"><span class="tool-icon">↔</span><span>Body Tuner</span></button><button class="tool-button" data-tool="Hair"><span class="tool-icon">✦</span><span>Hair</span></button><button class="tool-button" data-tool="Video Retouch"><span class="tool-icon">▷</span><span>Video Retouch</span></button>
-        <button class="tool-button" data-tool="Face Volume"><span class="tool-icon">◉</span><span>Face Volume</span></button><button class="tool-button" id="narrowTool" data-tool="Narrow"><span class="tool-icon">👃</span><span>Narrow</span></button><button class="tool-button" data-tool="Augmentation"><span class="tool-icon">☺</span><span>Augmentation</span></button>
+        <button class="tool-button" id="retouchTool" data-tool="Retouch"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="12.5" r="6.2"/><path d="M9 11.2h.01M13 11.2h.01"/><path d="M8.8 14.4c.7.7 1.4 1 2.2 1s1.5-.3 2.2-1"/><path d="M17.2 5.2l.45 1.15 1.15.45-1.15.45-.45 1.15-.45-1.15-1.15-.45 1.15-.45z"/><path d="M5.2 7.2l.3.75.75.3-.75.3-.3.75-.3-.75-.75-.3.75-.3z"/></svg></span><span>Retouch</span></button>
+        <button class="tool-button" id="teethTool" data-tool="Teeth"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4c1.2 1.4 1.6 3 1.4 4.6C9.2 10.2 8 11 8 13.2 8 16 9.2 20 10.4 20c.8 0 1.1-1.2 1.6-1.2s.8 1.2 1.6 1.2 1.1-1.2 1.6-1.2.8 1.2 1.6 1.2c1.2 0 2.4-4 2.4-6.8 0-2.2-1.2-3-1.4-4.6C17.6 7 18 5.4 19.2 4"/></svg></span><span>Teeth</span></button>
+        <button class="tool-button" data-tool="Body Tuner"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2"/><path d="M8 22l2-7 2 3 2-3 2 7M7 10h10l-1 4H8z"/></svg></span><span>Body Tuner</span></button>
+        <button class="tool-button" data-tool="Hair"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20c0-6 1-10 4-14 3 4 4 8 4 14"/><path d="M6 16c2 1 4 1 6 0s4-1 6 0"/></svg></span><span>Hair</span></button>
+        <button class="tool-button" data-tool="Video Retouch"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10l5-2v8l-5-2"/><path d="M7 12h4"/></svg></span><span>Video Retouch</span></button>
+        <button class="tool-button" data-tool="Face Volume"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M9 15c1 .8 2 1.2 3 1.2s2-.4 3-1.2"/><path d="M9 10h.01M15 10h.01"/></svg></span><span>Face Volume</span></button>
+        <button class="tool-button" id="narrowTool" data-tool="Narrow"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5c2.4 2.6 3.2 5.2 3.2 7.4 0 2.5-1.3 4.1-3.2 4.1s-3.2-1.6-3.2-4.1c0-2.2.8-4.8 3.2-7.4z"/><path d="M9.8 15.2c-1 .6-1.6 1.5-1.4 2.5"/><path d="M14.2 15.2c1 .6 1.6 1.5 1.4 2.5"/><path d="M1.6 12h3.5"/><path d="M3.8 10.5 5.3 12 3.8 13.5"/><path d="M22.4 12h-3.5"/><path d="M20.2 10.5 18.7 12 20.2 13.5"/></svg></span><span>Narrow</span></button>
+        <button class="tool-button" data-tool="Augmentation"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="12" r="7"/><path d="M18 8v6M15 11h6"/></svg></span><span>Augmentation</span></button>
       </div></section>
       <section class="tool-category"><h3>Design</h3><div class="tool-grid">
-        <button class="tool-button" data-tool="Brushes"><span class="tool-icon">◍</span><span>Brushes</span></button><button class="tool-button" data-tool="Stickers"><span class="tool-icon">▣</span><span>Stickers</span></button><button class="tool-button" data-tool="Background"><span class="tool-icon">▨</span><span>Background</span></button><button class="tool-button" data-tool="Text"><span class="tool-icon">Aa</span><span>Text</span></button><button class="tool-button" data-tool="Filters"><span class="tool-icon">●</span><span>Filters</span></button>
+        <button class="tool-button" data-tool="Brushes"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-8 8H6v-6l8-8z"/><path d="M5 21c1.5-1 2-2 2-3"/></svg></span><span>Brushes</span></button>
+        <button class="tool-button" data-tool="Stickers"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><span>Stickers</span></button>
+        <button class="tool-button" data-tool="Background"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 16l-5-4-8 6"/></svg></span><span>Background</span></button>
+        <button class="tool-button" data-tool="Text"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6V4h14v2M12 4v16M8 20h8"/></svg></span><span>Text</span></button>
+        <button class="tool-button" data-tool="Filters"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg></span><span>Filters</span></button>
+        <button class="tool-button" data-tool="Crop"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h12"/><path d="M18 21V9a3 3 0 0 0-3-3H3"/></svg></span><span>Crop</span></button>
       </div></section>
       <section class="tool-category"><h3>Others</h3><div class="tool-grid">
-        <button class="tool-button" data-tool="AI Duo"><span class="tool-icon">♧</span><span>AI Duo</span></button><button class="tool-button" id="aiVideoTool" data-tool="AI video"><span class="tool-icon">▷</span><span>AI video</span></button><button class="tool-button" id="photoStudioTool" data-tool="Photo Studio"><span class="tool-icon">▣</span><span>Photo Studio</span></button><button class="tool-button" data-tool="Video Screenshot"><span class="tool-icon">▣</span><span>Video Screenshot</span></button>
-        <button class="tool-button" data-tool="Background Expansion"><span class="tool-icon">⤢</span><span>Background Expansion</span></button><button class="tool-button" data-tool="Batch Edit"><span class="tool-icon">▧</span><span>Batch Edit</span></button><button class="tool-button" data-tool="Photo Grid"><span class="tool-icon">▦</span><span>Photo Grid</span></button>
+        <button class="tool-button" data-tool="AI Duo"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c1-3 3-4 5-4s4 1 5 4M13 19c.6-2 2-3 3.5-3s2.6.8 3.5 3"/></svg></span><span>AI Duo</span></button>
+        <button class="tool-button" id="aiVideoTool" data-tool="AI video"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l6 3-6 3z"/></svg></span><span>AI Video</span></button>
+        <button class="tool-button" id="photoStudioTool" data-tool="Photo Studio"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h4l2-2h4l2 2h4v11H4z"/><circle cx="12" cy="13" r="3"/></svg></span><span>Photo Studio</span></button>
+        <button class="tool-button" data-tool="Video Screenshot"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg></span><span>Video Screenshot</span></button>
+        <button class="tool-button" data-tool="Background Expansion"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></span><span>Background Expansion</span></button>
+        <button class="tool-button" data-tool="Batch Edit"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h12v12H8z"/><path d="M4 10V4h12"/></svg></span><span>Batch Edit</span></button>
       </div></section>
     </div>
     <button class="sheet-start" id="sheetStart" type="button"><span class="sparkle">✦</span> Start Editing</button>
   </section>
 
+  <section class="crop-screen" id="cropScreen" hidden>
+    <header class="studio-bar crop-bar">
+      <button class="pill-btn" id="cropCancel" type="button">Cancel</button>
+      <button class="auto-btn" id="cropAuto" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 12h3l2-5 3 10 2-5h6"/></svg>AUTO</button>
+      <button class="pill-btn pill-dark" id="cropDone" type="button">Done</button>
+    </header>
+    <div class="crop-icon-row">
+      <button type="button" id="cropStraightenIcon" aria-label="Auto straighten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 16c4-8 12-8 16 0"/><path d="M4 16h16"/></svg></button>
+      <button type="button" id="cropRotate" aria-label="Rotate 90 degrees"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
+      <button type="button" id="cropAspect" aria-label="Aspect ratio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="6" width="16" height="12" rx="1"/><path d="M9 6V4M15 6V4M9 20v-2M15 20v-2"/></svg></button>
+      <button type="button" id="cropMore" aria-label="More crop options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/></svg></button>
+    </div>
+    <div class="crop-stage" id="cropStage">
+      <div class="crop-wrap" id="cropWrap">
+        <canvas id="cropCanvas" aria-label="Crop preview"></canvas>
+        <div class="crop-frame" id="cropFrame">
+          <span data-handle="nw"></span><span data-handle="n"></span><span data-handle="ne"></span>
+          <span data-handle="e"></span><span data-handle="se"></span><span data-handle="s"></span>
+          <span data-handle="sw"></span><span data-handle="w"></span>
+        </div>
+      </div>
+    </div>
+    <div class="crop-dials">
+      <div class="dial-buttons">
+        <button type="button" data-dial="straighten" aria-pressed="true" aria-label="Straighten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 15c4-7 12-7 16 0"/><path d="M12 8v8"/></svg></button>
+        <button type="button" data-dial="vertical" aria-label="Vertical perspective"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M8 4h8L20 20H4z"/></svg></button>
+        <button type="button" data-dial="horizontal" aria-label="Horizontal perspective"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 8v8l16 4V4z"/></svg></button>
+      </div>
+      <div class="dial-scale" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><i></i><i></i><i></i><i></i></div>
+      <label class="range-control dial-range"><span class="visually-hidden">Angle</span><output id="cropAngleVal">0°</output><input type="range" id="cropAngle" min="-20" max="20" value="0"></label>
+    </div>
+    <div class="crop-menu" id="aspectMenu" hidden>
+      <button type="button" data-aspect="original">Original</button>
+      <button type="button" data-aspect="free">Freeform</button>
+      <button type="button" data-aspect="1">Square</button>
+      <button type="button" data-aspect="0.5625">9:16</button>
+      <button type="button" data-aspect="1.7778">16:9</button>
+      <button type="button" data-aspect="0.8">4:5</button>
+      <button type="button" data-aspect="1.25">5:4</button>
+      <button type="button" data-aspect="1.3333">4:3</button>
+      <button type="button" data-aspect="1.5">3:2</button>
+    </div>
+    <div class="crop-menu" id="cropMoreMenu" hidden>
+      <button type="button" id="flipHorizontal">Flip horizontal</button>
+      <button type="button" id="flipVertical">Flip vertical</button>
+      <button type="button" id="cropUndo">Undo</button>
+    </div>
+    <nav class="editor-tabs" aria-label="Editor">
+      <button type="button" data-studio-tab="adjust">Adjust</button>
+      <button type="button" data-studio-tab="filters">Filters</button>
+      <button type="button" data-studio-tab="crop" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h12"/><path d="M18 21V9a3 3 0 0 0-3-3H3"/></svg>Crop</button>
+    </nav>
+  </section>
+
+  <section class="portrait-screen" id="retouchScreen" hidden>
+    <header class="portrait-top">
+      <button class="portrait-back" id="retouchBack" type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <h2>Retouch</h2>
+    </header>
+    <div class="portrait-stage" id="retouchStage">
+      <span class="brush-ring" id="brushRing" hidden></span>
+    </div>
+    <footer class="portrait-bottom">
+      <div class="brush-preview-row" id="smoothMount"></div>
+      <div class="portrait-actions">
+        <button class="secondary-button" id="retouchCancel" type="button">Cancel</button>
+        <button class="primary-button" id="retouchApply" type="button">Apply</button>
+      </div>
+    </footer>
+  </section>
+  <section class="portrait-screen" id="narrowScreen" hidden>
+    <header class="portrait-top">
+      <button class="portrait-back" id="narrowBack" type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <h2>Narrow Nose</h2>
+    </header>
+    <div class="portrait-stage" id="narrowStage">
+      <svg class="landmark-overlay" id="noseLandmarks" aria-hidden="true"></svg>
+    </div>
+    <footer class="portrait-bottom">
+      <p class="face-detection-status" id="faceDetectionStatus" aria-live="polite">Face detection runs locally when MediaPipe is available.</p>
+      <label class="range-control" for="nose"><span>Narrow Nose</span><output id="noseVal">0</output><input type="range" id="nose" min="0" max="50" value="0"></label>
+      <div class="portrait-actions">
+        <button class="secondary-button" id="narrowCancel" type="button">Cancel</button>
+        <button class="primary-button" id="narrowApply" type="button">Apply</button>
+      </div>
+    </footer>
+  </section>
+
+  <nav class="bottom-nav" aria-label="Main">
+    <button id="navHome" type="button" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg></button>
+    <button class="nav-camera" id="navCamera" type="button" aria-label="Camera"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+    <button id="navTemplates" type="button" aria-label="Templates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/></svg></button>
+  </nav>
+  <section class="camera-view" id="cameraView" hidden>
+    <video id="cameraVideo" autoplay muted playsinline webkit-playsinline></video>
+    <div class="camera-top">
+      <button class="camera-icon-button" id="cameraClose" type="button" aria-label="Close camera"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="camera-icon-button" id="cameraFlip" type="button" aria-label="Flip camera"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8a8 8 0 0 1 14-2M20 16a8 8 0 0 1-14 2"/><path d="M16 3l2 3-3 1M8 21l-2-3 3-1"/></svg></button>
+    </div>
+    <div class="camera-bottom">
+      <div class="camera-modes" role="group" aria-label="Camera mode">
+        <button type="button" data-camera-mode="portrait" aria-pressed="true">Portrait</button>
+        <button type="button" data-camera-mode="live" aria-pressed="false">Live</button>
+        <button type="button" data-camera-mode="video" aria-pressed="false">Video</button>
+      </div>
+      <button class="camera-shutter" id="cameraCapture" type="button" aria-label="Capture photo"><span></span></button>
+      <p class="camera-status" id="cameraStatus">Portrait</p>
+    </div>
+    <div class="camera-fallback" id="cameraFallback" hidden>
+      <p>Camera permission was denied. Upload a photo instead.</p>
+      <label class="primary-button" for="upload">Upload photo</label>
+    </div>
+  </section>
+
+  <section class="guide-panel" id="guidePanel" hidden>
+    <div class="guide-card" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+      <header class="guide-bar">
+        <h2 id="guideTitle">AI guide</h2>
+        <div class="guide-actions">
+          <button type="button" id="guideClear">Delete chat</button>
+          <button type="button" id="guideClose">Close</button>
+        </div>
+      </header>
+      <div class="guide-drop" id="guideDrop">
+        <img id="guideThumb" alt="" hidden>
+        <p id="guideDropText">Drop your photo here, then tell me the edit or the background you want.</p>
+        <label class="guide-file" for="guidePhoto">Choose photo</label>
+        <input id="guidePhoto" type="file" accept="image/*" hidden>
+      </div>
+      <div class="guide-log" id="guideLog"></div>
+      <div class="guide-prompts">
+        <button type="button" data-guide-prompt="Edit my photo">Edit my photo</button>
+        <button type="button" data-guide-prompt="Brighten the lighting">Brighten the lighting</button>
+        <button type="button" data-guide-prompt="Smooth my skin">Smooth my skin</button>
+        <button type="button" data-guide-prompt="Make it vivid">Make it vivid</button>
+        <button type="button" data-guide-prompt="Change the background to a garden">Garden background</button>
+        <button type="button" data-guide-prompt="How do I save?">How do I save?</button>
+      </div>
+      <form class="guide-form" id="guideForm">
+        <label class="visually-hidden" for="guideInput">Ask the guide to use a tool</label>
+        <input id="guideInput" type="text" maxlength="160" placeholder="Ask AI to edit the photo" autocomplete="off">
+        <button type="submit">Ask</button>
+      </form>
+    </div>
+  </section>
   <script type="module" src="./menu.ts"></script>
   <script type="module" src="./app.ts"></script>
-  <footer class="site-footer"><span>Copyright © StISLA2021</span></footer>
+  <section class="home-note" id="feedback">
+    <h2>Feedback</h2>
+    <p>Tell StISLA2021 what should work better. Send opens your email app and addresses the message to <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a>. The note is not stored on this website.</p>
+    <form class="contact-form" id="feedbackForm">
+      <label for="feedbackName">Name<input id="feedbackName" name="name" type="text" required autocomplete="name"></label>
+      <label for="feedbackEmail">Email<input id="feedbackEmail" name="email" type="email" required autocomplete="email"></label>
+      <label for="feedbackMessage">What happened<textarea id="feedbackMessage" name="message" required placeholder="Which tool, and what you expected"></textarea></label>
+      <button type="submit">Send feedback</button>
+      <p id="feedbackStatus" aria-live="polite"></p>
+    </form>
+  </section>
+  <footer class="site-footer">
+    <nav aria-label="Site">
+      <a href="index.html">Home</a>
+      <a href="about.html">About Us</a>
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms.html">Terms and Conditions</a>
+      <a href="index.html#feedback">Feedback</a>
+      <a href="contact.html">Contact Us</a>
+      <a href="faq.html">FAQ</a>
+    </nav>
+    <p>EditsBeauty is published by StISLA2021 in Jalangbam, The Gambia.</p>
+    <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a>
+    <span>Copyright © StISLA2021</span>
+  </footer>
 </body>
 </html>

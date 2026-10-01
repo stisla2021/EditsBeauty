@@ -1,38 +1,98 @@
 <!DOCTYPE html>
 <!-- Copyright (c) StISLA2021 -->
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
   <title>Settings - EditsBeauty</title>
-  <link rel="icon" type="image/png" sizes="192x192" href="logo-192.png">
+  <meta name="description" content="Settings for EditsBeauty: resolution, cache, and links to About and the FAQ.">
+  <link rel="canonical" href="https://editsbeauty.vercel.app/settings">
+  <meta name="robots" content="noindex">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="EditsBeauty">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo-192.png">
+  <link rel="apple-touch-icon" href="images/logo-192.png">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <nav class="navbar">
-    <a class="logo" href="index.html"><span class="brand-mark brand-mark-small" aria-hidden="true">e</span><span>EditsBeauty</span></a>
-    <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
-    <ul class="nav-links" id="navLinks">
-      <li><a href="about.html">About</a></li>
-      <li><a href="privacy.html">Privacy</a></li>
-      <li><a href="settings.html" class="active">Settings</a></li>
-    </ul>
-  </nav>
-
-  <main class="container page">
-    <p class="eyebrow">PREFERENCES</p>
+<body class="ios-settings">
+  <header class="ios-header">
+    <a class="ios-back" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</a>
     <h1>Settings</h1>
-    <div class="theme-setting">
-      <div><h2>Appearance</h2><p>Follow your device automatically, or choose a theme.</p></div>
-      <div class="theme-options" role="group" aria-label="Color theme">
-        <button class="theme-option" id="systemTheme" type="button" aria-pressed="true">System</button>
-        <button class="theme-option" id="lightTheme" type="button" aria-pressed="false">Light</button>
-        <button class="theme-option" id="darkTheme" type="button" aria-pressed="false">Dark</button>
+    <span></span>
+  </header>
+  <main>
+    <div class="ios-group">
+      <div class="ios-row">
+        <span>Save to EditsBeauty Album</span>
+        <button class="ios-switch" id="saveAlbum" type="button" role="switch" aria-checked="true" aria-label="Save to EditsBeauty Album"></button>
       </div>
     </div>
+    <h2 class="ios-section">Other Settings</h2>
+    <div class="ios-group">
+      <button class="ios-row" id="resolutionRow" type="button">
+        <span class="ios-copy">Image Resolution<small>Compression limit for imported images</small></span>
+        <span class="ios-value"><span id="resolutionValue">High</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <button class="ios-row" id="liveRow" type="button">
+        <span class="ios-copy">Live Photo editing format<small>Choose a format each time you edit a Live Photo.</small></span>
+        <span class="ios-value"><span id="liveValue">Ask every time</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <div class="ios-row">
+        <span class="ios-copy">Sticker Storage Optimization<small>Automatically remove stickers that you haven't been used in the past two weeks.</small></span>
+        <button class="ios-switch" id="stickerOptimize" type="button" role="switch" aria-checked="false" aria-label="Sticker Storage Optimization"></button>
+      </div>
+      <div class="ios-row">
+        <span class="ios-copy">Use HEIC Format<small>Save more than 85% of storage space when saving selfies and retouching photos.</small></span>
+        <button class="ios-switch" id="heicFormat" type="button" role="switch" aria-checked="true" aria-label="Use HEIC Format"></button>
+      </div>
+    </div>
+    <h2 class="ios-section">More</h2>
+    <div class="ios-group">
+      <button class="ios-row" id="languageRow" type="button">
+        <span>Languages</span>
+        <span class="ios-value"><span id="languageValue">English</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <button class="ios-row" id="clearCache" type="button">
+        <span>Clear Cache</span>
+        <span class="ios-value" id="cacheSize">0 B</span>
+      </button>
+      <a class="ios-row" href="about.html">
+        <span>About</span>
+        <svg class="ios-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+      <a class="ios-row" href="faq.html">
+        <span>FAQ</span>
+        <svg class="ios-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+    <p class="ios-version">EditsBeauty V1.0.0</p>
   </main>
-
+  <div class="confirm-dialog" id="clearDialog" hidden>
+    <div class="confirm-card" role="dialog" aria-labelledby="clearTitle">
+      <h2 id="clearTitle">Clear Cache?</h2>
+      <p>This will remove temporary files but keep your saved photos.</p>
+      <div class="confirm-actions">
+        <button id="clearCancel" type="button">Cancel</button>
+        <button id="clearConfirm" type="button">Clear</button>
+      </div>
+    </div>
+  </div>
+  <footer class="site-footer">
+    <nav aria-label="Site">
+      <a href="index.html">Home</a>
+      <a href="about.html">About Us</a>
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms.html">Terms and Conditions</a>
+      <a href="contact.html">Contact Us</a>
+      <a href="faq.html">FAQ</a>
+    </nav>
+    <p>EditsBeauty is published by StISLA2021 in Jalangbam, The Gambia.</p>
+    <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a>
+    <span>Copyright © StISLA2021</span>
+  </footer>
   <script type="module" src="./menu.ts"></script>
-  <footer class="site-footer"><span>Copyright © StISLA2021</span></footer>
 </body>
 </html>
