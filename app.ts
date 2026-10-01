@@ -1,5 +1,5 @@
 // Copyright (c) StISLA2021
-import { liveEffectsActive, liveRecordStream, liveStill, publishStillLandmarks, startLivePreview, stopLivePreview } from './camera-live';
+import { ensureFaceMeshScript, liveEffectsActive, liveRecordStream, liveStill, publishStillLandmarks, startLivePreview, stopLivePreview } from './camera-live';
 
 type FacePoint = { x: number; y: number; z?: number };
 type FaceMeshResults = { multiFaceLandmarks?: FacePoint[][] };
@@ -1799,6 +1799,7 @@ document.querySelectorAll<HTMLButtonElement>('[data-tool]').forEach((button) => 
 });
 
 const detectFaceMesh = async (image: HTMLImageElement): Promise<FacePoint[] | null> => {
+  await ensureFaceMeshScript();
   const FaceMesh = (window as Window & { FaceMesh?: FaceMeshConstructor }).FaceMesh;
   if (!FaceMesh) {
     if (faceDetectionStatus) faceDetectionStatus.textContent = 'Face Mesh is offline; Narrow will use a centered fallback region.';

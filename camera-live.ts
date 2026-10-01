@@ -450,9 +450,14 @@ const processingCap = (): number => {
   return 960;
 };
 
+let sizedVideo = 0;
+
 const resizeToVideo = (): void => {
   if (!video || !video.videoWidth || !sourceCtx || !stageCtx) return;
   const cap = processingCap();
+  const signature = video.videoWidth * 100000 + video.videoHeight * 10 + cap;
+  if (signature === sizedVideo && source.width > 0) return;
+  sizedVideo = signature;
   const scale = Math.min(1, cap / Math.max(video.videoWidth, video.videoHeight));
   const width = Math.max(2, Math.round(video.videoWidth * scale));
   const height = Math.max(2, Math.round(video.videoHeight * scale));
@@ -854,8 +859,11 @@ const renderGl = (): void => {
     context.uniform1f(uniform(warpProgram, 'uLips'), amount(beauty.lips));
     context.drawElements(context.TRIANGLES, gridCount, context.UNSIGNED_SHORT, 0);
   }
-  const passes = blur > 35 || beauty.smooth > 40 || beauty.glow > 40 ? 2 : 1;
-  let readTex: WebGLTexture = doWarp && warpTex ? warpTex : sourceTex;
+  const colorWork = beauty.smooth + beauty.glow + beauty.foundation + beauty.blush + beauty.contour + beauty.eyeBright + beauty.teeth + beauty.lipTint;
+  const needsSoft = blur > 0 || bg !== 'none' || grade === 'film' || colorWork > 0;
+  const passes = !needsSoft ? 0 : lite ? 1 : blur > 35 || beauty.smooth > 40 || beauty.glow > 40 ? 2 : 1;
+  const sharpTex: WebGLTexture = doWarp && warpTex ? warpTex : sourceTex;
+  let readTex: WebGLTexture = sharpTex;
   for (let pass = 0; pass < passes; pass += 1) {
     context.useProgram(blurProgram);
     context.bindBuffer(context.ARRAY_BUFFER, quadBuffer);
@@ -881,10 +889,10 @@ const renderGl = (): void => {
   context.enableVertexAttribArray(0);
   context.vertexAttribPointer(0, 2, context.FLOAT, false, 0, 0);
   context.activeTexture(context.TEXTURE0);
-  context.bindTexture(context.TEXTURE_2D, doWarp && warpTex ? warpTex : sourceTex);
+  context.bindTexture(context.TEXTURE_2D, sharpTex);
   context.uniform1i(uniform(compositeProgram, 'uSharp'), 0);
   context.activeTexture(context.TEXTURE1);
-  context.bindTexture(context.TEXTURE_2D, blurTex);
+  context.bindTexture(context.TEXTURE_2D, passes > 0 && blurTex ? blurTex : sharpTex);
   context.uniform1i(uniform(compositeProgram, 'uSoft'), 1);
   context.uniform2f(uniform(compositeProgram, 'uFaceC'), geo.faceC[0], geo.faceC[1]);
   context.uniform2f(uniform(compositeProgram, 'uFaceR'), geo.faceR[0], geo.faceR[1]);
@@ -916,18 +924,20 @@ const renderGl = (): void => {
   }
 };
 
+const tinyCanvas = document.createElement('canvas');
+const tinyCtx = tinyCanvas.getContext('2d', { alpha: false });
+
 const drawFallback = (): void => {
-  if (!stageCtx || !source.width) return;
+  if (!stageCtx || !source.width || !tinyCtx) return;
   stageCtx.drawImage(source, 0, 0);
   if (bg === 'none' && beauty.smooth <= 0) return;
   const tiny = Math.max(8, Math.round(source.width / 10));
-  const blurCanvas = document.createElement('canvas');
-  blurCanvas.width = tiny;
-  blurCanvas.height = Math.max(8, Math.round(source.height / 10));
-  blurCanvas.getContext('2d')?.drawImage(source, 0, 0, blurCanvas.width, blurCanvas.height);
+  tinyCanvas.width = tiny;
+  tinyCanvas.height = Math.max(8, Math.round(source.height / 10));
+  tinyCtx.drawImage(source, 0, 0, tinyCanvas.width, tinyCanvas.height);
   const geo = faceUniforms();
   stageCtx.save();
-  stageCtx.drawImage(blurCanvas, 0, 0, stage.width, stage.height);
+  stageCtx.drawImage(tinyCanvas, 0, 0, stage.width, stage.height);
   stageCtx.globalCompositeOperation = 'destination-out';
   stageCtx.beginPath();
   stageCtx.ellipse(geo.faceC[0] * stage.width, geo.faceC[1] * stage.height, geo.faceR[0] * stage.width * 1.4, geo.faceR[1] * stage.height * 1.8, 0, 0, Math.PI * 2);
@@ -989,24 +999,35 @@ const drawMesh = (ctx: CanvasRenderingContext2D, face: FaceLandmarkSet): void =>
   ctx.restore();
 };
 
+let meshCtx: CanvasRenderingContext2D | null = null;
+let lastMeshSent = 0;
+let lastFrameCost = 0;
+let slowFrames = 0;
+
 const loop = (time: number): void => {
   if (!running) return;
   raf = window.requestAnimationFrame(loop);
+  const started = performance.now();
   resizeToVideo();
   if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !source.width) return;
   blitSource();
-  sendMesh();
+  const meshGap = lite ? 100 : 34;
+  if (started - lastMeshSent >= meshGap && lastFrameCost < 48) {
+    lastMeshSent = started;
+    sendMesh();
+  }
   paintStage(time);
-  meter(time);
-  if (time - thumbStamp > 500) {
+  lastFrameCost = performance.now() - started;
+  meter(time, lastFrameCost);
+  if (time - thumbStamp > 140) {
     thumbStamp = time;
-    paintThumbs();
+    paintNextThumb();
   }
 };
 
 const sendMesh = (): void => {
-  if (!faceMesh || meshBusy || meshFailed || !source.width) return;
-  const meshCtx = meshInput.getContext('2d');
+  if (!faceMesh || meshBusy || meshFailed || !source.width || !running) return;
+  if (!meshCtx) meshCtx = meshInput.getContext('2d', { alpha: false });
   if (!meshCtx) return;
   meshCtx.drawImage(source, 0, 0, meshInput.width, meshInput.height);
   meshBusy = true;
@@ -1019,16 +1040,28 @@ const sendMesh = (): void => {
   });
 };
 
-const meter = (time: number): void => {
+const meter = (time: number, cost: number): void => {
   previewFrames += 1;
   if (!previewStamp) previewStamp = time;
+  if (cost > 40) slowFrames += 1;
+  else slowFrames = Math.max(0, slowFrames - 1);
+  if (!lite && slowFrames >= (preferFull ? 18 : 8)) {
+    lite = true;
+    sizedVideo = 0;
+    slowFrames = 0;
+    const full = document.getElementById('cameraLite');
+    if (full) full.textContent = 'Lite mode on';
+  }
   if (time - previewStamp >= 500) {
     previewFps = Math.round((previewFrames * 1000) / (time - previewStamp));
     previewFrames = 0;
     previewStamp = time;
     if (previewFps < 20) lowStreak += 1;
     else lowStreak = 0;
-    if (!lite && !preferFull && lowStreak >= 3) lite = true;
+    if (!lite && !preferFull && lowStreak >= 2) {
+      lite = true;
+      sizedVideo = 0;
+    }
     writeHint();
   }
 };
@@ -1041,7 +1074,43 @@ const writeHint = (): void => {
   hint.textContent = `${modeNote} · Preview ${previewFps} fps · ${meshNote}`;
 };
 
+let meshScript: Promise<boolean> | null = null;
+let meshBooting = false;
+
+export const ensureFaceMeshScript = (): Promise<boolean> => {
+  if ((window as Window & { FaceMesh?: FaceMeshConstructor }).FaceMesh) return Promise.resolve(true);
+  if (meshScript) return meshScript;
+  meshScript = new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.onload = () => resolve(Boolean((window as Window & { FaceMesh?: FaceMeshConstructor }).FaceMesh));
+    script.onerror = () => {
+      meshScript = null;
+      resolve(false);
+    };
+    document.head.append(script);
+  });
+  return meshScript;
+};
+
 const bootMesh = (): void => {
+  if (faceMesh || meshFailed || meshBooting) return;
+  meshBooting = true;
+  void ensureFaceMeshScript().then((ready) => {
+    meshBooting = false;
+    if (!running) return;
+    if (!ready) {
+      meshFailed = true;
+      writeHint();
+      return;
+    }
+    createFaceMesh();
+  });
+};
+
+const createFaceMesh = (): void => {
   if (faceMesh || meshFailed) return;
   const FaceMesh = (window as Window & { FaceMesh?: FaceMeshConstructor }).FaceMesh;
   if (!FaceMesh) {
@@ -1061,6 +1130,7 @@ const bootMesh = (): void => {
       minTrackingConfidence: 0.5,
     });
     created.onResults((results) => {
+      if (!running) return;
       const raw = results.multiFaceLandmarks?.[0] ?? null;
       liveFace = raw ? groupLandmarks(raw) : null;
       meshReady = true;
@@ -1081,7 +1151,19 @@ const bootMesh = (): void => {
   }
 };
 
-const applyLens = (id: string, nextStrength = strength): void => {
+let rememberTimer = 0;
+
+const rememberLens = (): void => {
+  window.clearTimeout(rememberTimer);
+  rememberTimer = window.setTimeout(() => {
+    writeStore(LENS_KEY, lensId);
+    const savedStrength = readStrengthMap();
+    savedStrength[lensId] = strength;
+    writeStore(STRENGTH_KEY, JSON.stringify(savedStrength));
+  }, 180);
+};
+
+const applyLens = (id: string, nextStrength = strength, refreshSliders = true): void => {
   const lens = lensById(id) ?? starterLenses[0];
   lensId = lens.id;
   strength = Math.max(0, Math.min(100, Math.round(nextStrength)));
@@ -1095,12 +1177,9 @@ const applyLens = (id: string, nextStrength = strength): void => {
   feather = lens.feather;
   bg = lens.bg;
   grade = lens.grade;
-  writeStore(LENS_KEY, lens.id);
-  const savedStrength = readStrengthMap();
-  savedStrength[lens.id] = strength;
-  writeStore(STRENGTH_KEY, JSON.stringify(savedStrength));
   syncTray();
-  syncSliders();
+  if (refreshSliders) syncSliders();
+  rememberLens();
 };
 
 const readStrengthMap = (): Record<string, number> => {
@@ -1144,8 +1223,9 @@ const syncSliders = (): void => {
   if (strengthInput) strengthInput.value = String(strength);
 };
 
-const paintThumbs = (): void => {
-  document.querySelectorAll<HTMLButtonElement>('[data-lens]').forEach((button) => {
+let thumbIndex = 0;
+
+const paintThumb = (button: HTMLButtonElement): void => {
     const canvas = button.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
     const lens = lensById(button.dataset.lens ?? '');
@@ -1171,8 +1251,19 @@ const paintThumbs = (): void => {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       if (liveFace) lens.draw?.(ctx, liveFace, canvas.width, canvas.height, performance.now(), 1);
-    }
-  });
+  }
+};
+
+const paintNextThumb = (): void => {
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-lens]');
+  if (!buttons.length) return;
+  const selected = thumbIndex % 3 === 0 ? [...buttons].find((button) => button.dataset.lens === lensId) : undefined;
+  paintThumb(selected ?? buttons[thumbIndex % buttons.length]);
+  thumbIndex += 1;
+};
+
+const paintThumbs = (): void => {
+  document.querySelectorAll<HTMLButtonElement>('[data-lens]').forEach((button) => paintThumb(button));
 };
 
 const buildTray = (): void => {
@@ -1283,7 +1374,7 @@ const buildTune = (): void => {
   strengthInput.max = '100';
   strengthInput.value = String(strength);
   strengthInput.addEventListener('input', () => {
-    applyLens(lensId, Number(strengthInput.value));
+    applyLens(lensId, Number(strengthInput.value), false);
   });
   strengthLabel.append(strengthInput);
   tune.append(strengthLabel);
@@ -1354,6 +1445,13 @@ const mount = (): void => {
     syncTray();
   });
   document.getElementById('cameraTuneOpen')?.addEventListener('click', openTune);
+  window.addEventListener('pagehide', (event) => {
+    if (event.persisted) {
+      stopLivePreview();
+      return;
+    }
+    releaseCamera();
+  });
   window.addEventListener('storage', (event) => {
     if (event.key === MESH_KEY) {
       showMesh = event.newValue === 'on';
@@ -1384,7 +1482,22 @@ export const stopLivePreview = (): void => {
   running = false;
   window.cancelAnimationFrame(raf);
   liveFace = null;
+  meshBusy = false;
+  faceMesh?.close?.();
+  faceMesh = null;
+  meshReady = false;
   recordStream?.getAudioTracks().forEach((track) => recordStream?.removeTrack(track));
+};
+
+const releaseCamera = (): void => {
+  stopLivePreview();
+  const lose = gl?.getExtension('WEBGL_lose_context');
+  lose?.loseContext();
+  gl = null;
+  webglOk = false;
+  warpProgram = null;
+  blurProgram = null;
+  compositeProgram = null;
 };
 
 export const liveStill = (): string | null => {
