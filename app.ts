@@ -17,7 +17,8 @@ type SelfieSegmentationInstance = {
   close?: () => void;
 };
 type SelfieSegmentationConstructor = new (options: { locateFile: (file: string) => string }) => SelfieSegmentationInstance;
-type BackgroundScene = 'beach' | 'city' | 'studio' | 'garden' | 'sunset' | 'mountains' | 'forest' | 'night' | 'cafe' | 'sky' | 'flowers' | 'ocean';
+type SceneKind = 'photo' | 'color' | 'gradient' | 'blank' | 'blur';
+type SceneSpec = { label: string; kind: SceneKind; url?: string; color?: string; from?: string; to?: string };
 
 const byId = <T extends HTMLElement>(id: string): T | null =>
   document.getElementById(id) as T | null;
@@ -81,7 +82,7 @@ const editBackground = byId<HTMLInputElement>('editBackground');
 const backgroundStatus = byId<HTMLParagraphElement>('backgroundStatus');
 const aiLoading = byId<HTMLParagraphElement>('aiLoading');
 const overlayText = byId<HTMLInputElement>('overlayText');
-const stickerChoice = byId<HTMLSelectElement>('stickerChoice');
+const stickerChoice = byId<HTMLElement>('stickerChoice');
 const brushColor = byId<HTMLInputElement>('brushColor');
 const brushSize = byId<HTMLInputElement>('brushSize');
 const timestampToggle = byId<HTMLInputElement>('timestampToggle');
@@ -124,7 +125,8 @@ let brushMode: BrushStroke['mode'] = 'paint';
 let currentBrush: BrushStroke | null = null;
 const brushStrokes: BrushStroke[] = [];
 const textOverlays: string[] = [];
-const stickerOverlays: string[] = [];
+type PlacedSticker = { glyph: string; word: boolean; x: number; y: number };
+const stickerOverlays: PlacedSticker[] = [];
 
 const showAiLoading = (): number => {
   const token = aiLoadingToken + 1;
@@ -356,6 +358,109 @@ const paintFilterPixels = (target: CanvasRenderingContext2D, filter: string, ori
 };
 
 const mouthLoop = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
+const faceOval = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
+const leftEyeLoop = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
+const rightEyeLoop = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398];
+const lipOuter = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0, 37, 39, 40, 185];
+
+const growLoop = (points: FacePoint[], scale: number): FacePoint[] => {
+  if (points.length < 3) return points;
+  let centerX = 0;
+  let centerY = 0;
+  points.forEach((point) => {
+    centerX += point.x;
+    centerY += point.y;
+  });
+  centerX /= points.length;
+  centerY /= points.length;
+  return points.map((point) => ({
+    x: centerX + (point.x - centerX) * scale,
+    y: centerY + (point.y - centerY) * scale,
+  }));
+};
+
+const smoothSkin = (
+  target: CanvasRenderingContext2D,
+  amount: number,
+  face: { oval: FacePoint[]; eyes: FacePoint[][]; mouth: FacePoint[] } | null,
+): void => {
+  const width = target.canvas.width;
+  const height = target.canvas.height;
+  if (width < 2 || height < 2 || amount <= 0) return;
+  let minX = Math.floor(width * 0.18);
+  let minY = Math.floor(height * 0.12);
+  let maxX = Math.ceil(width * 0.82);
+  let maxY = Math.ceil(height * 0.78);
+  if (face) {
+    const pad = Math.max(8, width * 0.02);
+    minX = Math.max(0, Math.floor(Math.min(...face.oval.map((point) => point.x * width)) - pad));
+    minY = Math.max(0, Math.floor(Math.min(...face.oval.map((point) => point.y * height)) - pad));
+    maxX = Math.min(width, Math.ceil(Math.max(...face.oval.map((point) => point.x * width)) + pad));
+    maxY = Math.min(height, Math.ceil(Math.max(...face.oval.map((point) => point.y * height)) + pad));
+  }
+  const boxWidth = maxX - minX;
+  const boxHeight = maxY - minY;
+  if (boxWidth < 4 || boxHeight < 4) return;
+  const mask = document.createElement('canvas');
+  mask.width = boxWidth;
+  mask.height = boxHeight;
+  const maskContext = mask.getContext('2d');
+  if (!maskContext) return;
+  const trace = (points: FacePoint[]): void => {
+    if (points.length < 3) return;
+    maskContext.beginPath();
+    points.forEach((point, index) => {
+      const x = point.x * width - minX;
+      const y = point.y * height - minY;
+      if (index === 0) maskContext.moveTo(x, y);
+      else maskContext.lineTo(x, y);
+    });
+    maskContext.closePath();
+    maskContext.fill();
+  };
+  maskContext.fillStyle = '#fff';
+  if (face) {
+    trace(face.oval);
+    maskContext.globalCompositeOperation = 'destination-out';
+    face.eyes.forEach((eye) => trace(growLoop(eye, 1.45)));
+    trace(growLoop(face.mouth, 1.2));
+    maskContext.globalCompositeOperation = 'source-over';
+  } else {
+    maskContext.beginPath();
+    maskContext.ellipse(boxWidth / 2, boxHeight / 2, boxWidth * 0.42, boxHeight * 0.46, 0, 0, Math.PI * 2);
+    maskContext.fill();
+  }
+  let pixels: ImageData;
+  let maskPixels: ImageData;
+  try {
+    pixels = target.getImageData(minX, minY, boxWidth, boxHeight);
+    maskPixels = maskContext.getImageData(0, 0, boxWidth, boxHeight);
+  } catch {
+    return;
+  }
+  const blurred = new Uint8ClampedArray(pixels.data);
+  const span = Math.hypot(boxWidth, boxHeight);
+  const radius = Math.max(2, Math.min(12, Math.round(span * (0.01 + (amount / 100) * 0.028))));
+  boxBlur(blurred, boxWidth, boxHeight, radius);
+  boxBlur(blurred, boxWidth, boxHeight, Math.max(2, Math.round(radius * 0.65)));
+  const strength = 0.34 + (amount / 100) * 0.58;
+  const softEdge = 34 + amount * 0.28;
+  for (let index = 0; index < pixels.data.length; index += 4) {
+    const cover = maskPixels.data[index] / 255;
+    if (cover < 0.05) continue;
+    const red = pixels.data[index];
+    const green = pixels.data[index + 1];
+    const blue = pixels.data[index + 2];
+    const delta = Math.hypot(red - blurred[index], green - blurred[index + 1], blue - blurred[index + 2]);
+    const keep = delta <= softEdge ? 1 : delta >= softEdge + 46 ? 0 : (softEdge + 46 - delta) / 46;
+    const mix = cover * strength * keep;
+    if (mix <= 0.01) continue;
+    pixels.data[index] = red + (blurred[index] - red) * mix;
+    pixels.data[index + 1] = green + (blurred[index + 1] - green) * mix;
+    pixels.data[index + 2] = blue + (blurred[index + 2] - blue) * mix;
+  }
+  target.putImageData(pixels, minX, minY);
+};
 
 const whitenTeeth = (
   target: CanvasRenderingContext2D,
@@ -488,6 +593,13 @@ const lookRecipes: Record<string, LookRecipe> = {
   instant: { contrast: 1.28, saturate: 0.7, sepia: 0.28, brightness: 1.06 },
   transfer: { sepia: 0.5, contrast: 1.12, saturate: 1.35, hue: 18 },
   chrome: { contrast: 1.35, saturate: 1.4, brightness: 1.12, hue: 14 },
+  soft: { brightness: 1.08, saturate: 0.88, contrast: 0.9 },
+  pink: { saturate: 1.12, sepia: 0.16, hue: -14, brightness: 1.06 },
+  vintage: { sepia: 0.42, contrast: 0.88, saturate: 0.72, brightness: 1.06 },
+  pop: { saturate: 1.55, contrast: 1.16, brightness: 1.04 },
+  matte: { saturate: 0.7, contrast: 0.86, brightness: 1.1 },
+  golden: { sepia: 0.3, saturate: 1.18, brightness: 1.08, hue: -8 },
+  beauty: { brightness: 1.1, saturate: 1.04, contrast: 0.92, sepia: 0.1 },
 };
 
 const mixUnit = (value: number, amount: number): number => 1 + (value - 1) * amount;
@@ -1264,7 +1376,20 @@ aiEnhanceButton?.addEventListener('click', () => {
     scheduleRender();
   });
   control?.addEventListener('change', () => {
-    if (control === photoFilter) syncFilterChips();
+    if (control === photoFilter) {
+      syncFilterChips();
+      if (photoFilter.value === 'beauty') {
+        if (smoothSlider) {
+          smoothSlider.value = '72';
+          if (smoothValue) smoothValue.value = '72';
+          paintRange(smoothSlider);
+        }
+        const warmth = byId<HTMLInputElement>('adjustWarmth');
+        const brilliance = byId<HTMLInputElement>('adjustBrilliance');
+        if (warmth) warmth.value = '14';
+        if (brilliance) brilliance.value = '16';
+      }
+    }
     render();
   });
 });
@@ -1283,9 +1408,54 @@ byId<HTMLButtonElement>('addText')?.addEventListener('click', () => {
   textOverlays.push(value);
   render();
 });
-byId<HTMLButtonElement>('addSticker')?.addEventListener('click', () => {
-  if (stickerChoice) stickerOverlays.push(stickerChoice.value);
+const stickerCatalog: Array<{ title: string; words?: boolean; items: string[] }> = [
+  { title: 'Smileys', items: ['😀', '😁', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎', '🤩', '😜', '😇', '🥳', '😭', '🤔', '😴', '🤗', '😏', '😬', '🤯'] },
+  { title: 'Love', items: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💕', '💖', '💗', '💘', '💝', '💞', '💓', '💟', '💋', '💌'] },
+  { title: 'Party', items: ['🎉', '🎊', '✨', '🌟', '⭐', '🔥', '💯', '🎈', '🎁', '🏆', '🥇', '🎯', '🎵', '🎶', '📸', '💫', '💥', '👑'] },
+  { title: 'Hands', items: ['👍', '👎', '👏', '🙌', '✌️', '🤞', '👋', '🤝', '💪', '🙏', '👌', '🤟', '🤘', '👊', '🫶'] },
+  { title: 'Animals', items: ['🐶', '🐱', '🐰', '🐻', '🐼', '🦊', '🐸', '🐵', '🦄', '🦋', '🐝', '🐧', '🐥', '🐯', '🐨', '🐷'] },
+  { title: 'Food', items: ['🍕', '🍔', '🍟', '🌮', '🍩', '🍪', '🍰', '🍓', '🍒', '🍉', '🥑', '☕', '🧋', '🍦', '🍫', '🍿'] },
+  { title: 'Nature', items: ['🌸', '🌼', '🌻', '🌹', '🌷', '🍀', '🌈', '☀️', '🌙', '❄️', '🌊', '🌴', '🍁', '☁️', '⚡'] },
+  { title: 'Words', words: true, items: ['LOL', 'OMG', 'WOW', 'YES', 'OK', 'NO', 'LOVE', 'CUTE', 'COOL', 'SLAY', 'HI', 'BYE', 'YAY', 'BRB'] },
+];
+const wordColors = ['#ff2d78', '#087e80', '#ff8a00', '#7a5cff', '#111111', '#e23b3b'];
+const stickerGroups = byId<HTMLElement>('stickerGroups');
+const addSticker = (glyph: string, word: boolean): void => {
+  if (stickerOverlays.length >= 24) {
+    showToast('That is 24 stickers. Clear them to add more.');
+    return;
+  }
+  const slot = stickerOverlays.length;
+  stickerOverlays.push({
+    glyph,
+    word,
+    x: 0.18 + (slot % 4) * 0.2,
+    y: 0.16 + (Math.floor(slot / 4) % 4) * 0.18,
+  });
   render();
+};
+stickerCatalog.forEach((group) => {
+  if (!stickerGroups) return;
+  const block = document.createElement('div');
+  block.className = 'sticker-group';
+  const title = document.createElement('p');
+  title.textContent = group.title;
+  const row = document.createElement('div');
+  row.className = 'sticker-row';
+  group.items.forEach((item, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = item;
+    button.setAttribute('aria-label', group.words ? `${item} sticker` : `Add ${item}`);
+    if (group.words) {
+      button.className = 'word';
+      button.style.background = wordColors[index % wordColors.length];
+    }
+    button.addEventListener('click', () => addSticker(item, !!group.words));
+    row.append(button);
+  });
+  block.append(title, row);
+  stickerGroups.append(block);
 });
 byId<HTMLButtonElement>('clearOverlays')?.addEventListener('click', () => {
   textOverlays.length = 0;
@@ -1676,34 +1846,77 @@ const setPhotoCanvasSize = (): void => {
   }
 };
 
-const sceneLabels: Record<BackgroundScene, string> = {
-  beach: 'Beach',
-  city: 'City',
-  studio: 'Studio',
-  garden: 'Garden',
-  sunset: 'Sunset',
-  mountains: 'Mountains',
-  forest: 'Forest',
-  night: 'Night',
-  cafe: 'Cafe',
-  sky: 'Sky',
-  flowers: 'Flowers',
-  ocean: 'Ocean',
-};
-const sceneUrls: Record<BackgroundScene, string> = {
-  beach: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80',
-  city: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=1600&q=80',
-  studio: 'https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?auto=format&fit=crop&w=1600&q=80',
-  garden: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1600&q=80',
-  sunset: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1600&q=80',
-  mountains: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80',
-  forest: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80',
-  night: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1600&q=80',
-  cafe: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=80',
-  sky: 'https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=1600&q=80',
-  flowers: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=80',
-  ocean: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&w=1600&q=80',
-};
+const backgroundScenes = {
+  blank: { label: 'Blank', kind: 'blank' },
+  blur: { label: 'Blur', kind: 'blur' },
+  white: { label: 'White', kind: 'color', color: '#ffffff' },
+  black: { label: 'Black', kind: 'color', color: '#111111' },
+  gray: { label: 'Gray', kind: 'color', color: '#8e8e93' },
+  cream: { label: 'Cream', kind: 'color', color: '#f4efe6' },
+  red: { label: 'Red', kind: 'color', color: '#d7263d' },
+  pink: { label: 'Pink', kind: 'color', color: '#ff8fb8' },
+  blue: { label: 'Blue', kind: 'color', color: '#2f6fed' },
+  navy: { label: 'Navy', kind: 'color', color: '#1b2a4a' },
+  green: { label: 'Green', kind: 'color', color: '#1f8a4c' },
+  teal: { label: 'Teal', kind: 'color', color: '#087e80' },
+  yellow: { label: 'Yellow', kind: 'color', color: '#f5c518' },
+  purple: { label: 'Purple', kind: 'color', color: '#7a4dff' },
+  sunsetwash: { label: 'Sunset wash', kind: 'gradient', from: '#ff8a4c', to: '#6a4cff' },
+  rose: { label: 'Rose', kind: 'gradient', from: '#ffd1dc', to: '#ff6b9a' },
+  skywash: { label: 'Sky wash', kind: 'gradient', from: '#8ecbff', to: '#fff6df' },
+  studiowash: { label: 'Studio wash', kind: 'gradient', from: '#f7f7f8', to: '#c8c8ce' },
+  gold: { label: 'Gold', kind: 'gradient', from: '#ffe08a', to: '#e08a2c' },
+  neon: { label: 'Neon', kind: 'gradient', from: '#7a4dff', to: '#ff2d78' },
+  nightwash: { label: 'Night wash', kind: 'gradient', from: '#0b1026', to: '#3a4a8a' },
+  mint: { label: 'Mint', kind: 'gradient', from: '#d9fff4', to: '#69ded0' },
+  beach: { label: 'Beach', kind: 'photo', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80' },
+  city: { label: 'City', kind: 'photo', url: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=1600&q=80' },
+  studio: { label: 'Studio', kind: 'photo', url: 'https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?auto=format&fit=crop&w=1600&q=80' },
+  garden: { label: 'Garden', kind: 'photo', url: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1600&q=80' },
+  sunset: { label: 'Sunset', kind: 'photo', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1600&q=80' },
+  mountains: { label: 'Mountains', kind: 'photo', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80' },
+  forest: { label: 'Forest', kind: 'photo', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80' },
+  night: { label: 'Night', kind: 'photo', url: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1600&q=80' },
+  cafe: { label: 'Cafe', kind: 'photo', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=80' },
+  sky: { label: 'Sky', kind: 'photo', url: 'https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=1600&q=80' },
+  flowers: { label: 'Flowers', kind: 'photo', url: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=80' },
+  ocean: { label: 'Ocean', kind: 'photo', url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&w=1600&q=80' },
+  office: { label: 'Office', kind: 'photo', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80' },
+  snow: { label: 'Snow', kind: 'photo', url: 'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&w=1600&q=80' },
+  desert: { label: 'Desert', kind: 'photo', url: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=1600&q=80' },
+  library: { label: 'Library', kind: 'photo', url: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1600&q=80' },
+  room: { label: 'Room', kind: 'photo', url: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=80' },
+  brick: { label: 'Brick', kind: 'photo', url: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1600&q=80' },
+  street: { label: 'Street', kind: 'photo', url: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=1600&q=80' },
+  autumn: { label: 'Autumn', kind: 'photo', url: 'https://images.unsplash.com/photo-1508193638397-1c4234db14d8?auto=format&fit=crop&w=1600&q=80' },
+  waterfall: { label: 'Waterfall', kind: 'photo', url: 'https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?auto=format&fit=crop&w=1600&q=80' },
+  park: { label: 'Park', kind: 'photo', url: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80' },
+  rain: { label: 'Rain', kind: 'photo', url: 'https://images.unsplash.com/photo-1501691223387-dd0500403074?auto=format&fit=crop&w=1600&q=80' },
+  space: { label: 'Space', kind: 'photo', url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1600&q=80' },
+} as const satisfies Record<string, SceneSpec>;
+type BackgroundScene = keyof typeof backgroundScenes;
+const sceneLabels: Record<BackgroundScene, string> = Object.fromEntries(
+  Object.entries(backgroundScenes).map(([key, spec]) => [key, spec.label]),
+) as Record<BackgroundScene, string>;
+const bgSceneRow = byId<HTMLElement>('bgSceneRow');
+(Object.keys(backgroundScenes) as BackgroundScene[]).forEach((scene) => {
+  const spec = backgroundScenes[scene];
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'secondary-button';
+  button.dataset.bgScene = scene;
+  button.setAttribute('aria-pressed', 'false');
+  const swatch = document.createElement('span');
+  swatch.className = 'bg-swatch';
+  swatch.setAttribute('aria-hidden', 'true');
+  if (spec.kind === 'color' && spec.color) swatch.style.background = spec.color;
+  else if (spec.kind === 'gradient' && spec.from && spec.to) swatch.style.background = `linear-gradient(135deg, ${spec.from}, ${spec.to})`;
+  else if (spec.kind === 'blank') swatch.style.background = 'repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%)';
+  else if (spec.kind === 'blur') swatch.style.background = 'linear-gradient(90deg, #bbb, #eee)';
+  else swatch.style.background = '#d9f1ed';
+  button.append(swatch, document.createTextNode(spec.label));
+  bgSceneRow?.append(button);
+});
 const isBackgroundScene = (value: string): value is BackgroundScene => Object.prototype.hasOwnProperty.call(sceneLabels, value);
 const sceneLoads = new Map<BackgroundScene, Promise<HTMLImageElement | null>>();
 const loadedSceneImages = new Map<BackgroundScene, HTMLImageElement>();
@@ -1718,7 +1931,12 @@ const loadSceneImage = (scene: BackgroundScene): Promise<HTMLImageElement | null
     image.crossOrigin = 'anonymous';
     image.onload = () => resolve(image.naturalWidth ? image : null);
     image.onerror = () => resolve(null);
-    image.src = sceneUrls[scene];
+    const spec = backgroundScenes[scene];
+    if (spec.kind !== 'photo' || !spec.url) {
+      resolve(null);
+      return;
+    }
+    image.src = spec.url;
   });
   sceneLoads.set(scene, load);
   void load.then((image) => {
@@ -1907,17 +2125,25 @@ const drawSceneBehindPerson = (
   destWidth: number,
   destHeight: number,
 ): void => {
-  if (!activeBackgroundScene || !personMask || !context || !canvas || !originalImage) return;
+  if (!activeBackgroundScene || !personMask || !context || !canvas || !originalImage) {
+    canvas?.classList.remove('is-blank');
+    return;
+  }
+  const spec = backgroundScenes[activeBackgroundScene];
   const sceneImage = loadedSceneImages.get(activeBackgroundScene);
-  if (!sceneImage?.naturalWidth) return;
+  if (spec.kind === 'photo' && !sceneImage?.naturalWidth) return;
   const width = canvas.width;
   const height = canvas.height;
+  const snapshot = document.createElement('canvas');
+  snapshot.width = width;
+  snapshot.height = height;
+  snapshot.getContext('2d')?.drawImage(canvas, 0, 0);
   const personLayer = document.createElement('canvas');
   personLayer.width = width;
   personLayer.height = height;
   const personContext = personLayer.getContext('2d');
   if (!personContext) return;
-  personContext.drawImage(canvas, 0, 0);
+  personContext.drawImage(snapshot, 0, 0);
   personContext.globalCompositeOperation = 'destination-in';
   personContext.filter = 'none';
   const feather = document.createElement('canvas');
@@ -1944,7 +2170,22 @@ const drawSceneBehindPerson = (
   context.globalCompositeOperation = 'source-over';
   context.filter = 'none';
   context.clearRect(0, 0, width, height);
-  drawCover(context, sceneImage, 0, 0, width, height);
+  canvas.classList.toggle('is-blank', spec.kind === 'blank');
+  if (spec.kind === 'color' && spec.color) {
+    context.fillStyle = spec.color;
+    context.fillRect(0, 0, width, height);
+  } else if (spec.kind === 'gradient' && spec.from && spec.to) {
+    const wash = context.createLinearGradient(0, 0, 0, height);
+    wash.addColorStop(0, spec.from);
+    wash.addColorStop(1, spec.to);
+    context.fillStyle = wash;
+    context.fillRect(0, 0, width, height);
+  } else if (spec.kind === 'blur') {
+    context.drawImage(snapshot, 0, 0);
+    paintFilterPixels(context, `blur(${Math.max(10, width * 0.018).toFixed(1)}px)`);
+  } else if (spec.kind === 'photo' && sceneImage) {
+    drawCover(context, sceneImage, 0, 0, width, height);
+  }
   context.drawImage(personLayer, 0, 0);
   context.restore();
 };
@@ -2206,63 +2447,6 @@ const render = (): void => {
     }
   }
 
-  const smooth = Number(smoothSlider?.value ?? 0);
-  if (smooth > 0) {
-    const sharp = document.createElement('canvas');
-    sharp.width = width;
-    sharp.height = height;
-    const sharpContext = sharp.getContext('2d');
-    if (sharpContext) {
-      sharpContext.drawImage(canvas, 0, 0);
-      const soft = document.createElement('canvas');
-      soft.width = width;
-      soft.height = height;
-      const softContext = soft.getContext('2d');
-      if (softContext) {
-        const blurRadius = 1.8 + Math.min(smooth, 60) * 0.05;
-        softContext.filter = 'none';
-        softContext.drawImage(sharp, 0, 0);
-        paintFilterPixels(softContext, `blur(${blurRadius.toFixed(2)}px)`);
-        const polish = Math.min(smooth, 60) / 100;
-        context.save();
-        context.beginPath();
-        context.ellipse(width * 0.5, height * 0.46, width * 0.3, height * 0.36, 0, 0, Math.PI * 2);
-        context.clip();
-        context.globalAlpha = 0.2 + polish * 0.28;
-        context.drawImage(soft, 0, 0);
-        context.globalCompositeOperation = 'soft-light';
-        context.globalAlpha = 0.62;
-        context.drawImage(sharp, 0, 0);
-        if (smooth > 60) {
-          const glow = (smooth - 60) / 40;
-          const warm = document.createElement('canvas');
-          warm.width = width;
-          warm.height = height;
-          const warmContext = warm.getContext('2d');
-          if (warmContext) {
-            warmContext.filter = 'none';
-            warmContext.drawImage(sharp, 0, 0);
-            paintFilterPixels(warmContext, 'brightness(1.08) saturate(1.06)');
-            context.globalCompositeOperation = 'soft-light';
-            context.globalAlpha = 0.14 + glow * 0.2;
-            context.fillStyle = 'rgb(255, 214, 196)';
-            context.fillRect(0, 0, width, height);
-            context.globalCompositeOperation = 'source-over';
-            context.globalAlpha = 0.1 + glow * 0.14;
-            context.drawImage(warm, 0, 0);
-            context.globalCompositeOperation = 'soft-light';
-            context.globalAlpha = 0.5;
-            context.drawImage(sharp, 0, 0);
-          }
-        }
-        context.restore();
-        context.filter = 'none';
-        context.globalAlpha = 1;
-        context.globalCompositeOperation = 'source-over';
-      }
-    }
-  }
-
   const warpRegion = (centerX: number, centerY: number, radiusXFactor: number, radiusYFactor: number, amount: number): void => {
     if (!amount) return;
     try {
@@ -2310,6 +2494,17 @@ const render = (): void => {
       y: Math.max(0, Math.min(1, (point.y * sourceImage.naturalHeight - sourceY) / sourceHeight)),
     };
   };
+  const smoothAmount = Number(smoothSlider?.value ?? 0);
+  if (smoothAmount > 0 && context) {
+    const faceLoop = (indices: number[]): FacePoint[] => {
+      if (!faceMeshLandmarks) return [];
+      return indices.map((index) => faceMeshLandmarks?.[index]).filter((point): point is FacePoint => !!point).map(mapFacePoint);
+    };
+    const oval = faceLoop(faceOval);
+    const eyes = [faceLoop(leftEyeLoop), faceLoop(rightEyeLoop)].filter((loop) => loop.length >= 6);
+    const mouth = faceLoop(lipOuter);
+    smoothSkin(context, smoothAmount, oval.length >= 8 ? { oval, eyes, mouth } : null);
+  }
   const teethAmount = Number(teethSlider?.value ?? 0);
   if (teethAmount > 0 && faceMeshLandmarks && context) {
     const mouth = mouthLoop.map((index) => faceMeshLandmarks?.[index]).filter((point): point is FacePoint => !!point).map(mapFacePoint);
@@ -2352,8 +2547,26 @@ const render = (): void => {
     context.font = `700 ${fontSize}px sans-serif`;
     context.fillStyle = '#ffffff';
     textOverlays.forEach((text, index) => context.fillText(text, width / 2, height * (0.78 - index * 0.07), width * 0.88));
-    context.font = `${fontSize * 1.25}px sans-serif`;
-    stickerOverlays.forEach((sticker, index) => context.fillText(sticker, width * (0.78 - index * 0.12), height * 0.2));
+    stickerOverlays.forEach((sticker, index) => {
+      const x = sticker.x * width;
+      const y = sticker.y * height;
+      if (sticker.word) {
+        context.font = `800 ${Math.max(16, width * 0.045)}px sans-serif`;
+        const labelWidth = context.measureText(sticker.glyph).width;
+        const padX = Math.max(10, width * 0.018);
+        const boxWidth = labelWidth + padX * 2;
+        const boxHeight = Math.max(28, width * 0.07);
+        context.fillStyle = wordColors[index % wordColors.length];
+        context.beginPath();
+        context.roundRect(x - boxWidth / 2, y - boxHeight / 2, boxWidth, boxHeight, boxHeight / 2);
+        context.fill();
+        context.fillStyle = '#ffffff';
+        context.fillText(sticker.glyph, x, y);
+        return;
+      }
+      context.font = `${Math.max(28, width * 0.11)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+      context.fillText(sticker.glyph, x, y);
+    });
     if (timestampToggle?.checked) {
       context.font = `600 ${Math.max(18, width * 0.026)}px sans-serif`;
       context.textAlign = 'left';
@@ -2425,8 +2638,9 @@ const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): P
     hideAiLoading(loadingToken);
     return;
   }
+  const spec = backgroundScenes[scene];
   const [sceneImage, mask] = await Promise.all([
-    loadSceneImage(scene),
+    spec.kind === 'photo' ? loadSceneImage(scene) : Promise.resolve(null),
     ensurePersonMask(photo, generation),
   ]);
   if (generation !== imageGeneration || activeBackgroundScene !== scene) {
@@ -2434,10 +2648,11 @@ const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): P
     return;
   }
   hideAiLoading(loadingToken);
-  if (!sceneImage || !mask) {
+  if (!mask || (spec.kind === 'photo' && !sceneImage)) {
     activeBackgroundScene = null;
     setSceneButtons(null);
-    const offline = !navigator.onLine;
+    canvas?.classList.remove('is-blank');
+    const offline = !navigator.onLine && spec.kind === 'photo';
     const reason = offline
       ? 'Background change needs a connection for the scene photo and the person cutout. Filters, Adjust, and crop still work offline.'
       : !mask
@@ -2448,7 +2663,7 @@ const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): P
     render();
     return;
   }
-  loadedSceneImages.set(scene, sceneImage);
+  if (sceneImage) loadedSceneImages.set(scene, sceneImage);
   personMask = mask;
   render();
   if (backgroundStatus) backgroundStatus.textContent = `${sceneLabels[scene]} is behind the person.`;
@@ -2817,6 +3032,17 @@ const selectLook = (chip: HTMLButtonElement): void => {
   const title = byId<HTMLElement>('editorTitle');
   if (title) title.textContent = 'Filters';
   photoFilter.value = chip.dataset.look;
+  if (chip.dataset.look === 'beauty') {
+    if (smoothSlider) {
+      smoothSlider.value = '72';
+      if (smoothValue) smoothValue.value = '72';
+      paintRange(smoothSlider);
+    }
+    const warmth = byId<HTMLInputElement>('adjustWarmth');
+    const brilliance = byId<HTMLInputElement>('adjustBrilliance');
+    if (warmth) warmth.value = '14';
+    if (brilliance) brilliance.value = '16';
+  }
   console.log('filter', chip.dataset.look);
   syncFilterChips();
   if (creativeControls) creativeControls.hidden = false;
@@ -3017,24 +3243,27 @@ document.querySelectorAll<HTMLButtonElement>('[data-bg-scene]').forEach((button)
 
 downloadButton?.addEventListener('click', () => {
   if (!canvas || !originalImage) return;
+  const blankBackground = activeBackgroundScene === 'blank';
+  const fileName = blankBackground ? 'editsbeauty-edit.png' : 'editsbeauty-edit.jpg';
+  const mime = blankBackground ? 'image/png' : 'image/jpeg';
   canvas.toBlob(async (blob) => {
     if (!blob) {
       showToast('The edited photo could not be exported.');
       return;
     }
-    const file = new File([blob], 'editsbeauty-edit.jpg', { type: 'image/jpeg' });
+    const file = new File([blob], fileName, { type: mime });
     if (phoneDevice && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: 'EditsBeauty' });
-        showToast('Saved editsbeauty-edit.jpg');
+        showToast(`Saved ${fileName}`);
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
       }
     }
-    downloadBlob(blob, 'editsbeauty-edit.jpg');
-    showToast('Saved editsbeauty-edit.jpg');
-  }, 'image/jpeg', 0.95);
+    downloadBlob(blob, fileName);
+    showToast(`Saved ${fileName}`);
+  }, mime, blankBackground ? undefined : 0.95);
 });
 
 const splash = byId<HTMLDivElement>('splash');
@@ -3598,7 +3827,7 @@ const openGuide = (): void => {
   if (!guidePanel) return;
   guidePanel.hidden = false;
   if (guideLog && guideLog.childElementCount === 0) {
-    guideLine('guide', 'Drop your photo here, then tell me the task. I can smooth skin, apply a look, or change the background to beach, city, studio, garden, sunset, mountains, forest, night, cafe, sky, flowers, or ocean. It runs on this device. I do not create a new picture on a server.');
+    guideLine('guide', 'Drop your photo here, then tell me the task. I can smooth skin, apply a look, or change the background to blank, a color, blur, or a scene such as beach, office, snow, or sunset. It runs on this device. I do not create a new picture on a server.');
   }
   guideInput?.focus();
 };
@@ -3635,18 +3864,35 @@ const applyGuideLook = (look: string): void => {
 
 const sceneFromRequest = (text: string): BackgroundScene | null => {
   const aliases: Array<[RegExp, BackgroundScene]> = [
+    [/\b(blank|transparent|no background)\b/, 'blank'],
+    [/\b(blurred background|portrait blur|blur background)\b/, 'blur'],
+    [/\bwhite background\b|\bplain white\b/, 'white'],
+    [/\bblack background\b/, 'black'],
+    [/\bpink background\b/, 'pink'],
+    [/\bblue background\b/, 'blue'],
+    [/\bgreen background\b/, 'green'],
+    [/\b(office|workplace)\b/, 'office'],
+    [/\b(snow|winter)\b/, 'snow'],
+    [/\b(desert|dunes)\b/, 'desert'],
+    [/\b(library|books)\b/, 'library'],
+    [/\b(bedroom|room background)\b/, 'room'],
+    [/\b(waterfall|falls)\b/, 'waterfall'],
+    [/\b(autumn|fall leaves)\b/, 'autumn'],
+    [/\b(rain|rainy)\b/, 'rain'],
+    [/\b(space|galaxy)\b/, 'space'],
     [/\b(ocean|sea|waves|shore)\b/, 'ocean'],
     [/\b(mountains?|hills?|alps)\b/, 'mountains'],
     [/\b(flowers?|floral|blossoms?)\b/, 'flowers'],
     [/\b(cafe|coffee shop|coffee)\b/, 'cafe'],
     [/\b(night|stars|midnight|city lights)\b/, 'night'],
-    [/\b(garden|meadow|park)\b/, 'garden'],
+    [/\b(park)\b/, 'park'],
+    [/\b(garden|meadow)\b/, 'garden'],
     [/\b(sunset|dusk|golden sky)\b/, 'sunset'],
     [/\b(forest|woods|trees)\b/, 'forest'],
     [/\b(sky|clouds)\b/, 'sky'],
     [/\b(beach|sand|seaside)\b/, 'beach'],
     [/\b(city|downtown|skyline)\b/, 'city'],
-    [/\b(studio|plain background|white background)\b/, 'studio'],
+    [/\bstudio\b/, 'studio'],
   ];
   const match = aliases.find(([pattern]) => pattern.test(text));
   return match ? match[1] : null;
@@ -3662,6 +3908,13 @@ const lookFromRequest = (text: string): string | null => {
     [/\bblack and white\b|\bb\/w\b|\bbw\b|\bmono\b|\bnoir\b/, 'mono'],
     [/\bvivid\b/, 'vivid'],
     [/\bdramatic\b/, 'dramatic'],
+    [/\bbeauty\b/, 'beauty'],
+    [/\bsoft\b/, 'soft'],
+    [/\bpink\b(?!\s+background)/, 'pink'],
+    [/\bvintage\b/, 'vintage'],
+    [/\bpop\b/, 'pop'],
+    [/\bmatte\b/, 'matte'],
+    [/\bgolden\b(?!\s+sky)/, 'golden'],
     [/\bfilm\b/, 'film'],
     [/\bwarm\b/, 'warm'],
     [/\bglow\b/, 'glow'],
@@ -3865,7 +4118,7 @@ const answerGuide = async (raw: string): Promise<void> => {
     done.push('saved editsbeauty-edit.jpg');
   }
   const summary = done.join(', ');
-  const sceneList = 'Beach, city, studio, garden, sunset, mountains, forest, night, cafe, sky, flowers, or ocean.';
+  const sceneList = 'Blank, blur, white, black, pink, blue, beach, city, office, snow, sunset, or another scene in Background.';
   const waitingForScene = wantsBackground && !scene && done.every((item) => item === 'opened the backgrounds');
   if (waitingForScene) {
     guideLine('guide', `Tell me which background you want. ${sceneList}`);
@@ -3898,7 +4151,7 @@ const takeGuidePhoto = (file: File | undefined): void => {
   }
   openGuide();
   openPhoto(URL.createObjectURL(file));
-  guideLine('guide', 'Photo added on this device. Tell me the task. You can name a background: beach, city, studio, garden, sunset, mountains, forest, night, cafe, sky, flowers, or ocean.');
+  guideLine('guide', 'Photo added on this device. Tell me the task. You can name a background: blank, blur, white, beach, city, office, snow, sunset, or another scene in Background.');
 };
 
 const guideDrop = byId<HTMLElement>('guideDrop');
