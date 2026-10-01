@@ -1480,6 +1480,16 @@ document.addEventListener('keydown', (event: KeyboardEvent) => {
   }
 });
 
+const revealInSheet = (element: HTMLElement | null): void => {
+  if (!element) return;
+  const more = byId<HTMLDetailsElement>('moreTools');
+  if (more?.contains(element)) more.open = true;
+  const panel = element.closest('.sheet-panel');
+  if (!(panel instanceof HTMLElement)) return;
+  const top = element.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
+  panel.scrollTo({ top: Math.max(0, top - 8), behavior: 'auto' });
+};
+
 document.querySelectorAll<HTMLButtonElement>('[data-tool]').forEach((button) => {
   button.addEventListener('click', () => {
     const tool = button.dataset.tool ?? 'Tool';
@@ -1520,7 +1530,9 @@ document.querySelectorAll<HTMLButtonElement>('[data-tool]').forEach((button) => 
         return;
       }
       if (Number(teethSlider?.value ?? 0) === 0) setTeethAmount(68);
-      teethSlider?.focus({ preventScroll: true });
+      const title = byId<HTMLElement>('editorTitle');
+      if (title) title.textContent = 'Teeth';
+      revealInSheet(byId<HTMLElement>('teethControl'));
       return;
     }
     if (tool === 'Collage' || tool === 'Photo Grid' || tool === 'Photo Strip') {
@@ -1544,7 +1556,6 @@ document.querySelectorAll<HTMLButtonElement>('[data-tool]').forEach((button) => 
         if (output) output.value = '110%';
       }
       if (tool === 'ID Photo' && photoRatio) photoRatio.value = 'id';
-      if (tool === 'Background') window.setTimeout(() => byId<HTMLElement>('backgroundScenes')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 280);
       if (tool === 'Background Expansion' && photoRatio) photoRatio.value = 'expand-square';
       if (tool === 'Cutout' && cutoutTolerance) cutoutTolerance.value = '24';
       if (tool === 'AI Filter' && photoFilter) {
@@ -1579,7 +1590,28 @@ document.querySelectorAll<HTMLButtonElement>('[data-tool]').forEach((button) => 
         showToast('Choose a photo to use this tool.');
         upload?.click();
       }
-      if (tool === 'Cutout') window.alert('Local color-key cutout is ready. To connect remove.bg AI, configure your API key on a server; do not put secret keys in browser code.');
+      const title = byId<HTMLElement>('editorTitle');
+      if (title) title.textContent = tool === 'Filters' || tool === 'AI Filter' ? 'Filters' : tool;
+      const toolTarget: Record<string, string> = {
+        Enhance: 'enhance',
+        'ID Photo': 'photoRatio',
+        Cutout: 'cutoutTolerance',
+        Remover: 'brushToggle',
+        Background: 'backgroundScenes',
+        'Background Expansion': 'photoRatio',
+        'Batch Edit': 'batchStatus',
+        Brushes: 'brushToggle',
+        Stickers: 'stickerChoice',
+        Text: 'overlayText',
+        ChatEdit: 'overlayText',
+        'Fan Merch': 'stickerChoice',
+        'Body Tuner': 'bodyTune',
+        'Face Volume': 'faceVolume',
+        Hair: 'hairTint',
+        Augmentation: 'faceVolume',
+      };
+      if (toolTarget[tool]) revealInSheet(byId<HTMLElement>(toolTarget[tool]));
+      if (tool === 'Cutout') showToast('Cutout is ready. Move the tolerance slider to remove a background color.');
       return;
     }
     if (tool === 'Retouch' || tool === 'Narrow') {
@@ -3933,4 +3965,15 @@ document.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button, i
     button.setAttribute('aria-pressed', 'true');
     applyChosenLook(item.kind);
   });
+});
+
+byId<HTMLFormElement>('feedbackForm')?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  if (!(form instanceof HTMLFormElement)) return;
+  const data = new FormData(form);
+  const body = `Name: ${data.get('name')}\nEmail: ${data.get('email')}\n\n${data.get('message')}`;
+  const status = byId<HTMLElement>('feedbackStatus');
+  if (status) status.textContent = 'Opening your email app to send this to stisla2021@gmail.com.';
+  window.location.href = `mailto:stisla2021@gmail.com?subject=${encodeURIComponent('EditsBeauty feedback')}&body=${encodeURIComponent(body)}`;
 });

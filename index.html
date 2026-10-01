@@ -41,6 +41,7 @@
       <li><a href="about.html">About Us</a></li>
       <li><a href="privacy-policy.html">Privacy Policy</a></li>
       <li><a href="terms.html">Terms and Conditions</a></li>
+      <li><a href="index.html#feedback">Feedback</a></li>
       <li><a href="contact.html">Contact Us</a></li>
       <li><a href="settings.html">Settings</a></li>
       <li class="theme-setting">
@@ -627,12 +628,24 @@
   </section>
   <script type="module" src="./menu.ts"></script>
   <script type="module" src="./app.ts"></script>
+  <section class="home-note" id="feedback">
+    <h2>Feedback</h2>
+    <p>Tell StISLA2021 what should work better. Send opens your email app and addresses the message to <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a>. The note is not stored on this website.</p>
+    <form class="contact-form" id="feedbackForm">
+      <label for="feedbackName">Name<input id="feedbackName" name="name" type="text" required autocomplete="name"></label>
+      <label for="feedbackEmail">Email<input id="feedbackEmail" name="email" type="email" required autocomplete="email"></label>
+      <label for="feedbackMessage">What happened<textarea id="feedbackMessage" name="message" required placeholder="Which tool, and what you expected"></textarea></label>
+      <button type="submit">Send feedback</button>
+      <p id="feedbackStatus" aria-live="polite"></p>
+    </form>
+  </section>
   <footer class="site-footer">
     <nav aria-label="Site">
       <a href="index.html">Home</a>
       <a href="about.html">About Us</a>
       <a href="privacy-policy.html">Privacy Policy</a>
       <a href="terms.html">Terms and Conditions</a>
+      <a href="index.html#feedback">Feedback</a>
       <a href="contact.html">Contact Us</a>
       <a href="faq.html">FAQ</a>
     </nav>
