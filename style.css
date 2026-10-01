@@ -394,12 +394,12 @@ body.dark .canvas-stage { background: #302c31; }
 .bottom-nav button[aria-pressed="true"] { color: #111; }
 .camera-view { position: fixed; z-index: 24; inset: 0; display: grid; background: #050505; color: #fff; }
 .camera-view[hidden] { display: none; }
-.camera-view video { width: 100%; height: 100%; object-fit: cover; background: #111; }
+.camera-view video { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; pointer-events: none; }
+.camera-stage { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; background: #111; }
 .camera-top, .camera-bottom { position: absolute; z-index: 2; right: 0; left: 0; display: flex; align-items: center; justify-content: space-between; padding: max(16px, env(safe-area-inset-top)) 18px 16px; }
 .camera-view:has(.camera-fallback:not([hidden])) .camera-bottom { visibility: hidden; }
 .camera-bottom { bottom: 0; flex-direction: column; justify-content: flex-end; gap: 10px; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
 .camera-modes { display: flex; gap: 8px; }
-.camera-modes button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: rgb(255 255 255 / 20%); color: #fff; font-weight: 700; cursor: pointer; }
 .camera-modes button[aria-pressed="true"] { background: #fff; color: #111; }
 .camera-status { margin: 0; color: #fff; font-size: 13px; font-weight: 650; }
 .camera-shutter.is-recording span { width: 28px; height: 28px; border-radius: 8px; background: #ff3b30; }
@@ -408,7 +408,22 @@ body.dark .canvas-stage { background: #302c31; }
 .camera-icon-button { width: 44px; height: 44px; border-radius: 50%; background: rgb(0 0 0 / 45%); }
 .camera-shutter { width: 74px; height: 74px; border: 4px solid #fff; border-radius: 50%; background: transparent; }
 .camera-shutter span { width: 58px; height: 58px; border-radius: 50%; background: #fff; }
-.camera-fallback { position: absolute; z-index: 1; inset: 0; display: grid; align-content: center; justify-items: center; gap: 14px; padding: 24px; background: #111; text-align: center; }
+.camera-cats, .camera-filters { display: flex; gap: 8px; width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; }
+.camera-cats::-webkit-scrollbar, .camera-filters::-webkit-scrollbar { display: none; }
+.camera-cats button, .camera-modes button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: rgb(255 255 255 / 20%); color: #fff; font-weight: 700; cursor: pointer; flex: 0 0 auto; }
+.camera-cats button[aria-pressed="true"] { background: #fff; color: #111; }
+.lens-chip { display: grid; width: 68px; flex: 0 0 auto; justify-items: center; gap: 4px; padding: 0; border: 0; background: none; color: #fff; cursor: pointer; }
+.lens-chip canvas { width: 56px; height: 72px; border-radius: 12px; background: #222; object-fit: cover; }
+.lens-chip[aria-pressed="true"] canvas { outline: 2px solid #fff; outline-offset: 2px; }
+.lens-chip span { font-size: 11px; line-height: 1.1; }
+.camera-hint { margin: 0; color: rgb(255 255 255 / 80%); font-size: 12px; text-align: center; }
+.camera-tune { position: absolute; z-index: 4; right: 0; bottom: 0; left: 0; display: grid; gap: 8px; max-height: 48vh; overflow: auto; padding: 12px 16px max(16px, env(safe-area-inset-bottom)); background: rgb(0 0 0 / 78%); }
+.camera-tune[hidden] { display: none; }
+.camera-tune label { display: grid; gap: 4px; color: #fff; font-size: 13px; font-weight: 650; }
+.camera-tune input { width: 100%; }
+.camera-tune-bar, .camera-tune-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.camera-tune button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: #fff; color: #111; font-weight: 750; cursor: pointer; }
+.camera-fallback { position: absolute; z-index: 5; inset: 0; display: grid; align-content: center; justify-items: center; gap: 14px; padding: 24px; background: #111; text-align: center; }
 .camera-fallback[hidden] { display: none; }
 .camera-fallback .primary-button { min-width: 180px; }
 .iphone-filters { display: grid; grid-column: 1 / -1; gap: 12px; }

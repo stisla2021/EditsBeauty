@@ -9,5 +9,5 @@
     "rootDir": ".",
     "outDir": "dist"
   },
-  "include": ["app.ts", "menu.ts"]
+  "include": ["app.ts", "menu.ts", "camera-live.ts"]
 }

@@ -1,4 +1,6 @@
 // Copyright (c) StISLA2021
+import { liveEffectsActive, liveRecordStream, liveStill, publishStillLandmarks, startLivePreview, stopLivePreview } from './camera-live';
+
 type FacePoint = { x: number; y: number; z?: number };
 type FaceMeshResults = { multiFaceLandmarks?: FacePoint[][] };
 type FaceMeshInstance = {
@@ -1800,6 +1802,7 @@ const detectFaceMesh = async (image: HTMLImageElement): Promise<FacePoint[] | nu
   const FaceMesh = (window as Window & { FaceMesh?: FaceMeshConstructor }).FaceMesh;
   if (!FaceMesh) {
     if (faceDetectionStatus) faceDetectionStatus.textContent = 'Face Mesh is offline; Narrow will use a centered fallback region.';
+    publishStillLandmarks(null);
     return null;
   }
 
@@ -1821,9 +1824,11 @@ const detectFaceMesh = async (image: HTMLImageElement): Promise<FacePoint[] | nu
     if (faceDetectionStatus) faceDetectionStatus.textContent = landmarks
       ? 'Face detected locally. Narrow uses facial landmarks.'
       : 'No face found. Narrow uses a centered fallback region.';
+    publishStillLandmarks(landmarks);
     return landmarks;
   } catch {
     if (faceDetectionStatus) faceDetectionStatus.textContent = 'Face Mesh could not load; Narrow uses a centered fallback region.';
+    publishStillLandmarks(null);
     return null;
   }
 };
@@ -2813,6 +2818,7 @@ const stopCameraRecorder = (): void => {
 
 const stopCamera = (): void => {
   stopCameraRecorder();
+  stopLivePreview();
   cameraStream?.getTracks().forEach((track) => track.stop());
   cameraStream = null;
   if (cameraVideo) cameraVideo.srcObject = null;
@@ -2837,6 +2843,8 @@ const setCameraMode = (mode: CameraMode): void => {
 };
 
 const stillFromCamera = (): string | null => {
+  const live = liveStill();
+  if (live) return live;
   if (!cameraVideo?.videoWidth) return null;
   const shot = document.createElement('canvas');
   shot.width = cameraVideo.videoWidth;
@@ -2866,14 +2874,15 @@ const recorderMime = (): string => {
 };
 
 const startCameraRecording = (ms: number | null, onStop: (blob: Blob) => void): void => {
-  if (!cameraStream || typeof MediaRecorder === 'undefined') {
+  const recorded = liveRecordStream(cameraStream) ?? cameraStream;
+  if (!recorded || typeof MediaRecorder === 'undefined') {
     showToast('This phone cannot record video in the browser.');
     return;
   }
   cameraChunks = [];
   const mime = recorderMime();
   try {
-    cameraRecorder = mime ? new MediaRecorder(cameraStream, { mimeType: mime }) : new MediaRecorder(cameraStream);
+    cameraRecorder = mime ? new MediaRecorder(recorded, { mimeType: mime }) : new MediaRecorder(recorded);
   } catch {
     showToast('This phone cannot record video in the browser.');
     return;
@@ -2907,9 +2916,13 @@ async function openCamera(): Promise<void> {
     if (cameraFallback) cameraFallback.hidden = false;
     return;
   }
-  const video = cameraFacing === 'environment'
-    ? { facingMode: { ideal: 'environment' } }
-    : { facingMode: { ideal: 'user' } };
+  const phoneCamera = window.matchMedia('(max-width: 820px), (pointer: coarse)').matches;
+  const video = {
+    facingMode: { ideal: cameraFacing },
+    width: { ideal: phoneCamera ? 720 : 1280 },
+    height: { ideal: phoneCamera ? 1280 : 720 },
+    frameRate: { ideal: 30, max: 30 },
+  };
   const withAudio = cameraMode !== 'portrait';
   try {
     let stream: MediaStream;
@@ -2927,6 +2940,8 @@ async function openCamera(): Promise<void> {
     cameraVideo.muted = true;
     cameraVideo.playsInline = true;
     await cameraVideo.play();
+    if (session !== cameraSession) return;
+    startLivePreview(cameraVideo, cameraFacing);
   } catch {
     if (session !== cameraSession) return;
     stopCamera();
@@ -2975,9 +2990,10 @@ const captureCamera = (): void => {
     });
     window.setTimeout(() => {
       if (session !== cameraSession) return;
+      const baked = liveEffectsActive();
       closeCamera();
       if (still) {
-        pendingSmooth = '48';
+        pendingSmooth = baked ? '0' : '48';
         pendingPortraitFinish = true;
         openPhoto(still);
         setStudioTab('filters');
@@ -2988,7 +3004,7 @@ const captureCamera = (): void => {
   }
   const still = stillFromCamera();
   if (!still) return;
-  pendingSmooth = '48';
+  pendingSmooth = liveEffectsActive() ? '0' : '48';
   pendingPortraitFinish = true;
   closeCamera();
   setStudioTab('filters');

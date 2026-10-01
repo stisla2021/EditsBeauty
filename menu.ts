@@ -336,6 +336,8 @@ const bindSettings = (): void => {
   setSwitch(saveAlbum, readSetting('editsbeauty-save-album', 'on') !== 'off');
   if (stickerOptimize instanceof HTMLButtonElement) setSwitch(stickerOptimize, readSetting('editsbeauty-sticker-optimize', 'off') === 'on');
   if (heicFormat instanceof HTMLButtonElement) setSwitch(heicFormat, readSetting('editsbeauty-heic', 'on') !== 'off');
+  const faceMeshOverlay = document.getElementById('faceMeshOverlay');
+  if (faceMeshOverlay instanceof HTMLButtonElement) setSwitch(faceMeshOverlay, readSetting('editsbeauty-face-mesh', 'off') === 'on');
   if (resolutionValue) resolutionValue.textContent = readSetting('editsbeauty-resolution', 'High');
   if (liveValue) liveValue.textContent = readSetting('editsbeauty-live-format', 'Ask every time');
   if (languageValue) languageValue.textContent = readSetting('editsbeauty-language', 'English');
@@ -356,6 +358,12 @@ const bindSettings = (): void => {
     const next = heicFormat.getAttribute('aria-checked') !== 'true';
     setSwitch(heicFormat, next);
     writeSetting('editsbeauty-heic', next ? 'on' : 'off');
+  });
+  faceMeshOverlay?.addEventListener('click', () => {
+    if (!(faceMeshOverlay instanceof HTMLButtonElement)) return;
+    const next = faceMeshOverlay.getAttribute('aria-checked') !== 'true';
+    setSwitch(faceMeshOverlay, next);
+    writeSetting('editsbeauty-face-mesh', next ? 'on' : 'off');
   });
 
   const resolutions = ['High', 'Standard', 'Original'];

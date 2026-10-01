@@ -572,19 +572,26 @@
   </nav>
   <section class="camera-view" id="cameraView" hidden>
     <video id="cameraVideo" autoplay muted playsinline webkit-playsinline></video>
+    <canvas class="camera-stage" id="cameraStage"></canvas>
     <div class="camera-top">
       <button class="camera-icon-button" id="cameraClose" type="button" aria-label="Close camera"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="camera-icon-button" id="cameraMesh" type="button" aria-pressed="false" aria-label="Face mesh overlay">Mesh</button>
       <button class="camera-icon-button" id="cameraFlip" type="button" aria-label="Flip camera"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8a8 8 0 0 1 14-2M20 16a8 8 0 0 1-14 2"/><path d="M16 3l2 3-3 1M8 21l-2-3 3-1"/></svg></button>
     </div>
     <div class="camera-bottom">
+      <div class="camera-cats" id="cameraCats" role="group" aria-label="Filter categories"></div>
+      <div class="camera-filters" id="cameraFilters" role="listbox" aria-label="Camera filters"></div>
       <div class="camera-modes" role="group" aria-label="Camera mode">
         <button type="button" data-camera-mode="portrait" aria-pressed="true">Portrait</button>
         <button type="button" data-camera-mode="live" aria-pressed="false">Live</button>
         <button type="button" data-camera-mode="video" aria-pressed="false">Video</button>
+        <button type="button" id="cameraTuneOpen">Tune</button>
       </div>
       <button class="camera-shutter" id="cameraCapture" type="button" aria-label="Capture photo"><span></span></button>
       <p class="camera-status" id="cameraStatus">Portrait</p>
+      <p class="camera-hint" id="cameraHint"></p>
     </div>
+    <div class="camera-tune" id="cameraTune" hidden></div>
     <div class="camera-fallback" id="cameraFallback" hidden>
       <p>Camera permission was denied. Upload a photo instead.</p>
       <label class="primary-button" for="upload">Upload photo</label>
