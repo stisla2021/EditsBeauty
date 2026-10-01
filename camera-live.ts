@@ -1003,6 +1003,7 @@ let meshCtx: CanvasRenderingContext2D | null = null;
 let lastMeshSent = 0;
 let lastFrameCost = 0;
 let slowFrames = 0;
+let sendErrors = 0;
 
 const loop = (time: number): void => {
   if (!running) return;
@@ -1031,12 +1032,16 @@ const sendMesh = (): void => {
   if (!meshCtx) return;
   meshCtx.drawImage(source, 0, 0, meshInput.width, meshInput.height);
   meshBusy = true;
-  faceMesh.send({ image: meshInput }).catch(() => {
+  const active = faceMesh;
+  active.send({ image: meshInput }).catch(() => {
+    if (!running || faceMesh !== active) return;
+    sendErrors += 1;
+    if (sendErrors < 3) return;
     meshFailed = true;
     meshReady = false;
-    faceMesh = null;
+    writeHint();
   }).finally(() => {
-    meshBusy = false;
+    if (faceMesh === active) meshBusy = false;
   });
 };
 
@@ -1466,13 +1471,27 @@ export const publishStillLandmarks = (points: FacePoint[] | null): void => {
   stillFace = points ? groupLandmarks(points) : null;
 };
 
+const prepareFrame = (): boolean => {
+  if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return false;
+  resizeToVideo();
+  if (!source.width) return false;
+  blitSource();
+  paintStage(performance.now());
+  return stage.width >= 2;
+};
+
 export const startLivePreview = (nextVideo: HTMLVideoElement, nextFacing: 'user' | 'environment'): void => {
   video = nextVideo;
   facing = nextFacing;
   running = true;
   previewStamp = 0;
   previewFrames = 0;
-  if (!meshFailed) bootMesh();
+  slowFrames = 0;
+  if (!faceMesh) {
+    meshFailed = false;
+    sendErrors = 0;
+    bootMesh();
+  }
   if (!webglOk && !gl) bootGl();
   window.cancelAnimationFrame(raf);
   raf = window.requestAnimationFrame(loop);
@@ -1483,14 +1502,14 @@ export const stopLivePreview = (): void => {
   window.cancelAnimationFrame(raf);
   liveFace = null;
   meshBusy = false;
-  faceMesh?.close?.();
-  faceMesh = null;
-  meshReady = false;
   recordStream?.getAudioTracks().forEach((track) => recordStream?.removeTrack(track));
 };
 
 const releaseCamera = (): void => {
   stopLivePreview();
+  faceMesh?.close?.();
+  faceMesh = null;
+  meshReady = false;
   const lose = gl?.getExtension('WEBGL_lose_context');
   lose?.loseContext();
   gl = null;
@@ -1501,7 +1520,7 @@ const releaseCamera = (): void => {
 };
 
 export const liveStill = (): string | null => {
-  if (!running || stage.width < 2) return null;
+  if (!running || !prepareFrame()) return null;
   try {
     return stage.toDataURL('image/jpeg', 0.92);
   } catch {
@@ -1510,7 +1529,7 @@ export const liveStill = (): string | null => {
 };
 
 export const liveRecordStream = (audioFrom: MediaStream | null): MediaStream | null => {
-  if (!running || stage.width < 2 || !stage.captureStream) return null;
+  if (!running || !prepareFrame() || !stage.captureStream) return null;
   if (!recordStream) recordStream = stage.captureStream(30);
   recordStream.getAudioTracks().forEach((track) => recordStream?.removeTrack(track));
   const audio = audioFrom?.getAudioTracks()[0];

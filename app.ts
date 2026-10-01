@@ -2808,6 +2808,8 @@ const cameraModeLabel: Record<CameraMode, string> = {
   video: 'Video',
 };
 
+let suppressRecordingClose = false;
+
 const stopCameraRecorder = (): void => {
   window.clearTimeout(liveStopTimer);
   if (cameraRecorder && cameraRecorder.state !== 'inactive') cameraRecorder.stop();
@@ -2818,6 +2820,7 @@ const stopCameraRecorder = (): void => {
 };
 
 const stopCamera = (): void => {
+  if (cameraRecorder && cameraRecorder.state === 'recording') suppressRecordingClose = true;
   stopCameraRecorder();
   stopLivePreview();
   cameraStream?.getTracks().forEach((track) => track.stop());
@@ -2893,8 +2896,11 @@ const startCameraRecording = (ms: number | null, onStop: (blob: Blob) => void): 
   };
   cameraRecorder.onstop = () => {
     const blob = new Blob(cameraChunks, { type: cameraRecorder?.mimeType || mime || 'video/webm' });
+    const skipped = suppressRecordingClose;
+    suppressRecordingClose = false;
     cameraRecording = false;
     cameraShutter?.classList.remove('is-recording');
+    if (skipped) return;
     if (blob.size > 0) onStop(blob);
     else showToast('The recording was empty. Try again.');
   };
@@ -2930,7 +2936,11 @@ async function openCamera(): Promise<void> {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video, audio: withAudio });
     } catch {
-      stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: cameraFacing } }, audio: false });
+      }
     }
     if (session !== cameraSession) {
       stream.getTracks().forEach((track) => track.stop());
@@ -3965,8 +3975,9 @@ const answerGuide = async (raw: string): Promise<void> => {
   if (/\b(save|download|export)\b/.test(text) && !/\b(edit|smooth|vivid|noir|background|bright|warm|exposure|teeth|tooth)\b/.test(text)) {
     if (downloadButton && originalImage && !downloadButton.disabled) downloadButton.click();
     else showToast('Choose a photo before saving.');
-    if (originalImage) guideResult('I saved the photo as editsbeauty-edit.jpg. Here is the edited picture. Save at the top right does the same thing.');
-    else guideLine('guide', 'Choose a photo first. After the edit, tap Save at the top right. The download is editsbeauty-edit.jpg.');
+    const savedName = activeBackgroundScene === 'blank' ? 'editsbeauty-edit.png' : 'editsbeauty-edit.jpg';
+    if (originalImage) guideResult(`I saved the photo as ${savedName}. Here is the edited picture. Save at the top right does the same thing.`);
+    else guideLine('guide', 'Choose a photo first. After the edit, tap Save at the top right. The download is editsbeauty-edit.jpg, or a PNG when the background is blank.');
     return;
   }
   const done: string[] = [];
@@ -4141,11 +4152,14 @@ const answerGuide = async (raw: string): Promise<void> => {
     guideLine('guide', `Tell me which background you want. ${sceneList}`);
     return;
   }
+  if (!originalImage) {
+    guideLine('guide', `Choose a photo first. I will apply ${summary} when it opens.`);
+    return;
+  }
   const reply = backgroundReady && scene
     ? `Here is the edited picture. I put ${sceneLabels[scene]} behind the person: ${summary}.`
     : `Here is the edited picture: ${summary}. You can still change any slider, look, or background by hand. Save is at the top right.`;
-  if (originalImage) guideResult(reply);
-  else guideLine('guide', reply);
+  guideResult(reply);
 };
 
 byId<HTMLButtonElement>('homeGuide')?.addEventListener('click', openGuide);
