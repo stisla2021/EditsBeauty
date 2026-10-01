@@ -84,10 +84,10 @@ const installedApp = (): boolean => {
     || window.matchMedia('(display-mode: fullscreen)').matches;
 };
 
-const iosBrowser = (): boolean => {
-  const iPhone = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+const appleDevice = (): boolean => {
+  const ua = navigator.userAgent;
   const iPad = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-  return iPhone || iPad;
+  return iPad || /iPad|iPhone|iPod|Macintosh|Mac OS X/i.test(ua);
 };
 
 let installPrompt: InstallPromptEvent | null = (window as Window & { __editsbeautyInstall?: InstallPromptEvent }).__editsbeautyInstall ?? null;
@@ -95,7 +95,7 @@ const installButton = document.createElement('button');
 installButton.type = 'button';
 installButton.className = 'install-app';
 installButton.textContent = 'Install app';
-installButton.hidden = installedApp();
+installButton.hidden = appleDevice() || installedApp();
 const installHelp = document.createElement('div');
 installHelp.className = 'install-help';
 installHelp.hidden = true;
@@ -116,11 +116,15 @@ installMenuButton.className = 'nav-share';
 installMenuButton.id = 'installApp';
 installMenuButton.textContent = 'Install app';
 installMenuItem.append(installMenuButton);
-installMenuItem.hidden = installedApp();
-if (navLinks) {
+installMenuItem.hidden = appleDevice() || installedApp();
+if (navLinks && !appleDevice()) {
   const shareItem = document.getElementById('shareApp')?.closest('li');
   if (shareItem?.parentElement === navLinks) navLinks.insertBefore(installMenuItem, shareItem);
   else navLinks.prepend(installMenuItem);
+}
+if (appleDevice()) {
+  installButton.remove();
+  installHelp.remove();
 }
 
 const hideInstall = (): void => {
@@ -140,13 +144,13 @@ window.addEventListener('beforeinstallprompt', (event: Event) => {
   event.preventDefault();
   installPrompt = event as InstallPromptEvent;
   document.documentElement.dataset.installable = 'true';
-  if (!installedApp()) {
-    installButton.hidden = false;
-    installMenuItem.hidden = false;
-  }
+  if (appleDevice() || installedApp()) return;
+  installButton.hidden = false;
+  installMenuItem.hidden = false;
 });
 
 const runInstall = (): void => {
+  if (appleDevice()) return;
   if (installedApp()) {
     hideInstall();
     return;
@@ -161,11 +165,7 @@ const runInstall = (): void => {
     });
     return;
   }
-  if (iosBrowser()) {
-    showInstallHelp('In Safari, tap Share, then Add to Home Screen.');
-    return;
-  }
-  showInstallHelp('Open the browser menu and choose Install app or Add to Home screen.');
+  showInstallHelp('Open the browser menu and choose Install app.');
 };
 
 installButton.addEventListener('click', runInstall);
