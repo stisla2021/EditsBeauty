@@ -11,6 +11,12 @@
   "x-copyright": "StISLA2021",
   "id": "./",
   "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://editsbeauty.vercel.app/manifest.json"
+    }
+  ],
   "icons": [
     {
       "src": "images/logo-192.png",

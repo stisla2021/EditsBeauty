@@ -77,12 +77,42 @@ type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 };
 
-const installedApp = (): boolean => {
+const installedKey = 'editsbeauty-installed';
+
+const rememberInstalled = (): void => {
+  try {
+    localStorage.setItem(installedKey, '1');
+  } catch {
+    // The button is still removed for this visit.
+  }
+};
+
+const rememberedInstall = (): boolean => {
+  try {
+    return localStorage.getItem(installedKey) === '1';
+  } catch {
+    return false;
+  }
+};
+
+const forgetInstalled = (): void => {
+  try {
+    localStorage.removeItem(installedKey);
+  } catch {
+    // A later install prompt can still show the button.
+  }
+};
+
+const launchedInstalled = (): boolean => {
   const nav = navigator as Navigator & { standalone?: boolean };
   return nav.standalone === true
     || window.matchMedia('(display-mode: standalone)').matches
-    || window.matchMedia('(display-mode: fullscreen)').matches;
+    || window.matchMedia('(display-mode: fullscreen)').matches
+    || window.matchMedia('(display-mode: minimal-ui)').matches
+    || window.matchMedia('(display-mode: window-controls-overlay)').matches;
 };
+
+const alreadyInstalled = (): boolean => launchedInstalled() || rememberedInstall();
 
 const appleDevice = (): boolean => {
   const ua = navigator.userAgent;
@@ -91,11 +121,12 @@ const appleDevice = (): boolean => {
 };
 
 let installPrompt: InstallPromptEvent | null = (window as Window & { __editsbeautyInstall?: InstallPromptEvent }).__editsbeautyInstall ?? null;
+if (installPrompt && !appleDevice() && !launchedInstalled()) forgetInstalled();
 const installButton = document.createElement('button');
 installButton.type = 'button';
 installButton.className = 'install-app';
 installButton.textContent = 'Install app';
-installButton.hidden = appleDevice() || installedApp();
+installButton.hidden = appleDevice() || alreadyInstalled();
 const installHelp = document.createElement('div');
 installHelp.className = 'install-help';
 installHelp.hidden = true;
@@ -116,22 +147,26 @@ installMenuButton.className = 'nav-share';
 installMenuButton.id = 'installApp';
 installMenuButton.textContent = 'Install app';
 installMenuItem.append(installMenuButton);
-installMenuItem.hidden = appleDevice() || installedApp();
-if (navLinks && !appleDevice()) {
+installMenuItem.hidden = appleDevice() || alreadyInstalled();
+const placeInstallMenu = (): void => {
+  if (!navLinks || installMenuItem.isConnected) return;
   const shareItem = document.getElementById('shareApp')?.closest('li');
   if (shareItem?.parentElement === navLinks) navLinks.insertBefore(installMenuItem, shareItem);
   else navLinks.prepend(installMenuItem);
-}
-if (appleDevice()) {
+};
+if (!appleDevice() && !alreadyInstalled()) placeInstallMenu();
+if (appleDevice() || alreadyInstalled()) {
   installButton.remove();
   installHelp.remove();
+  installMenuItem.remove();
 }
 
 const hideInstall = (): void => {
+  rememberInstalled();
   installPrompt = null;
-  installButton.hidden = true;
-  installHelp.hidden = true;
-  installMenuItem.hidden = true;
+  installButton.remove();
+  installHelp.remove();
+  installMenuItem.remove();
   document.documentElement.dataset.installed = 'true';
 };
 
@@ -142,16 +177,19 @@ const showInstallHelp = (message: string): void => {
 
 window.addEventListener('beforeinstallprompt', (event: Event) => {
   event.preventDefault();
+  if (appleDevice() || launchedInstalled()) return;
+  forgetInstalled();
   installPrompt = event as InstallPromptEvent;
   document.documentElement.dataset.installable = 'true';
-  if (appleDevice() || installedApp()) return;
+  if (!installButton.isConnected) document.body.append(installButton);
   installButton.hidden = false;
+  placeInstallMenu();
   installMenuItem.hidden = false;
 });
 
 const runInstall = (): void => {
   if (appleDevice()) return;
-  if (installedApp()) {
+  if (alreadyInstalled()) {
     hideInstall();
     return;
   }
@@ -179,6 +217,13 @@ installHelpClose.addEventListener('click', () => {
 });
 
 window.addEventListener('appinstalled', hideInstall);
+if (launchedInstalled()) hideInstall();
+const relatedApps = navigator as Navigator & { getInstalledRelatedApps?: () => Promise<unknown[]> };
+if (!appleDevice() && relatedApps.getInstalledRelatedApps) {
+  void relatedApps.getInstalledRelatedApps().then((apps) => {
+    if (apps.length > 0) hideInstall();
+  }).catch(() => undefined);
+}
 
 if ('serviceWorker' in navigator) {
   void navigator.serviceWorker.register('./sw.js').then((registration) => {
