@@ -77,43 +77,108 @@ type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 };
 
+const installedApp = (): boolean => {
+  const nav = navigator as Navigator & { standalone?: boolean };
+  return nav.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches
+    || window.matchMedia('(display-mode: fullscreen)').matches;
+};
+
+const iosBrowser = (): boolean => {
+  const iPhone = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+  const iPad = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  return iPhone || iPad;
+};
+
 let installPrompt: InstallPromptEvent | null = (window as Window & { __editsbeautyInstall?: InstallPromptEvent }).__editsbeautyInstall ?? null;
 const installButton = document.createElement('button');
 installButton.type = 'button';
 installButton.className = 'install-app';
 installButton.textContent = 'Install app';
-installButton.hidden = true;
-document.body.append(installButton);
-if (installPrompt) {
-  installButton.hidden = false;
-  document.documentElement.dataset.installable = 'true';
+installButton.hidden = installedApp();
+const installHelp = document.createElement('div');
+installHelp.className = 'install-help';
+installHelp.hidden = true;
+installHelp.setAttribute('role', 'dialog');
+installHelp.setAttribute('aria-label', 'Install EditsBeauty');
+const installHelpText = document.createElement('p');
+const installHelpClose = document.createElement('button');
+installHelpClose.type = 'button';
+installHelpClose.textContent = 'Close';
+installHelp.append(installHelpText, installHelpClose);
+document.body.append(installButton, installHelp);
+if (installPrompt) document.documentElement.dataset.installable = 'true';
+
+const installMenuItem = document.createElement('li');
+const installMenuButton = document.createElement('button');
+installMenuButton.type = 'button';
+installMenuButton.className = 'nav-share';
+installMenuButton.id = 'installApp';
+installMenuButton.textContent = 'Install app';
+installMenuItem.append(installMenuButton);
+installMenuItem.hidden = installedApp();
+if (navLinks) {
+  const shareItem = document.getElementById('shareApp')?.closest('li');
+  if (shareItem?.parentElement === navLinks) navLinks.insertBefore(installMenuItem, shareItem);
+  else navLinks.prepend(installMenuItem);
 }
+
+const hideInstall = (): void => {
+  installPrompt = null;
+  installButton.hidden = true;
+  installHelp.hidden = true;
+  installMenuItem.hidden = true;
+  document.documentElement.dataset.installed = 'true';
+};
+
+const showInstallHelp = (message: string): void => {
+  installHelpText.textContent = message;
+  installHelp.hidden = false;
+};
 
 window.addEventListener('beforeinstallprompt', (event: Event) => {
   event.preventDefault();
   installPrompt = event as InstallPromptEvent;
-  installButton.hidden = false;
   document.documentElement.dataset.installable = 'true';
-});
-
-installButton.addEventListener('click', () => {
-  if (!installPrompt) return;
-  const prompt = installPrompt;
-  installPrompt = null;
-  installButton.hidden = true;
-  void prompt.prompt().then(() => prompt.userChoice).then((choice) => {
-    if (choice.outcome === 'accepted') installButton.remove();
-    else installButton.hidden = false;
-  }).catch(() => {
+  if (!installedApp()) {
     installButton.hidden = false;
-  });
+    installMenuItem.hidden = false;
+  }
 });
 
-window.addEventListener('appinstalled', () => {
-  installPrompt = null;
-  installButton.hidden = true;
-  document.documentElement.dataset.installed = 'true';
+const runInstall = (): void => {
+  if (installedApp()) {
+    hideInstall();
+    return;
+  }
+  if (installPrompt) {
+    const prompt = installPrompt;
+    installPrompt = null;
+    void prompt.prompt().then(() => prompt.userChoice).then((choice) => {
+      if (choice.outcome === 'accepted') hideInstall();
+    }).catch(() => {
+      showInstallHelp('Open the browser menu and choose Install app.');
+    });
+    return;
+  }
+  if (iosBrowser()) {
+    showInstallHelp('In Safari, tap Share, then Add to Home Screen.');
+    return;
+  }
+  showInstallHelp('Open the browser menu and choose Install app or Add to Home screen.');
+};
+
+installButton.addEventListener('click', runInstall);
+installMenuButton.addEventListener('click', () => {
+  navLinks?.classList.remove('active');
+  if (hamburger instanceof HTMLButtonElement) hamburger.setAttribute('aria-expanded', 'false');
+  runInstall();
 });
+installHelpClose.addEventListener('click', () => {
+  installHelp.hidden = true;
+});
+
+window.addEventListener('appinstalled', hideInstall);
 
 if ('serviceWorker' in navigator) {
   void navigator.serviceWorker.register('./sw.js').then((registration) => {

@@ -372,7 +372,11 @@ body.dark .canvas-stage { background: #302c31; }
 .contact-form button { min-height: 44px; border: 0; border-radius: 999px; background: #111; color: #fff; font-weight: 700; cursor: pointer; }
 .home-note .contact-form label { color: inherit; }
 .home-note .contact-form input, .home-note .contact-form textarea { background: var(--surface); color: var(--text); border-color: var(--line); }
-.install-app { position: fixed; z-index: 12; right: 16px; bottom: calc(96px + env(safe-area-inset-bottom)); min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 750; box-shadow: var(--shadow); }
+.install-app { position: fixed; z-index: 18; right: 16px; bottom: calc(96px + env(safe-area-inset-bottom)); min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 750; box-shadow: var(--shadow); }
+.install-help { position: fixed; z-index: 90; right: 16px; bottom: calc(152px + env(safe-area-inset-bottom)); display: grid; gap: 10px; width: min(22rem, calc(100% - 32px)); margin-left: auto; padding: 14px 16px; border-radius: 16px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.install-help p { margin: 0; font-size: 14px; line-height: 1.45; }
+.install-help button { min-height: 44px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 750; cursor: pointer; }
+.install-help[hidden] { display: none; }
 .bottom-nav { position: fixed; z-index: 16; bottom: max(12px, env(safe-area-inset-bottom)); left: 50%; display: flex; width: min(280px, calc(100% - 48px)); height: 64px; align-items: flex-end; justify-content: space-between; padding: 0 28px 10px; border-radius: 999px; background: #fff; box-shadow: 0 10px 30px rgb(17 17 17 / 12%); transform: translateX(-50%); }
 .bottom-nav button { display: grid; min-width: 48px; min-height: 44px; place-items: center; padding: 0; border: 0; background: none; color: #111; cursor: pointer; }
 .bottom-nav svg { width: 24px; height: 24px; }
