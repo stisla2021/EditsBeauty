@@ -232,13 +232,41 @@ const iosDevice = (): boolean => {
 
 const appliedVersionKey = 'editsbeauty-applied-version';
 const dismissedUpdateKey = 'editsbeauty-update-dismissed';
-const readAppliedVersion = (): string => {
+const homeScreenSeenKey = 'editsbeauty-homescreen-seen';
+const firstHomeSessionKey = 'editsbeauty-homescreen-first-session';
+const seenHomeScreen = (): boolean => {
   try {
-    return localStorage.getItem(appliedVersionKey) ?? '';
+    return localStorage.getItem(homeScreenSeenKey) === '1';
   } catch {
-    return '';
+    return false;
   }
 };
+const markHomeScreenSeen = (): void => {
+  try {
+    localStorage.setItem(homeScreenSeenKey, '1');
+  } catch {
+    // A new install still skips the banner for this visit.
+  }
+};
+const seenBeforeThisVisit = launchedInstalled() && seenHomeScreen();
+if (launchedInstalled()) {
+  if (!seenBeforeThisVisit) {
+    try {
+      sessionStorage.setItem(firstHomeSessionKey, '1');
+    } catch {
+      // This visit still skips the banner.
+    }
+  }
+  markHomeScreenSeen();
+}
+const firstHomeSession = ((): boolean => {
+  try {
+    return sessionStorage.getItem(firstHomeSessionKey) === '1';
+  } catch {
+    return false;
+  }
+})();
+const returningHomeScreen = seenBeforeThisVisit && !firstHomeSession && !iosDevice();
 const rememberAppliedVersion = (version: string): void => {
   try {
     localStorage.setItem(appliedVersionKey, version);
@@ -270,17 +298,12 @@ if ('serviceWorker' in navigator) {
   updateButton.className = 'update-button';
   updateButton.type = 'button';
   updateButton.textContent = 'Update';
-  const forceButton = document.createElement('button');
-  forceButton.className = 'update-button update-force';
-  forceButton.type = 'button';
-  forceButton.textContent = 'Force refresh';
-  forceButton.hidden = !iosDevice();
   const updateClose = document.createElement('button');
   updateClose.className = 'update-close';
   updateClose.type = 'button';
   updateClose.setAttribute('aria-label', 'Dismiss update');
   updateClose.textContent = '×';
-  updateActions.append(updateButton, forceButton);
+  updateActions.append(updateButton);
   updateBanner.append(updateCopy, updateActions, updateClose);
   document.body.prepend(updateBanner);
 
@@ -335,14 +358,19 @@ if ('serviceWorker' in navigator) {
   };
 
   const showUpdate = async (worker: ServiceWorker | null): Promise<void> => {
-    if (!launchedInstalled() || !navigator.serviceWorker.controller || !worker) return;
+    if (!navigator.serviceWorker.controller || !worker) return;
     const [current, next] = await Promise.all([
       askVersion(navigator.serviceWorker.controller),
       askVersion(worker),
     ]);
     if (current) rememberAppliedVersion(current);
-    if (!next || next === current || next === readAppliedVersion()) {
+    if (!next || next === current) {
       if (next && next === current) hideUpdate();
+      return;
+    }
+    updateBanner.hidden = true;
+    if (!returningHomeScreen) {
+      if (iosDevice() || launchedInstalled()) applyQuietly(worker, next);
       return;
     }
     waitingWorker = worker;
@@ -352,12 +380,9 @@ if ('serviceWorker' in navigator) {
       return;
     }
     updateVersion.textContent = `Version ${next}`;
-    updateMessage.textContent = iosDevice()
-      ? 'On iPhone: tap Update. If the screen does not change, close EditsBeauty completely, then open it again from the Home Screen.'
-      : 'A new version of EditsBeauty is ready. Tap Update to load it now.';
+    updateMessage.textContent = 'A new version of EditsBeauty is ready. Tap Update to load it now.';
     updateButton.disabled = false;
     updateButton.textContent = 'Update';
-    forceButton.hidden = !iosDevice();
     updateBanner.hidden = false;
   };
 
@@ -382,22 +407,31 @@ if ('serviceWorker' in navigator) {
       .finally(openLatest);
   };
 
+  const applyQuietly = (worker: ServiceWorker, version: string): void => {
+    updateBanner.hidden = true;
+    try {
+      if (sessionStorage.getItem('editsbeauty-quiet-update') === version) return;
+      sessionStorage.setItem('editsbeauty-quiet-update', version);
+    } catch {
+      // One attempt still runs when storage is blocked.
+    }
+    waitingWorker = worker;
+    offeredVersion = version;
+    worker.postMessage({ type: 'SKIP_WAITING' });
+    window.setTimeout(finishUpdate, 700);
+  };
+
   updateClose.addEventListener('click', dismissUpdate);
 
   const beginUpdate = (): void => {
     if (refreshing || !waitingWorker) return;
     updateButton.disabled = true;
-    forceButton.disabled = true;
     updateButton.textContent = 'Updating…';
     waitingWorker.postMessage({ type: 'SKIP_WAITING' });
-    window.setTimeout(finishUpdate, iosDevice() ? 400 : 3000);
+    window.setTimeout(finishUpdate, 3000);
   };
 
   updateButton.addEventListener('click', beginUpdate);
-  forceButton.addEventListener('click', () => {
-    forceButton.textContent = 'Refreshing…';
-    beginUpdate();
-  });
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hasControlledPage) {
