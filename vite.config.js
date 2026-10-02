@@ -2,6 +2,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from '
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { planEdit } from './guide-plan.js';
+import { acceptReport, saveReport } from './report-store.js';
 
 const groqKey = () => {
   if (process.env.GROQ_API_KEY) return process.env.GROQ_API_KEY;
@@ -22,7 +23,48 @@ const guideApi = () => ({
   },
 });
 
+const readJson = (req) => new Promise((resolveBody, reject) => {
+  const chunks = [];
+  req.on('data', (chunk) => chunks.push(chunk));
+  req.on('end', () => {
+    try {
+      resolveBody(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'));
+    } catch (error) {
+      reject(error);
+    }
+  });
+});
+
 const attachGuide = (middlewares) => {
+  middlewares.use('/api/report', (req, res) => {
+    const reply = (status, body) => {
+      res.statusCode = status;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(body));
+    };
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+    if (req.method !== 'POST') {
+      reply(405, { stored: false, error: 'method' });
+      return;
+    }
+    void readJson(req).then(async (body) => {
+      const accepted = acceptReport(body);
+      if (!accepted.ok) {
+        reply(accepted.status, { stored: false, error: accepted.error });
+        return;
+      }
+      try {
+        reply(200, await saveReport(accepted.record));
+      } catch (error) {
+        const status = error && typeof error.status === 'number' ? error.status : 502;
+        reply(status, { stored: false, error: status === 503 ? 'unconfigured' : 'store' });
+      }
+    }).catch(() => reply(400, { stored: false, error: 'json' }));
+  });
   middlewares.use('/api/guide', (req, res) => {
     if (req.method === 'OPTIONS') {
       res.statusCode = 204;

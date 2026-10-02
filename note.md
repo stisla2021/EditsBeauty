@@ -6,7 +6,7 @@ Updated 2 October 2026.
 - Canonical Vercel URL: https://editsbeauty.vercel.app/
 - Repository: https://github.com/stisla2021/EditsBeauty
 - Branch: `main`
-- Version: V1.1.2
+- Version: V1.1.3
 
 Editing happens on the device. The AI guide reads the words of a request and chooses the same tools a person can move by hand. Groq does that reading. The photo is not uploaded, and the guide does not generate a new picture. If Groq cannot be reached, a simpler on-device reader uses the same tools.
 
@@ -17,6 +17,8 @@ The camera runs on the device. Portrait starts with a background blur and a feat
 The installed app checks for a new version when it opens and when you return to it. A normal browser visit and the first open after installing do not show an update prompt. iPhone and iPad never show that prompt; a newer version is applied on its own. On other devices, Update available appears on the home screen only after the app has been opened before and the version number changes. Update switches to the new version and reloads. The × on the banner hides it for this visit; it can show again the next time the app opens if that version is still waiting. After that version is running, the banner stays hidden until the next version.
 
 Recent updates: the accent is soft teal `#14B8A6` on buttons, selected tools, the selected filter, and the intensity slider, with dark text on those fills; Filters, Adjust, Crop, Retouch, Teeth, Narrow, Background, Enhance, Cutout, Body Tuner, Text, Stickers, and Brushes use one set of line icons; the update prompt stays off for a new visit, a new install, and iPhone or iPad, while those Apple devices still receive the new version; Home Screen updates with a versioned Update available banner; stickers can be moved, resized, and rotated on the device; Undo and Redo keep 15 editor steps; live camera beauty, portrait blur, and face lenses; the full editor remains on the main page; backgrounds include blank, blur, colors, gradients, and more scenes; dragging stays smooth; the guide shows its finished edit; feedback goes out by email. The install prompt appears only where supported and is hidden on iPhone, iPad, and Mac and after installation.
+
+Diagnostic reports are off until Settings is turned on. A report is stored or emailed only after you confirm, and it never includes the photo, the canvas, or face landmarks. The feedback form still opens an email and is not stored.
 
 Save downloads `editsbeauty-edit.jpg`. A blank background saves `editsbeauty-edit.png`. Settings, About, and the legal pages are linked from the app.
 

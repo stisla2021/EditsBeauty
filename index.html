@@ -643,12 +643,13 @@
   <script type="module" src="./app.ts"></script>
   <section class="home-note" id="feedback">
     <h2>Feedback</h2>
-    <p>Tell StISLA2021 what should work better. Send opens your email app and addresses the message to <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a>. The note is not stored on this website.</p>
+    <p>Tell StISLA2021 what should work better. Send opens your email app and addresses the message to <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a>. That note is not stored on this website. Report a problem can store a short diagnostic list only after you agree, and it never includes your photo.</p>
     <form class="contact-form" id="feedbackForm">
       <label for="feedbackName">Name<input id="feedbackName" name="name" type="text" required autocomplete="name"></label>
       <label for="feedbackEmail">Email<input id="feedbackEmail" name="email" type="email" required autocomplete="email"></label>
       <label for="feedbackMessage">What happened<textarea id="feedbackMessage" name="message" required placeholder="Which tool, and what you expected"></textarea></label>
       <button type="submit">Send feedback</button>
+      <button id="reportProblem" type="button">Report a problem</button>
       <p id="feedbackStatus" aria-live="polite"></p>
     </form>
   </section>

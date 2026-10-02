@@ -59,6 +59,14 @@
         <span>Languages</span>
         <span class="ios-value"><span id="languageValue">English</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
       </button>
+      <div class="ios-row">
+        <span class="ios-copy">Diagnostic reports<small>Off by default. When on, you can choose to store a short problem report. Photos, the canvas, and face landmarks are never included.</small></span>
+        <button class="ios-switch" id="diagnosticReports" type="button" role="switch" aria-checked="false" aria-label="Diagnostic reports"></button>
+      </div>
+      <button class="ios-row" id="settingsReport" type="button">
+        <span>Report a problem</span>
+        <svg class="ios-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
       <button class="ios-row" id="clearCache" type="button">
         <span>Clear Cache</span>
         <span class="ios-value" id="cacheSize">0 B</span>
@@ -72,7 +80,7 @@
         <svg class="ios-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </a>
     </div>
-    <p class="ios-version">EditsBeauty V1.1.2</p>
+    <p class="ios-version">EditsBeauty V1.1.3</p>
   </main>
   <div class="confirm-dialog" id="clearDialog" hidden>
     <div class="confirm-card" role="dialog" aria-labelledby="clearTitle">

@@ -4,7 +4,7 @@ On-device portrait and photo editor. Photos stay in the browser. Filters, Adjust
 
 **Live app:** https://stisla2021.github.io/EditsBeauty/
 
-Version V1.1.2. Copyright (c) StISLA2021.
+Version V1.1.3. Copyright (c) StISLA2021.
 
 ## What you can do
 
@@ -18,7 +18,7 @@ Version V1.1.2. Copyright (c) StISLA2021.
 - **Stickers** are drawn on the device: shapes, beauty marks, short words, and emoji. Tap one to add it, then drag to move it and use the handles to resize or rotate. You can stack several. **Undo** and **Redo** in the editor step back through adjustments, filters, beauty, stickers, crop, and background changes, up to 15 steps.
 - The editor uses a soft teal accent, `#14B8A6`, on buttons, the selected tool, the selected filter, and the intensity slider. Text on those teal fills is dark so it stays readable. Tool icons for Filters, Adjust, Crop, Retouch, Teeth, Narrow, Background, Enhance, Cutout, Body Tuner, Text, Stickers, and Brushes share one line weight.
 - The install prompt is shown only where supported and is hidden on Apple devices and after installation. A normal browser visit and a brand-new Home Screen install do not show an update prompt. On iPhone and iPad the update prompt never appears; a newer version is applied on its own. On other devices, after the installed app has already been opened, **Update available** appears on the home screen only when the version number changes, with a teal **Update** button. **Update** switches to the new version and reloads. The **×** hides the banner for this visit, and it can show again the next time the app opens if that version is still waiting. After the new version is running, the banner stays hidden until the next version. Filters, Adjust, crop, and the camera still open offline after the app has been visited once. **Clear Cache** in Settings deletes stored files and returns the size to 0 B.
-- **Feedback** opens an email draft addressed to the publisher; feedback text is not stored on the website.
+- **Feedback** opens an email draft addressed to the publisher; that note is not stored on the website. **Report a problem** is off until Diagnostic reports is turned on in Settings. Even then, a report is sent only after you confirm. It may include the app version, browser name and version, mobile or desktop, an approximate screen size, the error and stack trace, the tool or screen, a short note, and the time you confirm. It never includes the photo, the canvas, or face landmarks. Store sends that list to the server. Email opens the same list in your email app. On Vercel, set `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or the Upstash Redis REST pair) to keep reports. Until those are set, the server stores nothing and Email remains the fallback.
 
 ## Run it locally
 

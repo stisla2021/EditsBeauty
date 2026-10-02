@@ -1,4 +1,5 @@
 // Copyright (c) StISLA2021
+import { startReports } from './report';
 const themeKey = 'editsbeauty-theme';
 type ThemePreference = 'system' | 'light' | 'dark';
 const deviceTheme = window.matchMedia('(prefers-color-scheme: dark)');
@@ -578,6 +579,8 @@ const bindSettings = (): void => {
   if (heicFormat instanceof HTMLButtonElement) setSwitch(heicFormat, readSetting('editsbeauty-heic', 'on') !== 'off');
   const faceMeshOverlay = document.getElementById('faceMeshOverlay');
   if (faceMeshOverlay instanceof HTMLButtonElement) setSwitch(faceMeshOverlay, readSetting('editsbeauty-face-mesh', 'off') === 'on');
+  const diagnosticReports = document.getElementById('diagnosticReports');
+  if (diagnosticReports instanceof HTMLButtonElement) setSwitch(diagnosticReports, readSetting('editsbeauty-diagnostics', 'off') === 'on');
   if (resolutionValue) resolutionValue.textContent = readSetting('editsbeauty-resolution', 'High');
   if (liveValue) liveValue.textContent = readSetting('editsbeauty-live-format', 'Ask every time');
   if (languageValue) languageValue.textContent = readSetting('editsbeauty-language', 'English');
@@ -604,6 +607,12 @@ const bindSettings = (): void => {
     const next = faceMeshOverlay.getAttribute('aria-checked') !== 'true';
     setSwitch(faceMeshOverlay, next);
     writeSetting('editsbeauty-face-mesh', next ? 'on' : 'off');
+  });
+  diagnosticReports?.addEventListener('click', () => {
+    if (!(diagnosticReports instanceof HTMLButtonElement)) return;
+    const next = diagnosticReports.getAttribute('aria-checked') !== 'true';
+    setSwitch(diagnosticReports, next);
+    writeSetting('editsbeauty-diagnostics', next ? 'on' : 'off');
   });
 
   const resolutions = ['High', 'Standard', 'Original'];
@@ -660,3 +669,4 @@ const bindAboutId = (): void => {
 
 bindSettings();
 bindAboutId();
+startReports();
