@@ -1,6 +1,11 @@
 // Copyright (c) StISLA2021
+import { inject } from '@vercel/analytics';
 import { ensureFaceMeshScript, liveEffectsActive, liveRecordStream, liveStill, publishStillLandmarks, startLivePreview, stopLivePreview } from './camera-live';
 import { noteEdit, noteGuide, noteTool } from './usage';
+
+// Initialize Vercel Web Analytics
+inject();
+
 
 type FacePoint = { x: number; y: number; z?: number };
 type FaceMeshResults = { multiFaceLandmarks?: FacePoint[][] };
