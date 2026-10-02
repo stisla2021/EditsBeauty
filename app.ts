@@ -3854,7 +3854,7 @@ const openGuide = (): void => {
   if (!guidePanel) return;
   guidePanel.hidden = false;
   if (guideLog && guideLog.childElementCount === 0) {
-    guideLine('guide', 'Drop your photo here, then tell me the task. I can smooth skin, apply a look, or change the background to blank, a color, blur, or a scene such as beach, office, snow, or sunset. It runs on this device. I do not create a new picture on a server.');
+    guideLine('guide', 'Tell me the edit in your own words, such as “smooth my skin and whiten my teeth” or “brighten this and use a beach background.” I choose the controls already in the editor. Your photo stays on this device, and I do not create a new picture.');
   }
   guideInput?.focus();
 };
@@ -3956,6 +3956,173 @@ const lookFromRequest = (text: string): string | null => {
   return match && match[1] in lookRecipes ? match[1] : null;
 };
 
+type GuidePlan = {
+  reply: string;
+  smooth?: number;
+  teeth?: number;
+  look?: string;
+  background?: string;
+  effect?: string;
+  crop?: string;
+  auto?: boolean;
+  reset?: boolean;
+  save?: boolean;
+} & Partial<Record<(typeof adjustControlIds)[number], number>>;
+
+const guideEndpoint = (): string => {
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1' || host === 'editsbeauty.vercel.app') {
+    return new URL('/api/guide', window.location.origin).href;
+  }
+  return 'https://editsbeauty.vercel.app/api/guide';
+};
+
+const guideHistory = (): string[] => {
+  if (!guideLog) return [];
+  return Array.from(guideLog.querySelectorAll<HTMLElement>('.guide-you, .guide-reply'))
+    .map((node) => node.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+    .filter(Boolean)
+    .slice(-6);
+};
+
+const guideState = (): Record<string, string | number | boolean | null> => ({
+  hasPhoto: Boolean(originalImage),
+  look: photoFilter?.value ?? 'original',
+  smooth: Number(smoothSlider?.value ?? 0),
+  teeth: Number(teethSlider?.value ?? 0),
+  background: activeBackgroundScene,
+  exposure: sliderNumber('adjustExposure'),
+  brilliance: sliderNumber('adjustBrilliance'),
+  highlights: sliderNumber('adjustHighlights'),
+  shadows: sliderNumber('adjustShadows'),
+  contrast: sliderNumber('adjustContrast'),
+  brightness: sliderNumber('adjustBrightness'),
+  blackPoint: sliderNumber('adjustBlackPoint'),
+  saturation: sliderNumber('adjustSaturation'),
+  vibrance: sliderNumber('adjustVibrance'),
+  warmth: sliderNumber('adjustWarmth'),
+  tint: sliderNumber('adjustTint'),
+  sharpness: sliderNumber('adjustSharpness'),
+  definition: sliderNumber('adjustDefinition'),
+  noise: sliderNumber('adjustNoise'),
+  vignette: sliderNumber('adjustVignette'),
+});
+
+const requestGuidePlan = async (message: string, history: string[]): Promise<GuidePlan | null> => {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(guideEndpoint(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, state: guideState(), history }),
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    const plan = await response.json() as GuidePlan;
+    if (!plan || typeof plan.reply !== 'string' || !plan.reply.trim()) return null;
+    return plan;
+  } catch {
+    return null;
+  } finally {
+    window.clearTimeout(timer);
+  }
+};
+
+const applyPlannedLook = (look: string): void => {
+  activeHomeEffect = null;
+  if (!photoFilter || !(look in lookRecipes)) return;
+  photoFilter.value = look;
+  if (look === 'beauty') {
+    if (smoothSlider) {
+      smoothSlider.value = '72';
+      if (smoothValue) smoothValue.value = '72';
+      paintRange(smoothSlider);
+    }
+    pendingSmooth = '72';
+    const warmth = byId<HTMLInputElement>('adjustWarmth');
+    const brilliance = byId<HTMLInputElement>('adjustBrilliance');
+    if (warmth) warmth.value = '14';
+    if (brilliance) brilliance.value = '16';
+  }
+  syncFilterChips();
+  showEditor();
+  setStudioTab('filters');
+};
+
+const planChangesPhoto = (plan: GuidePlan): boolean => Boolean(
+  plan.reset || plan.auto || plan.save || plan.smooth !== undefined || plan.teeth !== undefined
+  || plan.look || plan.background || plan.effect || plan.crop
+  || adjustControlIds.some((id) => plan[id] !== undefined),
+);
+
+const applyGuidePlan = async (plan: GuidePlan): Promise<void> => {
+  const edits = planChangesPhoto(plan);
+  if (plan.reset) {
+    activeHomeEffect = null;
+    applyingAuto = true;
+    adjustControlIds.forEach((id) => setAdjustControl(id, 0, false));
+    applyingAuto = false;
+    byId<HTMLButtonElement>('adjustAuto')?.setAttribute('aria-pressed', 'false');
+    if (photoFilter) photoFilter.value = 'original';
+    syncFilterChips();
+    pendingSmooth = '0';
+    if (smoothSlider) {
+      smoothSlider.value = '0';
+      if (smoothValue) smoothValue.value = '0';
+      paintRange(smoothSlider);
+    }
+    setTeethAmount(0);
+    activeBackgroundScene = null;
+    setSceneButtons(null);
+  }
+  if (plan.auto) applyAutoAdjust(true);
+  adjustControlIds.forEach((id) => {
+    if (plan[id] !== undefined) setAdjustControl(id, Number(plan[id]), false);
+  });
+  if (plan.look) applyPlannedLook(plan.look);
+  if (plan.effect && isHomeEffect(plan.effect)) {
+    if (originalImage) beginHomeEffect(plan.effect);
+    else activeHomeEffect = plan.effect;
+  }
+  if (plan.smooth !== undefined && smoothSlider) {
+    const amount = String(Math.max(0, Math.min(100, Math.round(plan.smooth))));
+    pendingSmooth = amount;
+    smoothSlider.value = amount;
+    if (smoothValue) smoothValue.value = amount;
+    paintRange(smoothSlider);
+    byId<HTMLButtonElement>('smoothToggle')?.setAttribute('aria-pressed', String(Number(amount) > 0));
+  }
+  if (plan.teeth !== undefined) setTeethAmount(plan.teeth);
+  if (plan.background && isBackgroundScene(plan.background)) {
+    openBackgroundTools();
+    try {
+      await selectBackgroundScene(plan.background, false);
+    } catch {
+      showToast('That background could not be applied. The other controls still changed.');
+    }
+  }
+  if (plan.crop && originalImage && ['original', '1', '0.8', '0.5625', '1.7778', '1.3333', '1.5', '1.25'].includes(plan.crop)) {
+    setStudioTab('crop');
+    fitAspect(plan.crop);
+    closeCrop(true);
+  }
+  if (originalImage) render();
+  if (!originalImage && edits) {
+    guideLine('guide', `${plan.reply} Choose a photo first, and I will apply this when it opens.`);
+    if (!plan.background) {
+      showToast('Choose a photo, or tap an example portrait.');
+      requestPhoto();
+    }
+    return;
+  }
+  if (plan.save && downloadButton && originalImage && !downloadButton.disabled) {
+    window.setTimeout(() => downloadButton.click(), plan.crop ? 400 : 0);
+  }
+  if (originalImage) guideResult(plan.reply);
+  else guideLine('guide', plan.reply);
+};
+
 const answerGuide = async (raw: string): Promise<void> => {
   const typed = raw.trim();
   if (!typed) return;
@@ -3965,8 +4132,30 @@ const answerGuide = async (raw: string): Promise<void> => {
     guideLine('guide', 'The photo is opening. I will do that as soon as it is ready.');
     return;
   }
-  const text = typed.toLowerCase().replace(/\s+/g, ' ');
+  const historyBefore = guideHistory();
   guideLine('you', typed);
+  const waiting = guideLog ? document.createElement('p') : null;
+  if (waiting && guideLog) {
+    waiting.className = 'guide-reply';
+    waiting.textContent = 'Choosing the controls…';
+    guideLog.append(waiting);
+    guideLog.scrollTop = guideLog.scrollHeight;
+  }
+  const plan = await requestGuidePlan(typed, historyBefore);
+  if (plan) {
+    try {
+      await applyGuidePlan(plan);
+    } finally {
+      waiting?.remove();
+    }
+    return;
+  }
+  waiting?.remove();
+  await answerGuideLocal(typed);
+};
+
+const answerGuideLocal = async (typed: string): Promise<void> => {
+  const text = typed.toLowerCase().replace(/\s+/g, ' ');
   const asksHow = /^(how|what|where|why)\b/.test(text) || /\bhow do i\b/.test(text);
   if (asksHow && !/\b(please|can you|do it)\b/.test(text)) {
     guideLine('guide', 'Choose a photo with Start Editing, the camera, or an example portrait. Then ask me to edit it, or use the tools yourself. I can smooth skin, whiten teeth, apply a look, change the background, and set Adjust: Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Save downloads editsbeauty-edit.jpg.');

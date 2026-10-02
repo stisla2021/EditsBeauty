@@ -8,7 +8,7 @@ Version V1.0.0. Copyright (c) StISLA2021.
 
 ## What you can do
 
-- **Ask AI** on the home page, or **AI** in the editor. Ask it to edit a photo, brighten the lighting, smooth skin, apply a look, change the background, or save. It uses the tools already in the editor. It does not send the picture to a server or generate a new one.
+- **Ask AI** on the home page, or **AI** in the editor. Ask in ordinary language, for example “make my skin smoother” or “brighten the photo and change the background to beach.” Groq’s Llama 3.3 70B chooses the existing Adjust, filter, beauty, background, crop, and Save controls. The photo stays in the browser and is not uploaded or regenerated. If that connection is unavailable, a simpler on-device reader uses the same controls.
 - **Adjust** has Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. B/W is a filter. Move the sliders yourself any time.
 - **Filters and retouching** include Vivid, B/W, Soft, Pink, Vintage, Pop, Matte, Golden, Beauty, Smooth, and teeth whitening. Smooth keeps edges such as brows and lips sharper than the skin. Beauty also raises smooth, warmth, and brilliance.
 - **Backgrounds** under Adjust, then More tools: Blank, Blur, solid colors, gradients, and photo scenes (Beach, City, Studio, Garden, Sunset, Mountains, Forest, Night, Cafe, Sky, Flowers, Ocean, Office, Snow, Desert, Library, Room, Brick, Street, Autumn, Waterfall, Park, Rain, Space). The person stays. Blank saves a PNG; other saves stay JPEG. Scenes use real photos.
@@ -35,7 +35,7 @@ Pushes to `main` publish the site with GitHub Actions (`.github/workflows/pages.
 
 After a push, the Pages workflow must finish before the new files show up.
 
-`vercel.json` also configures Vercel to run `npm run build` and serve `dist/`. Vercel deploys on push only when this GitHub repository is connected to a Vercel project; that project connection is not stored in this checkout. The canonical Vercel address in the app is https://editsbeauty.vercel.app/.
+`vercel.json` also configures Vercel to run `npm run build` and serve `dist/`. The AI guide’s `/api/guide` function runs on Vercel and calls Groq. Set `GROQ_API_KEY` in the Vercel project environment. The key stays there and is not written into the page. Vercel deploys on push only when this GitHub repository is connected to a Vercel project; that project connection is not stored in this checkout. The canonical Vercel address in the app is https://editsbeauty.vercel.app/.
 
 ## Pages
 

@@ -8,7 +8,7 @@ Updated 1 October 2026.
 - Branch: `main`
 - Version: V1.0.0
 
-Editing happens on the device. The AI guide edits a photo when asked, using the same tools a person can move by hand. It does not generate a new picture and it does not upload the photo.
+Editing happens on the device. The AI guide reads the words of a request and chooses the same tools a person can move by hand. Groq does that reading. The photo is not uploaded, and the guide does not generate a new picture. If Groq cannot be reached, a simpler on-device reader uses the same tools.
 
 Adjust holds Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. Filters include Vivid, B/W, Soft, Pink, Vintage, Pop, Matte, Golden, and Beauty. Retouching includes Smooth and teeth whitening. Smooth keeps brows, eyes, and lips sharper than the skin. Beauty also raises smooth, warmth, and brilliance. Background tools include Blank, Blur, solid colors, gradients, and real-photo scenes, plus expansion. The person stays. Choose your own photo, then tap an example portrait to apply that look to it. Stickers are original emoji and word badges. Ask AI accepts a dropped photo and a task, including a named background such as blank, blur, a color, or a scene. The camera has Portrait, Live, and Video. Filters, Adjust, crop, and the camera open again offline after one visit. Delete chat empties the AI guide. Clear Cache in Settings deletes stored files and shows 0 B again.
 

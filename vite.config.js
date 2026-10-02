@@ -1,6 +1,70 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
+import { planEdit } from './guide-plan.js';
+
+const groqKey = () => {
+  if (process.env.GROQ_API_KEY) return process.env.GROQ_API_KEY;
+  const file = resolve('.env');
+  if (!existsSync(file)) return '';
+  const line = readFileSync(file, 'utf8').split(/\r?\n/).find((item) => item.startsWith('GROQ_API_KEY='));
+  if (!line) return '';
+  return line.slice('GROQ_API_KEY='.length).trim().replace(/^["']|["']$/g, '');
+};
+
+const guideApi = () => ({
+  name: 'guide-api',
+  configureServer(server) {
+    attachGuide(server.middlewares);
+  },
+  configurePreviewServer(server) {
+    attachGuide(server.middlewares);
+  },
+});
+
+const attachGuide = (middlewares) => {
+  middlewares.use('/api/guide', (req, res) => {
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+    if (req.method !== 'POST') {
+      res.statusCode = 405;
+      res.end();
+      return;
+    }
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      void (async () => {
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+          if (body.image || body.photo || body.pixels || body.dataUrl) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'photo' }));
+            return;
+          }
+          const plan = await planEdit({
+            message: body.message,
+            state: body.state,
+            history: body.history,
+            apiKey: groqKey(),
+          });
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(plan));
+        } catch (error) {
+          const status = error && typeof error.status === 'number' ? error.status : 502;
+          res.statusCode = status;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: status === 503 ? 'unconfigured' : 'guide' }));
+        }
+      })();
+    });
+  });
+};
 
 const pages = [
   'index.html',
@@ -38,6 +102,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    guideApi(),
     {
       name: 'copy-service-worker',
       closeBundle() {
