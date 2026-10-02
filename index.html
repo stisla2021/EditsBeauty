@@ -65,6 +65,10 @@
       <header class="studio-bar">
         <button class="studio-back" id="studioBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
         <p class="studio-title" id="editorTitle">Filters</p>
+        <div class="history-actions" role="group" aria-label="History">
+          <button class="history-btn" id="undoBtn" type="button" aria-label="Undo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8H4v4"/><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8"/></svg></button>
+          <button class="history-btn" id="redoBtn" type="button" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8h4v4"/><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"/></svg></button>
+        </div>
         <button class="studio-guide" id="guideLaunch" type="button">AI</button>
         <button class="studio-save" id="downloadBtn" type="button" disabled>Save</button>
       </header>
@@ -91,6 +95,13 @@
           </label>
         </div>
         <canvas id="canvas" aria-label="Photo editing preview"></canvas>
+        <div class="sticker-layer" id="stickerLayer">
+          <div class="sticker-frame" id="stickerFrame" hidden>
+            <button type="button" id="stickerRotate" aria-label="Rotate sticker">↻</button>
+            <button type="button" id="stickerScale" aria-label="Resize sticker">⤡</button>
+            <button type="button" id="stickerDelete" aria-label="Remove sticker">×</button>
+          </div>
+        </div>
         <p class="ai-loading" id="aiLoading" hidden>AI Loading...</p>
       </div>
       <input type="file" id="upload" accept="image/*" hidden>
@@ -184,7 +195,7 @@
           <label class="grid-setting" for="overlayText">Text overlay<input id="overlayText" type="text" maxlength="80" placeholder="Add a caption"></label>
           <button class="secondary-button" id="addText" type="button">Add text</button>
           <div class="sticker-picker" id="stickerChoice" tabindex="-1">
-            <p class="tool-note">Tap a sticker to put it on the photo.</p>
+            <p class="tool-note">Tap a sticker to add it. Drag it to move, then use the handles to resize or rotate. You can stack several.</p>
             <div id="stickerGroups"></div>
           </div>
           <label class="grid-setting">Brush color<input id="brushColor" type="color" value="#087e80"></label>

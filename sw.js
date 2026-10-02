@@ -1,5 +1,5 @@
 // Copyright (c) StISLA2021
-const CACHE = 'editsbeauty-shell-v25';
+const CACHE = 'editsbeauty-shell-v27';
 const SHELL = [
   './',
   './index.html',
@@ -30,8 +30,13 @@ self.addEventListener('install', (event) => {
         // A host may not serve every shell file. The next visit stores the ones it has.
       }
     }));
-    await self.skipWaiting();
   })());
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    void self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {

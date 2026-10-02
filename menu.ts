@@ -226,9 +226,74 @@ if (!appleDevice() && relatedApps.getInstalledRelatedApps) {
 }
 
 if ('serviceWorker' in navigator) {
-  void navigator.serviceWorker.register('./sw.js').then((registration) => {
-    void registration.update();
-  }).catch(() => undefined);
+  const updateBanner = document.createElement('section');
+  updateBanner.className = 'update-banner';
+  updateBanner.setAttribute('role', 'region');
+  updateBanner.setAttribute('aria-label', 'App update available');
+  updateBanner.setAttribute('aria-live', 'polite');
+  updateBanner.hidden = true;
+
+  const updateCopy = document.createElement('div');
+  updateCopy.className = 'update-copy';
+  const updateTitle = document.createElement('strong');
+  updateTitle.textContent = 'Update available';
+  const updateMessage = document.createElement('p');
+  updateMessage.textContent = appleDevice()
+    ? 'Tap Update to get the latest version. If it does not refresh, close EditsBeauty completely and reopen it from your Home Screen.'
+    : 'A new version of EditsBeauty is ready. Update now to load the latest version.';
+  updateCopy.append(updateTitle, updateMessage);
+
+  const updateButton = document.createElement('button');
+  updateButton.className = 'update-button';
+  updateButton.type = 'button';
+  updateButton.textContent = 'Update';
+  updateBanner.append(updateCopy, updateButton);
+  document.body.append(updateBanner);
+
+  let waitingWorker: ServiceWorker | null = null;
+  let hasControlledPage = navigator.serviceWorker.controller !== null;
+
+  const showUpdate = (worker: ServiceWorker | null): void => {
+    if (!worker || !navigator.serviceWorker.controller) return;
+    waitingWorker = worker;
+    updateBanner.hidden = false;
+  };
+
+  updateButton.addEventListener('click', () => {
+    if (!waitingWorker) return;
+    updateButton.disabled = true;
+    updateButton.textContent = 'Updating…';
+    waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hasControlledPage) window.location.reload();
+    else hasControlledPage = true;
+  });
+
+  void navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((registration) => {
+    showUpdate(registration.waiting);
+
+    registration.addEventListener('updatefound', () => {
+      const installingWorker = registration.installing;
+      if (!installingWorker) return;
+      installingWorker.addEventListener('statechange', () => {
+        if (installingWorker.state === 'installed') showUpdate(registration.waiting);
+      });
+    });
+
+    const checkForUpdate = (): void => {
+      void registration.update().catch((error: unknown) => {
+        console.warn('EditsBeauty could not check for an app update.', error);
+      });
+    };
+    checkForUpdate();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkForUpdate();
+    });
+  }).catch((error: unknown) => {
+    console.error('EditsBeauty could not register its service worker.', error);
+  });
 }
 
 const readSetting = (key: string, fallback: string): string => {

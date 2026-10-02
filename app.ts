@@ -127,8 +127,19 @@ let brushMode: BrushStroke['mode'] = 'paint';
 let currentBrush: BrushStroke | null = null;
 const brushStrokes: BrushStroke[] = [];
 const textOverlays: string[] = [];
-type PlacedSticker = { glyph: string; word: boolean; x: number; y: number };
+type PlacedSticker = {
+  id: number;
+  kind: 'emoji' | 'word' | 'mark';
+  glyph: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
+  tone: string;
+};
 const stickerOverlays: PlacedSticker[] = [];
+let stickerSerial = 1;
+let selectedStickerId = 0;
 
 const showAiLoading = (): number => {
   const token = aiLoadingToken + 1;
@@ -157,15 +168,6 @@ const syncOfflinePill = (): void => {
 syncOfflinePill();
 window.addEventListener('online', syncOfflinePill);
 window.addEventListener('offline', syncOfflinePill);
-
-const registerServiceWorker = (): void => {
-  if (!('serviceWorker' in navigator)) return;
-  void navigator.serviceWorker.register('./sw.js').then((registration) => {
-    void registration.update();
-  });
-};
-if (document.readyState === 'complete') registerServiceWorker();
-else window.addEventListener('load', registerServiceWorker);
 
 const showToast = (message: string): void => {
   let toast = document.querySelector<HTMLDivElement>('.toast');
@@ -917,6 +919,7 @@ const requestPhoto = (): void => {
 };
 
 const beginHomeEffect = (effect: HomeEffect): void => {
+  if (effect !== 'ai-bg') remember();
   if (effect === 'ai-bg') {
     activeHomeEffect = null;
     console.log('filter', effect);
@@ -1363,6 +1366,7 @@ outputBindings.forEach(([input, outputId, format]) => {
 });
 
 aiEnhanceButton?.addEventListener('click', () => {
+  remember();
   aiEnhanceEnabled = true;
   if (enhanceSlider) enhanceSlider.value = '110';
   const output = byId<HTMLOutputElement>('enhanceValue');
@@ -1407,33 +1411,541 @@ byId<HTMLButtonElement>('addText')?.addEventListener('click', () => {
     showToast('Type a caption before adding text.');
     return;
   }
+  remember();
   textOverlays.push(value);
   render();
 });
-const stickerCatalog: Array<{ title: string; words?: boolean; items: string[] }> = [
-  { title: 'Smileys', items: ['😀', '😁', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎', '🤩', '😜', '😇', '🥳', '😭', '🤔', '😴', '🤗', '😏', '😬', '🤯'] },
-  { title: 'Love', items: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💕', '💖', '💗', '💘', '💝', '💞', '💓', '💟', '💋', '💌'] },
-  { title: 'Party', items: ['🎉', '🎊', '✨', '🌟', '⭐', '🔥', '💯', '🎈', '🎁', '🏆', '🥇', '🎯', '🎵', '🎶', '📸', '💫', '💥', '👑'] },
-  { title: 'Hands', items: ['👍', '👎', '👏', '🙌', '✌️', '🤞', '👋', '🤝', '💪', '🙏', '👌', '🤟', '🤘', '👊', '🫶'] },
-  { title: 'Animals', items: ['🐶', '🐱', '🐰', '🐻', '🐼', '🦊', '🐸', '🐵', '🦄', '🦋', '🐝', '🐧', '🐥', '🐯', '🐨', '🐷'] },
-  { title: 'Food', items: ['🍕', '🍔', '🍟', '🌮', '🍩', '🍪', '🍰', '🍓', '🍒', '🍉', '🥑', '☕', '🧋', '🍦', '🍫', '🍿'] },
-  { title: 'Nature', items: ['🌸', '🌼', '🌻', '🌹', '🌷', '🍀', '🌈', '☀️', '🌙', '❄️', '🌊', '🌴', '🍁', '☁️', '⚡'] },
-  { title: 'Words', words: true, items: ['LOL', 'OMG', 'WOW', 'YES', 'OK', 'NO', 'LOVE', 'CUTE', 'COOL', 'SLAY', 'HI', 'BYE', 'YAY', 'BRB'] },
+const stickerTones = ['#1a2332', '#c4622d', '#2f6f62', '#8a5a44', '#3d4f66', '#9a3412'];
+const stickerCatalog: Array<{ title: string; kind: PlacedSticker['kind']; items: string[] }> = [
+  { title: 'Shapes', kind: 'mark', items: ['star', 'heart', 'spark', 'blossom', 'sun', 'moon', 'ring', 'drop', 'diamond'] },
+  { title: 'Beauty', kind: 'mark', items: ['gloss', 'lash', 'petal', 'mirror', 'blush'] },
+  { title: 'Words', kind: 'word', items: ['SOFT', 'GLOW', 'LOVE', 'YES', 'CUTE', 'WOW', 'HI', 'OK', 'NEW', 'SLAY'] },
+  { title: 'Smileys', kind: 'emoji', items: ['😊', '😍', '🥰', '😎', '🤩', '😜', '😇', '🥳', '😂', '😘'] },
+  { title: 'Cute', kind: 'emoji', items: ['🌸', '🦋', '🐰', '🐻', '✨', '🌙', '🍓', '🎀', '☕', '🍀'] },
+  { title: 'Fun', kind: 'emoji', items: ['🎉', '🔥', '👑', '💯', '🎵', '📸', '👍', '✌️', '💪', '🌈'] },
 ];
-const wordColors = ['#ff2d78', '#087e80', '#ff8a00', '#7a5cff', '#111111', '#e23b3b'];
+
+type EditorStamp = {
+  token: number;
+  image?: string;
+  filter: string;
+  intensity: string;
+  smooth: string;
+  teeth: string;
+  nose: string;
+  body: string;
+  face: string;
+  enhance: string;
+  enhanced: boolean;
+  hair: string;
+  hairColor: string;
+  adjusts: Record<string, string>;
+  background: string | null;
+  effect: string | null;
+  stickers: PlacedSticker[];
+  texts: string[];
+  brush: BrushStroke[];
+  timestamp: boolean;
+};
+const HISTORY_LIMIT = 15;
+const undoStack: EditorStamp[] = [];
+const redoStack: EditorStamp[] = [];
+let imageToken = 0;
+let applyingHistory = false;
+let historyLock = 0;
+let sliderArm: EditorStamp | null = null;
+
+const cloneStickers = (items: PlacedSticker[]): PlacedSticker[] => items.map((item) => ({ ...item }));
+const cloneBrush = (items: BrushStroke[]): BrushStroke[] => items.map((stroke) => ({
+  ...stroke,
+  points: stroke.points.map((point) => ({ ...point })),
+}));
+
+const captureStamp = (withImage: boolean): EditorStamp => {
+  const adjusts: Record<string, string> = {};
+  adjustControlIds.forEach((id) => {
+    adjusts[id] = byId<HTMLInputElement>(id)?.value ?? '0';
+  });
+  const stamp: EditorStamp = {
+    token: imageToken,
+    filter: photoFilter?.value ?? 'original',
+    intensity: byId<HTMLInputElement>('filterIntensity')?.value ?? '100',
+    smooth: smoothSlider?.value ?? '0',
+    teeth: teethSlider?.value ?? '0',
+    nose: noseSlider?.value ?? '0',
+    body: bodyTuneSlider?.value ?? '0',
+    face: faceVolumeSlider?.value ?? '0',
+    enhance: enhanceSlider?.value ?? '100',
+    enhanced: aiEnhanceEnabled,
+    hair: hairStrength?.value ?? '0',
+    hairColor: hairTint?.value ?? '#784b32',
+    adjusts,
+    background: activeBackgroundScene,
+    effect: activeHomeEffect,
+    stickers: cloneStickers(stickerOverlays),
+    texts: [...textOverlays],
+    brush: cloneBrush(brushStrokes),
+    timestamp: !!timestampToggle?.checked,
+  };
+  if (withImage && originalImage) stamp.image = snapshotSource();
+  return stamp;
+};
+
+const syncHistoryButtons = (): void => {
+  const undo = byId<HTMLButtonElement>('undoBtn');
+  const redo = byId<HTMLButtonElement>('redoBtn');
+  if (undo) undo.disabled = undoStack.length === 0;
+  if (redo) redo.disabled = redoStack.length === 0;
+};
+
+const pushUndo = (stamp: EditorStamp): void => {
+  undoStack.push(stamp);
+  if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+  redoStack.length = 0;
+  syncHistoryButtons();
+};
+
+const remember = (withImage = false): void => {
+  if (applyingHistory || historyLock) return;
+  sliderArm = null;
+  pushUndo(captureStamp(withImage));
+};
+
+const resetEditHistory = (): void => {
+  undoStack.length = 0;
+  redoStack.length = 0;
+  sliderArm = null;
+  imageToken += 1;
+  syncHistoryButtons();
+};
+
+const setHistorySlider = (id: string, value: string): void => {
+  const input = byId<HTMLInputElement>(id);
+  if (!input) return;
+  input.value = value;
+  paintRange(input);
+  const output = byId<HTMLOutputElement>(`${id}Val`);
+  if (output) output.value = id === 'filterIntensity' ? `${value}%` : formatAdjustValue(id, value);
+};
+
+const applyStamp = async (stamp: EditorStamp): Promise<void> => {
+  applyingHistory = true;
+  try {
+    if (photoFilter) photoFilter.value = stamp.filter;
+    syncFilterChips();
+    const intensity = byId<HTMLInputElement>('filterIntensity');
+    if (intensity) {
+      intensity.value = stamp.intensity;
+      paintRange(intensity);
+      const output = byId<HTMLOutputElement>('filterIntensityVal');
+      if (output) output.value = `${stamp.intensity}%`;
+    }
+    if (smoothSlider) {
+      smoothSlider.value = stamp.smooth;
+      if (smoothValue) smoothValue.value = stamp.smooth;
+      paintRange(smoothSlider);
+    }
+    if (teethSlider) {
+      teethSlider.value = stamp.teeth;
+      if (teethValue) teethValue.value = stamp.teeth;
+      paintRange(teethSlider);
+    }
+    if (noseSlider) {
+      noseSlider.value = stamp.nose;
+      if (noseValue) noseValue.value = stamp.nose;
+    }
+    if (bodyTuneSlider) bodyTuneSlider.value = stamp.body;
+    if (faceVolumeSlider) faceVolumeSlider.value = stamp.face;
+    if (enhanceSlider) enhanceSlider.value = stamp.enhance;
+    aiEnhanceEnabled = stamp.enhanced;
+    if (hairStrength) hairStrength.value = stamp.hair;
+    if (hairTint) hairTint.value = stamp.hairColor;
+    if (timestampToggle) timestampToggle.checked = stamp.timestamp;
+    applyingAuto = true;
+    adjustControlIds.forEach((id) => setHistorySlider(id, stamp.adjusts[id] ?? '0'));
+    applyingAuto = false;
+    activeHomeEffect = stamp.effect && isHomeEffect(stamp.effect) ? stamp.effect : null;
+    stickerOverlays.splice(0, stickerOverlays.length, ...cloneStickers(stamp.stickers));
+    textOverlays.splice(0, textOverlays.length, ...stamp.texts);
+    brushStrokes.splice(0, brushStrokes.length, ...cloneBrush(stamp.brush));
+    if (!stickerOverlays.some((item) => item.id === selectedStickerId)) selectedStickerId = 0;
+    if (stamp.image && stamp.token !== imageToken) {
+      imageToken = stamp.token;
+      await new Promise<void>((resolve) => {
+        replaceOriginal(stamp.image ?? '', '', resolve);
+      });
+    }
+    if (stamp.background !== activeBackgroundScene) {
+      if (stamp.background && isBackgroundScene(stamp.background)) await selectBackgroundScene(stamp.background, false);
+      else {
+        activeBackgroundScene = null;
+        setSceneButtons(null);
+        canvas?.classList.remove('is-blank');
+        if (backgroundStatus) backgroundStatus.textContent = 'Pick a scene. The person stays, and the photo behind them changes on this device.';
+        render();
+      }
+    } else render();
+  } finally {
+    applyingHistory = false;
+    syncHistoryButtons();
+  }
+};
+
+const undoEdit = (): void => {
+  const stamp = undoStack.pop();
+  if (!stamp) {
+    showToast('Nothing to undo.');
+    syncHistoryButtons();
+    return;
+  }
+  redoStack.push(captureStamp(stamp.image !== undefined));
+  void applyStamp(stamp);
+};
+
+const redoEdit = (): void => {
+  const stamp = redoStack.pop();
+  if (!stamp) {
+    showToast('Nothing to redo.');
+    syncHistoryButtons();
+    return;
+  }
+  undoStack.push(captureStamp(stamp.image !== undefined));
+  if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+  void applyStamp(stamp);
+};
+
+byId<HTMLButtonElement>('undoBtn')?.addEventListener('click', undoEdit);
+byId<HTMLButtonElement>('redoBtn')?.addEventListener('click', redoEdit);
+document.addEventListener('keydown', (event) => {
+  if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
+  const key = event.key.toLowerCase();
+  if (key === 'z') {
+    event.preventDefault();
+    if (event.shiftKey) redoEdit();
+    else undoEdit();
+  } else if (key === 'y') {
+    event.preventDefault();
+    redoEdit();
+  }
+});
+
+const armSliderHistory = (input: HTMLInputElement | null): void => {
+  input?.addEventListener('pointerdown', () => {
+    if (applyingHistory || historyLock) return;
+    sliderArm = captureStamp(false);
+  });
+  input?.addEventListener('change', () => {
+    if (!sliderArm || applyingHistory || historyLock) {
+      sliderArm = null;
+      return;
+    }
+    const next = captureStamp(false);
+    if (JSON.stringify(sliderArm) !== JSON.stringify(next)) pushUndo(sliderArm);
+    sliderArm = null;
+  });
+};
+[...adjustControlIds, 'smooth', 'teeth', 'nose', 'bodyTune', 'faceVolume', 'filterIntensity', 'hairStrength'].forEach((id) => {
+  armSliderHistory(byId<HTMLInputElement>(id));
+});
+syncHistoryButtons();
+
+const drawMark = (context: CanvasRenderingContext2D, name: string, size: number, tone: string): void => {
+  context.save();
+  context.fillStyle = tone;
+  context.strokeStyle = tone;
+  context.lineWidth = Math.max(2, size * 0.08);
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  const radius = size / 2;
+  if (name === 'star' || name === 'spark') {
+    const points = name === 'spark' ? 4 : 5;
+    const inner = name === 'spark' ? 0.16 : 0.42;
+    context.beginPath();
+    for (let index = 0; index < points * 2; index += 1) {
+      const distance = index % 2 === 0 ? radius : radius * inner;
+      const angle = -Math.PI / 2 + (index * Math.PI) / points;
+      const x = Math.cos(angle) * distance;
+      const y = Math.sin(angle) * distance;
+      if (index === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    }
+    context.closePath();
+    context.fill();
+  } else if (name === 'heart') {
+    context.beginPath();
+    context.moveTo(0, radius * 0.32);
+    context.bezierCurveTo(-radius, -radius * 0.2, -radius * 0.55, -radius, 0, -radius * 0.32);
+    context.bezierCurveTo(radius * 0.55, -radius, radius, -radius * 0.2, 0, radius * 0.32);
+    context.fill();
+  } else if (name === 'blossom') {
+    for (let index = 0; index < 6; index += 1) {
+      context.beginPath();
+      context.ellipse(0, -radius * 0.38, radius * 0.26, radius * 0.46, (index * Math.PI) / 3, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.fillStyle = '#fffdf8';
+    context.beginPath();
+    context.arc(0, 0, radius * 0.18, 0, Math.PI * 2);
+    context.fill();
+  } else if (name === 'sun') {
+    context.beginPath();
+    context.arc(0, 0, radius * 0.38, 0, Math.PI * 2);
+    context.fill();
+    for (let index = 0; index < 8; index += 1) {
+      context.rotate(Math.PI / 4);
+      context.beginPath();
+      context.moveTo(0, -radius * 0.55);
+      context.lineTo(0, -radius);
+      context.stroke();
+    }
+  } else if (name === 'moon') {
+    context.beginPath();
+    context.arc(-radius * 0.08, 0, radius * 0.72, -1.1, 1.1, true);
+    context.arc(radius * 0.28, 0, radius * 0.58, 1.15, -1.15);
+    context.closePath();
+    context.fill();
+  } else if (name === 'ring') {
+    context.lineWidth = Math.max(3, size * 0.12);
+    context.beginPath();
+    context.arc(0, 0, radius * 0.62, 0, Math.PI * 2);
+    context.stroke();
+  } else if (name === 'drop') {
+    context.beginPath();
+    context.moveTo(0, -radius);
+    context.bezierCurveTo(radius * 0.9, -radius * 0.1, radius * 0.72, radius * 0.72, 0, radius);
+    context.bezierCurveTo(-radius * 0.72, radius * 0.72, -radius * 0.9, -radius * 0.1, 0, -radius);
+    context.fill();
+  } else if (name === 'diamond') {
+    context.beginPath();
+    context.moveTo(0, -radius);
+    context.lineTo(radius * 0.7, 0);
+    context.lineTo(0, radius);
+    context.lineTo(-radius * 0.7, 0);
+    context.closePath();
+    context.fill();
+  } else if (name === 'gloss') {
+    context.beginPath();
+    context.ellipse(0, 0, radius * 0.92, radius * 0.4, 0, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = 'rgb(255 253 248 / 50%)';
+    context.beginPath();
+    context.ellipse(-radius * 0.18, -radius * 0.08, radius * 0.32, radius * 0.1, -0.4, 0, Math.PI * 2);
+    context.fill();
+  } else if (name === 'lash') {
+    context.lineWidth = Math.max(2, size * 0.07);
+    for (let index = -2; index <= 2; index += 1) {
+      context.beginPath();
+      context.moveTo(index * radius * 0.28, radius * 0.2);
+      context.quadraticCurveTo(index * radius * 0.36, -radius * 0.15, index * radius * 0.5, -radius * 0.9);
+      context.stroke();
+    }
+  } else if (name === 'petal') {
+    context.beginPath();
+    context.ellipse(0, 0, radius * 0.4, radius * 0.88, 0, 0, Math.PI * 2);
+    context.fill();
+  } else if (name === 'mirror') {
+    context.lineWidth = Math.max(2, size * 0.08);
+    context.beginPath();
+    context.roundRect(-radius * 0.55, -radius * 0.78, radius * 1.1, radius * 1.56, radius * 0.18);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(-radius * 0.18, -radius * 0.45);
+    context.lineTo(radius * 0.12, radius * 0.4);
+    context.stroke();
+  } else if (name === 'blush') {
+    context.globalAlpha = 0.9;
+    context.beginPath();
+    context.ellipse(-radius * 0.38, 0, radius * 0.4, radius * 0.26, 0, 0, Math.PI * 2);
+    context.ellipse(radius * 0.38, 0, radius * 0.4, radius * 0.26, 0, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.restore();
+};
+
+const paintStickers = (context: CanvasRenderingContext2D, width: number, height: number): void => {
+  stickerOverlays.forEach((sticker) => {
+    context.save();
+    context.translate(sticker.x * width, sticker.y * height);
+    context.rotate(sticker.rotation);
+    context.scale(sticker.scale, sticker.scale);
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.shadowColor = 'rgb(26 35 50 / 28%)';
+    context.shadowBlur = Math.max(2, width * 0.004);
+    if (sticker.kind === 'word') {
+      const fontSize = Math.max(16, width * 0.045);
+      context.font = `800 ${fontSize}px "Avenir Next", "Segoe UI", sans-serif`;
+      const padX = Math.max(10, width * 0.018);
+      const boxWidth = context.measureText(sticker.glyph).width + padX * 2;
+      const boxHeight = Math.max(28, width * 0.07);
+      context.fillStyle = sticker.tone;
+      context.beginPath();
+      context.roundRect(-boxWidth / 2, -boxHeight / 2, boxWidth, boxHeight, 8);
+      context.fill();
+      context.shadowColor = 'transparent';
+      context.fillStyle = '#fffdf8';
+      context.fillText(sticker.glyph, 0, 0);
+    } else if (sticker.kind === 'emoji') {
+      context.font = `${Math.max(28, width * 0.11)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+      context.fillText(sticker.glyph, 0, 0);
+    } else {
+      context.shadowColor = 'transparent';
+      drawMark(context, sticker.glyph, width * 0.16, sticker.tone);
+    }
+    context.restore();
+  });
+};
+
+const stickerBox = (sticker: PlacedSticker, width: number): { w: number; h: number } => {
+  if (sticker.kind === 'word') {
+    const fontSize = Math.max(16, width * 0.045);
+    const textWidth = sticker.glyph.length * fontSize * 0.62;
+    return {
+      w: (textWidth + Math.max(10, width * 0.018) * 2) * sticker.scale,
+      h: Math.max(28, width * 0.07) * sticker.scale,
+    };
+  }
+  const base = Math.max(28, width * (sticker.kind === 'emoji' ? 0.11 : 0.16));
+  return { w: base * sticker.scale, h: base * sticker.scale };
+};
+
+const placeStickerFrame = (): void => {
+  const frame = byId<HTMLElement>('stickerFrame');
+  const stage = byId<HTMLElement>('canvasStage');
+  if (!frame || !stage || !canvas) return;
+  const sticker = stickerOverlays.find((item) => item.id === selectedStickerId);
+  if (!sticker || canvas.parentElement !== stage || !canvas.classList.contains('has-image')) {
+    frame.hidden = true;
+    return;
+  }
+  const canvasRect = canvas.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
+  const box = stickerBox(sticker, canvas.width || 1);
+  const width = box.w * (canvasRect.width / (canvas.width || 1));
+  const height = box.h * (canvasRect.height / (canvas.height || 1));
+  frame.hidden = false;
+  frame.style.width = `${width}px`;
+  frame.style.height = `${height}px`;
+  frame.style.left = `${canvasRect.left - stageRect.left + sticker.x * canvasRect.width - width / 2}px`;
+  frame.style.top = `${canvasRect.top - stageRect.top + sticker.y * canvasRect.height - height / 2}px`;
+  frame.style.transform = `rotate(${sticker.rotation}rad)`;
+};
+
+const hitSticker = (nx: number, ny: number): PlacedSticker | null => {
+  if (!canvas?.width || !canvas.height) return null;
+  const px = nx * canvas.width;
+  const py = ny * canvas.height;
+  for (let index = stickerOverlays.length - 1; index >= 0; index -= 1) {
+    const sticker = stickerOverlays[index];
+    const dx = px - sticker.x * canvas.width;
+    const dy = py - sticker.y * canvas.height;
+    const cos = Math.cos(-sticker.rotation);
+    const sin = Math.sin(-sticker.rotation);
+    const localX = dx * cos - dy * sin;
+    const localY = dx * sin + dy * cos;
+    const box = stickerBox(sticker, canvas.width);
+    if (Math.abs(localX) <= box.w / 2 && Math.abs(localY) <= box.h / 2) return sticker;
+  }
+  return null;
+};
+
+type StickerDrag = {
+  mode: 'move' | 'rotate' | 'scale';
+  stamp: EditorStamp;
+  startX: number;
+  startY: number;
+  originX: number;
+  originY: number;
+  startRotation: number;
+  startScale: number;
+  startAngle: number;
+  startDistance: number;
+};
+let stickerDrag: StickerDrag | null = null;
+
+const stickerCenter = (sticker: PlacedSticker): { x: number; y: number } | null => {
+  if (!canvas) return null;
+  const bounds = canvas.getBoundingClientRect();
+  return { x: bounds.left + sticker.x * bounds.width, y: bounds.top + sticker.y * bounds.height };
+};
+
+const beginStickerDrag = (mode: StickerDrag['mode'], event: PointerEvent): void => {
+  const sticker = stickerOverlays.find((item) => item.id === selectedStickerId);
+  if (!sticker || applyingHistory) return;
+  const center = stickerCenter(sticker);
+  const angle = center ? Math.atan2(event.clientY - center.y, event.clientX - center.x) : 0;
+  const distance = center ? Math.max(12, Math.hypot(event.clientX - center.x, event.clientY - center.y)) : 12;
+  stickerDrag = {
+    mode,
+    stamp: captureStamp(false),
+    startX: event.clientX,
+    startY: event.clientY,
+    originX: sticker.x,
+    originY: sticker.y,
+    startRotation: sticker.rotation,
+    startScale: sticker.scale,
+    startAngle: angle,
+    startDistance: distance,
+  };
+  event.preventDefault();
+  event.stopPropagation();
+};
+
+const moveStickerDrag = (event: PointerEvent): void => {
+  if (!stickerDrag || !canvas) return;
+  const sticker = stickerOverlays.find((item) => item.id === selectedStickerId);
+  if (!sticker) return;
+  if (stickerDrag.mode === 'move') {
+    const bounds = canvas.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    sticker.x = Math.max(0.02, Math.min(0.98, stickerDrag.originX + (event.clientX - stickerDrag.startX) / bounds.width));
+    sticker.y = Math.max(0.02, Math.min(0.98, stickerDrag.originY + (event.clientY - stickerDrag.startY) / bounds.height));
+  } else {
+    const center = stickerCenter(sticker);
+    if (!center) return;
+    if (stickerDrag.mode === 'rotate') {
+      const angle = Math.atan2(event.clientY - center.y, event.clientX - center.x);
+      sticker.rotation = stickerDrag.startRotation + (angle - stickerDrag.startAngle);
+    } else {
+      const distance = Math.max(12, Math.hypot(event.clientX - center.x, event.clientY - center.y));
+      sticker.scale = Math.max(0.35, Math.min(3.2, stickerDrag.startScale * (distance / stickerDrag.startDistance)));
+    }
+  }
+  scheduleRender();
+};
+
+const endStickerDrag = (): void => {
+  if (!stickerDrag) return;
+  const stamp = stickerDrag.stamp;
+  const before = JSON.stringify(stamp.stickers);
+  stickerDrag = null;
+  if (before !== JSON.stringify(stickerOverlays)) pushUndo(stamp);
+  render();
+};
+
 const stickerGroups = byId<HTMLElement>('stickerGroups');
-const addSticker = (glyph: string, word: boolean): void => {
+const addSticker = (glyph: string, kind: PlacedSticker['kind'], tone: string): void => {
   if (stickerOverlays.length >= 24) {
     showToast('That is 24 stickers. Clear them to add more.');
     return;
   }
+  remember();
   const slot = stickerOverlays.length;
-  stickerOverlays.push({
+  const sticker: PlacedSticker = {
+    id: stickerSerial,
+    kind,
     glyph,
-    word,
-    x: 0.18 + (slot % 4) * 0.2,
-    y: 0.16 + (Math.floor(slot / 4) % 4) * 0.18,
-  });
+    x: 0.22 + (slot % 4) * 0.18,
+    y: 0.2 + (Math.floor(slot / 4) % 4) * 0.16,
+    scale: 1,
+    rotation: 0,
+    tone,
+  };
+  stickerSerial += 1;
+  stickerOverlays.push(sticker);
+  selectedStickerId = sticker.id;
   render();
 };
 stickerCatalog.forEach((group) => {
@@ -1445,25 +1957,78 @@ stickerCatalog.forEach((group) => {
   const row = document.createElement('div');
   row.className = 'sticker-row';
   group.items.forEach((item, index) => {
+    const tone = stickerTones[index % stickerTones.length];
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = item;
-    button.setAttribute('aria-label', group.words ? `${item} sticker` : `Add ${item}`);
-    if (group.words) {
+    button.setAttribute('aria-label', group.kind === 'word' ? `${item} sticker` : `Add ${item} sticker`);
+    if (group.kind === 'mark') {
+      button.className = 'mark';
+      const icon = document.createElement('canvas');
+      icon.width = 36;
+      icon.height = 36;
+      const iconContext = icon.getContext('2d');
+      if (iconContext) {
+        iconContext.translate(18, 18);
+        drawMark(iconContext, item, 28, tone);
+      }
+      button.append(icon);
+    } else if (group.kind === 'word') {
       button.className = 'word';
-      button.style.background = wordColors[index % wordColors.length];
-    }
-    button.addEventListener('click', () => addSticker(item, !!group.words));
+      button.textContent = item;
+      button.style.background = tone;
+    } else button.textContent = item;
+    button.addEventListener('click', () => addSticker(item, group.kind, tone));
     row.append(button);
   });
   block.append(title, row);
   stickerGroups.append(block);
 });
 byId<HTMLButtonElement>('clearOverlays')?.addEventListener('click', () => {
+  if (!textOverlays.length && !stickerOverlays.length && !brushStrokes.length) return;
+  remember();
   textOverlays.length = 0;
   stickerOverlays.length = 0;
   brushStrokes.length = 0;
+  selectedStickerId = 0;
   render();
+});
+const stickerFrameEl = byId<HTMLElement>('stickerFrame');
+stickerFrameEl?.addEventListener('pointerdown', (event) => {
+  if (!(event.target instanceof HTMLElement) || event.target.closest('button')) return;
+  beginStickerDrag('move', event);
+  try { stickerFrameEl.setPointerCapture(event.pointerId); } catch { /* A real pointer owns capture. */ }
+});
+byId<HTMLButtonElement>('stickerRotate')?.addEventListener('pointerdown', (event) => {
+  beginStickerDrag('rotate', event);
+  if (event.currentTarget instanceof HTMLElement) {
+    try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* A real pointer owns capture. */ }
+  }
+});
+byId<HTMLButtonElement>('stickerScale')?.addEventListener('pointerdown', (event) => {
+  beginStickerDrag('scale', event);
+  if (event.currentTarget instanceof HTMLElement) {
+    try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* A real pointer owns capture. */ }
+  }
+});
+byId<HTMLButtonElement>('stickerDelete')?.addEventListener('click', (event) => {
+  event.stopPropagation();
+  const index = stickerOverlays.findIndex((item) => item.id === selectedStickerId);
+  if (index < 0) return;
+  remember();
+  stickerOverlays.splice(index, 1);
+  selectedStickerId = stickerOverlays[stickerOverlays.length - 1]?.id ?? 0;
+  render();
+});
+window.addEventListener('pointermove', moveStickerDrag);
+window.addEventListener('pointerup', endStickerDrag);
+window.addEventListener('pointercancel', endStickerDrag);
+window.addEventListener('resize', placeStickerFrame);
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+  if (!selectedStickerId) return;
+  byId<HTMLButtonElement>('stickerDelete')?.click();
 });
 byId<HTMLButtonElement>('brushToggle')?.addEventListener('click', (event) => {
   brushEnabled = !brushEnabled;
@@ -1514,6 +2079,23 @@ const endBrush = (): void => {
 };
 canvas?.addEventListener('pointerup', endBrush);
 canvas?.addEventListener('pointercancel', endBrush);
+canvas?.addEventListener('pointerdown', (event: PointerEvent) => {
+  if (brushEnabled || stickerDrag) return;
+  const point = brushPoint(event);
+  if (!point) return;
+  const hit = hitSticker(point.x, point.y);
+  if (!hit) {
+    if (selectedStickerId) {
+      selectedStickerId = 0;
+      placeStickerFrame();
+    }
+    return;
+  }
+  selectedStickerId = hit.id;
+  placeStickerFrame();
+  beginStickerDrag('move', event);
+  try { canvas.setPointerCapture(event.pointerId); } catch { /* A real pointer owns capture. */ }
+});
 
 const setCameraLook = (look: string): void => {
   if (photoFilter) photoFilter.value = look;
@@ -2543,7 +3125,7 @@ const render = (): void => {
   warpRegion(0.5, 0.43, 0.16, 0.2, -Number(faceVolumeSlider?.value ?? 0) / 30 * 0.14);
   drawSceneBehindPerson(sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
 
-  if (context && (textOverlays.length || stickerOverlays.length || timestampToggle?.checked)) {
+  if (context && (textOverlays.length || timestampToggle?.checked)) {
     context.save();
     context.textAlign = 'center';
     context.textBaseline = 'middle';
@@ -2553,26 +3135,6 @@ const render = (): void => {
     context.font = `700 ${fontSize}px sans-serif`;
     context.fillStyle = '#ffffff';
     textOverlays.forEach((text, index) => context.fillText(text, width / 2, height * (0.78 - index * 0.07), width * 0.88));
-    stickerOverlays.forEach((sticker, index) => {
-      const x = sticker.x * width;
-      const y = sticker.y * height;
-      if (sticker.word) {
-        context.font = `800 ${Math.max(16, width * 0.045)}px sans-serif`;
-        const labelWidth = context.measureText(sticker.glyph).width;
-        const padX = Math.max(10, width * 0.018);
-        const boxWidth = labelWidth + padX * 2;
-        const boxHeight = Math.max(28, width * 0.07);
-        context.fillStyle = wordColors[index % wordColors.length];
-        context.beginPath();
-        context.roundRect(x - boxWidth / 2, y - boxHeight / 2, boxWidth, boxHeight, boxHeight / 2);
-        context.fill();
-        context.fillStyle = '#ffffff';
-        context.fillText(sticker.glyph, x, y);
-        return;
-      }
-      context.font = `${Math.max(28, width * 0.11)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-      context.fillText(sticker.glyph, x, y);
-    });
     if (timestampToggle?.checked) {
       context.font = `600 ${Math.max(18, width * 0.026)}px sans-serif`;
       context.textAlign = 'left';
@@ -2616,11 +3178,14 @@ const render = (): void => {
     context.stroke();
     context.restore();
   });
+  if (context) paintStickers(context, width, height);
   paintHomeEffect();
   updatePortraitGuides();
+  placeStickerFrame();
 };
 
 const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): Promise<void> => {
+  if (originalImage && scene !== activeBackgroundScene) remember();
   activeBackgroundScene = scene;
   setSceneButtons(scene);
   if (creativeControls) creativeControls.hidden = false;
@@ -2721,6 +3286,8 @@ const openPhoto = (src: string): void => {
     stickerOverlays.length = 0;
     brushStrokes.length = 0;
     currentBrush = null;
+    selectedStickerId = 0;
+    resetEditHistory();
     setPhotoCanvasSize();
     canvas.classList.add('has-image');
     if (emptyState) emptyState.hidden = true;
@@ -3055,6 +3622,7 @@ const selectLook = (chip: HTMLButtonElement): void => {
   if (now - lastLookTap < 350) return;
   lastLookTap = now;
   if (!chip.dataset.look || !photoFilter) return;
+  remember();
   activeHomeEffect = null;
   const title = byId<HTMLElement>('editorTitle');
   if (title) title.textContent = 'Filters';
@@ -3156,10 +3724,12 @@ teethSlider?.addEventListener('change', () => {
   else showToast('Teeth whitened. Your other edits stay in place.');
 });
 byId<HTMLButtonElement>('teethToggle')?.addEventListener('click', () => {
+  remember();
   setTeethAmount(Number(teethSlider?.value ?? 0) > 0 ? 0 : 68);
 });
 byId<HTMLButtonElement>('smoothToggle')?.addEventListener('click', () => {
   if (!smoothSlider) return;
+  remember();
   console.log('filter', 'smooth');
   smoothSlider.value = Number(smoothSlider.value) > 0 ? '0' : '80';
   paintSmooth();
@@ -3224,6 +3794,7 @@ const setAdjustControl = (id: string, value: number, draw: boolean): void => {
 };
 
 const applyAutoAdjust = (on: boolean): void => {
+  remember();
   applyingAuto = true;
   adjustControlIds.forEach((id) => setAdjustControl(id, on ? autoAdjustRecipe[id] : 0, false));
   applyingAuto = false;
@@ -3254,6 +3825,7 @@ byId<HTMLButtonElement>('adjustAuto')?.addEventListener('click', () => {
 });
 
 byId<HTMLButtonElement>('resetBtn')?.addEventListener('click', () => {
+  remember();
   if (smoothSlider) smoothSlider.value = '0';
   if (noseSlider) noseSlider.value = '0';
   if (smoothValue) smoothValue.value = '0';
@@ -3416,7 +3988,6 @@ const cropWrapEl = byId<HTMLElement>('cropWrap');
 const cropFrameEl = byId<HTMLElement>('cropFrame');
 const cropAngleEl = byId<HTMLInputElement>('cropAngle');
 const cropAngleOutput = byId<HTMLOutputElement>('cropAngleVal');
-const editHistory: string[] = [];
 let cropBox: CropBox = { x: 0, y: 0, w: 1, h: 1 };
 let quarterTurns = 0;
 let flipHorizontal = false;
@@ -3581,7 +4152,7 @@ const snapshotSource = (): string => {
   return shot.toDataURL('image/jpeg', 0.92);
 };
 
-const replaceOriginal = (src: string, message: string): void => {
+const replaceOriginal = (src: string, message: string, done?: () => void): void => {
   const image = new Image();
   image.onload = () => {
     originalImage = image;
@@ -3593,11 +4164,16 @@ const replaceOriginal = (src: string, message: string): void => {
     render();
     paintFilterPreviews();
     if (!cropScreenEl?.hidden) paintCropPreview();
-    showToast(message);
+    if (message) showToast(message);
     void detectFaceMesh(image).then((landmarks) => {
       faceMeshLandmarks = landmarks;
       render();
     });
+    done?.();
+  };
+  image.onerror = () => {
+    if (message) showToast('That edit could not be restored.');
+    done?.();
   };
   image.src = src;
 };
@@ -3637,11 +4213,8 @@ const commitCrop = (): void => {
   output.width = cropWidth;
   output.height = cropHeight;
   output.getContext('2d')?.drawImage(full, originX, originY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-  const previous = snapshotSource();
-  if (previous) {
-    editHistory.push(previous);
-    if (editHistory.length > 8) editHistory.shift();
-  }
+  remember(true);
+  imageToken += 1;
   replaceOriginal(output.toDataURL('image/jpeg', 0.92), 'Crop applied.');
 };
 
@@ -3732,13 +4305,8 @@ byId<HTMLButtonElement>('flipVertical')?.addEventListener('click', () => {
   hideCropMenus();
 });
 byId<HTMLButtonElement>('cropUndo')?.addEventListener('click', () => {
-  const previous = editHistory.pop();
   hideCropMenus();
-  if (!previous) {
-    showToast('Nothing to undo.');
-    return;
-  }
-  replaceOriginal(previous, 'Undid the last crop.');
+  undoEdit();
 });
 cropAngleEl?.addEventListener('input', () => {
   const value = Number(cropAngleEl.value);
@@ -4058,6 +4626,9 @@ const planChangesPhoto = (plan: GuidePlan): boolean => Boolean(
 
 const applyGuidePlan = async (plan: GuidePlan): Promise<void> => {
   const edits = planChangesPhoto(plan);
+  if (edits) remember(Boolean(plan.crop && originalImage));
+  historyLock += 1;
+  try {
   if (plan.reset) {
     activeHomeEffect = null;
     applyingAuto = true;
@@ -4121,6 +4692,9 @@ const applyGuidePlan = async (plan: GuidePlan): Promise<void> => {
   }
   if (originalImage) guideResult(plan.reply);
   else guideLine('guide', plan.reply);
+  } finally {
+    historyLock -= 1;
+  }
 };
 
 const answerGuide = async (raw: string): Promise<void> => {
@@ -4170,6 +4744,10 @@ const answerGuideLocal = async (typed: string): Promise<void> => {
     return;
   }
   const done: string[] = [];
+  const historyBeforeEdit = undoStack.length;
+  remember(Boolean(originalImage && /\b(crop|square|story)\b/.test(text)));
+  historyLock += 1;
+  try {
   const needsPhoto = (): void => {
     if (originalImage) return;
     showToast('Choose a photo, or tap an example portrait.');
@@ -4349,6 +4927,13 @@ const answerGuideLocal = async (typed: string): Promise<void> => {
     ? `Here is the edited picture. I put ${sceneLabels[scene]} behind the person: ${summary}.`
     : `Here is the edited picture: ${summary}. You can still change any slider, look, or background by hand. Save is at the top right.`;
   guideResult(reply);
+  } finally {
+    historyLock -= 1;
+    if (done.length === 0 && undoStack.length > historyBeforeEdit) {
+      undoStack.pop();
+      syncHistoryButtons();
+    }
+  }
 };
 
 byId<HTMLButtonElement>('homeGuide')?.addEventListener('click', openGuide);
