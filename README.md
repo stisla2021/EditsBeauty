@@ -4,7 +4,7 @@ On-device portrait and photo editor. Photos stay in the browser. Filters, Adjust
 
 **Live app:** https://stisla2021.github.io/EditsBeauty/
 
-Version V1.0.0. Copyright (c) StISLA2021.
+Version V1.1.0. Copyright (c) StISLA2021.
 
 ## What you can do
 
@@ -16,7 +16,7 @@ Version V1.0.0. Copyright (c) StISLA2021.
 - **Ask AI** accepts a dropped photo and a task, including a named background such as beach, garden, night, blank, or blur. **Delete chat** clears that conversation.
 - The **camera** has Portrait, Live, and Video. Portrait opens with a background blur. A horizontal tray holds Original plus beauty, makeup, fun, classic, and background lenses (Soft, Glow, Blush, Contour, Glasses, Cat, Crown, Earrings, Sparkle, Puppy, Hearts, Film, Portrait, White, Sunset). Original stays first. The last lens is remembered. Long-press a lens, or tap Tune, to set strength and the beauty sliders: skin smooth, slim face, V-shape jaw, chin, eye enlarge, eye brighten, nose slim, lips, lip color, teeth, foundation, blush, contour and highlight, soft glow, portrait blur, and edge feather. Save look stores that mix on the device as My look. Face landmarks come from MediaPipe Face Mesh on the device. Mesh in the camera, or Face mesh overlay in Settings, draws a light mesh and is off until turned on. If the mesh cannot load, color beauty still runs. Video and the short Live clip record the preview with the current beauty and lens. Heavy effects use WebGL. Phones use a smaller preview. If the preview stays under 20 fps, Lite mode turns off face reshape and lenses; Full quality in Tune turns them back on.
 - **Stickers** are drawn on the device: shapes, beauty marks, short words, and emoji. Tap one to add it, then drag to move it and use the handles to resize or rotate. You can stack several. **Undo** and **Redo** in the editor step back through adjustments, filters, beauty, stickers, crop, and background changes, up to 15 steps.
-- The install prompt is shown only where supported and is hidden on Apple devices and after installation. When a new version is ready, a prominent **Update available** banner lets users activate it and reload in one tap. On iPhone/iPad, close and reopen the Home Screen app if iOS does not refresh automatically. Filters, Adjust, crop, and the camera still open offline after the app has been visited once. **Clear Cache** in Settings deletes stored files and returns the size to 0 B.
+- The install prompt is shown only where supported and is hidden on Apple devices and after installation. The installed Home Screen app checks for a new version when it opens and when you come back to it. **Update available** appears on the home screen only when that version number changes, with an orange **Update** button. **Update** switches to the new version and reloads. On iPhone it also clears the saved copy and opens the latest page; if the screen still looks old, close EditsBeauty completely and open it again from the Home Screen. **Force refresh** repeats that step. The **×** hides the banner for this visit, and it can show again the next time the app opens if that version is still waiting. After the new version is running, the banner stays hidden until the next version. A normal browser tab does not show it. Filters, Adjust, crop, and the camera still open offline after the app has been visited once. **Clear Cache** in Settings deletes stored files and returns the size to 0 B.
 - **Feedback** opens an email draft addressed to the publisher; feedback text is not stored on the website.
 
 ## Run it locally

@@ -455,28 +455,52 @@ body.dark .canvas-stage { background: #302c31; }
 .update-banner {
   position: fixed;
   z-index: 45;
-  top: max(48px, calc(env(safe-area-inset-top) + 44px));
+  top: calc(76px + env(safe-area-inset-top));
   left: 50%;
   display: flex;
-  width: min(560px, calc(100% - 24px));
+  width: min(520px, calc(100% - 24px));
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px;
+  padding: 16px 44px 16px 16px;
   border: 1px solid var(--line);
   border-left: 4px solid var(--accent);
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--surface);
   color: var(--text);
   box-shadow: var(--shadow);
   transform: translateX(-50%);
 }
+.update-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
 .update-banner[hidden] { display: none; }
 .update-copy { min-width: 0; }
-.update-copy strong { display: block; margin-bottom: 4px; font-size: 16px; }
-.update-copy p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
-.update-button { min-height: 44px; flex: 0 0 auto; padding: 0 18px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 750; cursor: pointer; }
+.update-copy strong { display: block; margin-bottom: 2px; font-family: Palatino, "Iowan Old Style", Georgia, serif; font-size: 1.25rem; font-weight: 700; }
+.update-version { margin: 0 0 4px; color: var(--accent); font-size: 13px; font-weight: 750; }
+.update-copy p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.update-actions { display: flex; flex: 0 0 auto; gap: 8px; }
+.update-button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fffdf8; font-weight: 750; cursor: pointer; }
+.update-force { border: 1px solid var(--line); background: var(--surface); color: var(--text); }
 .update-button:disabled { opacity: .7; cursor: wait; }
+@media (max-width: 640px) {
+  .update-banner { flex-direction: column; align-items: stretch; }
+  .update-actions { width: 100%; }
+  .update-button { flex: 1; }
+}
 .nav-gear { display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--text); text-decoration: none; }
 .nav-gear svg { width: 22px; height: 22px; }
 body.ios-settings, body.dark.ios-settings { background: #fff; color: #111; }

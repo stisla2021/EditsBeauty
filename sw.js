@@ -1,5 +1,7 @@
 // Copyright (c) StISLA2021
-const CACHE = 'editsbeauty-shell-v27';
+// Bump APP_VERSION and CACHE together. The Home Screen update banner appears only when APP_VERSION changes.
+const APP_VERSION = '1.1.0';
+const CACHE = 'editsbeauty-shell-v28';
 const SHELL = [
   './',
   './index.html',
@@ -34,8 +36,17 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') {
+  const data = event.data;
+  if (!data || typeof data !== 'object') return;
+  if (data.type === 'SKIP_WAITING') {
     void self.skipWaiting();
+    return;
+  }
+  if (data.type === 'GET_VERSION') {
+    const reply = { type: 'VERSION', version: APP_VERSION };
+    const port = event.ports && event.ports[0];
+    if (port) port.postMessage(reply);
+    else if (event.source && 'postMessage' in event.source) event.source.postMessage(reply);
   }
 });
 

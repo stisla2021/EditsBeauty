@@ -225,6 +225,28 @@ if (!appleDevice() && relatedApps.getInstalledRelatedApps) {
   }).catch(() => undefined);
 }
 
+const iosDevice = (): boolean => {
+  const iPad = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  return iPad || /iPhone|iPad|iPod/i.test(navigator.userAgent);
+};
+
+const appliedVersionKey = 'editsbeauty-applied-version';
+const dismissedUpdateKey = 'editsbeauty-update-dismissed';
+const readAppliedVersion = (): string => {
+  try {
+    return localStorage.getItem(appliedVersionKey) ?? '';
+  } catch {
+    return '';
+  }
+};
+const rememberAppliedVersion = (version: string): void => {
+  try {
+    localStorage.setItem(appliedVersionKey, version);
+  } catch {
+    // A successful reload still leaves the new version in control.
+  }
+};
+
 if ('serviceWorker' in navigator) {
   const updateBanner = document.createElement('section');
   updateBanner.className = 'update-banner';
@@ -237,53 +259,170 @@ if ('serviceWorker' in navigator) {
   updateCopy.className = 'update-copy';
   const updateTitle = document.createElement('strong');
   updateTitle.textContent = 'Update available';
+  const updateVersion = document.createElement('p');
+  updateVersion.className = 'update-version';
   const updateMessage = document.createElement('p');
-  updateMessage.textContent = appleDevice()
-    ? 'Tap Update to get the latest version. If it does not refresh, close EditsBeauty completely and reopen it from your Home Screen.'
-    : 'A new version of EditsBeauty is ready. Update now to load the latest version.';
-  updateCopy.append(updateTitle, updateMessage);
+  updateCopy.append(updateTitle, updateVersion, updateMessage);
 
+  const updateActions = document.createElement('div');
+  updateActions.className = 'update-actions';
   const updateButton = document.createElement('button');
   updateButton.className = 'update-button';
   updateButton.type = 'button';
   updateButton.textContent = 'Update';
-  updateBanner.append(updateCopy, updateButton);
-  document.body.append(updateBanner);
+  const forceButton = document.createElement('button');
+  forceButton.className = 'update-button update-force';
+  forceButton.type = 'button';
+  forceButton.textContent = 'Force refresh';
+  forceButton.hidden = !iosDevice();
+  const updateClose = document.createElement('button');
+  updateClose.className = 'update-close';
+  updateClose.type = 'button';
+  updateClose.setAttribute('aria-label', 'Dismiss update');
+  updateClose.textContent = '×';
+  updateActions.append(updateButton, forceButton);
+  updateBanner.append(updateCopy, updateActions, updateClose);
+  document.body.prepend(updateBanner);
 
   let waitingWorker: ServiceWorker | null = null;
+  let offeredVersion = '';
   let hasControlledPage = navigator.serviceWorker.controller !== null;
+  let refreshing = false;
 
-  const showUpdate = (worker: ServiceWorker | null): void => {
-    if (!worker || !navigator.serviceWorker.controller) return;
+  const askVersion = (worker: ServiceWorker | null): Promise<string | null> => new Promise((resolve) => {
+    if (!worker) {
+      resolve(null);
+      return;
+    }
+    const channel = new MessageChannel();
+    const timer = window.setTimeout(() => resolve(null), 1600);
+    channel.port1.onmessage = (event: MessageEvent<{ version?: unknown }>) => {
+      window.clearTimeout(timer);
+      const version = event.data?.version;
+      resolve(typeof version === 'string' && version ? version : null);
+    };
+    try {
+      worker.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+    } catch {
+      window.clearTimeout(timer);
+      resolve(null);
+    }
+  });
+
+  const dismissedVersion = (): string => {
+    try {
+      return sessionStorage.getItem(dismissedUpdateKey) ?? '';
+    } catch {
+      return '';
+    }
+  };
+
+  const hideUpdate = (): void => {
+    updateBanner.hidden = true;
+    offeredVersion = '';
+    waitingWorker = null;
+  };
+
+  const dismissUpdate = (): void => {
+    if (offeredVersion) {
+      try {
+        sessionStorage.setItem(dismissedUpdateKey, offeredVersion);
+      } catch {
+        // Hiding the banner still works when storage is blocked.
+      }
+    }
+    updateBanner.hidden = true;
+  };
+
+  const showUpdate = async (worker: ServiceWorker | null): Promise<void> => {
+    if (!launchedInstalled() || !navigator.serviceWorker.controller || !worker) return;
+    const [current, next] = await Promise.all([
+      askVersion(navigator.serviceWorker.controller),
+      askVersion(worker),
+    ]);
+    if (current) rememberAppliedVersion(current);
+    if (!next || next === current || next === readAppliedVersion()) {
+      if (next && next === current) hideUpdate();
+      return;
+    }
     waitingWorker = worker;
+    offeredVersion = next;
+    if (next === dismissedVersion()) {
+      updateBanner.hidden = true;
+      return;
+    }
+    updateVersion.textContent = `Version ${next}`;
+    updateMessage.textContent = iosDevice()
+      ? 'On iPhone: tap Update. If the screen does not change, close EditsBeauty completely, then open it again from the Home Screen.'
+      : 'A new version of EditsBeauty is ready. Tap Update to load it now.';
+    updateButton.disabled = false;
+    updateButton.textContent = 'Update';
+    forceButton.hidden = !iosDevice();
     updateBanner.hidden = false;
   };
 
-  updateButton.addEventListener('click', () => {
-    if (!waitingWorker) return;
+  const finishUpdate = (): void => {
+    if (refreshing) return;
+    refreshing = true;
+    const openLatest = (): void => {
+      if (!iosDevice()) {
+        window.location.reload();
+        return;
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.set('refresh', String(Date.now()));
+      window.location.replace(url.href);
+    };
+    if (!iosDevice() || !('caches' in window)) {
+      openLatest();
+      return;
+    }
+    void caches.keys()
+      .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+      .finally(openLatest);
+  };
+
+  updateClose.addEventListener('click', dismissUpdate);
+
+  const beginUpdate = (): void => {
+    if (refreshing || !waitingWorker) return;
     updateButton.disabled = true;
+    forceButton.disabled = true;
     updateButton.textContent = 'Updating…';
     waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    window.setTimeout(finishUpdate, iosDevice() ? 400 : 3000);
+  };
+
+  updateButton.addEventListener('click', beginUpdate);
+  forceButton.addEventListener('click', () => {
+    forceButton.textContent = 'Refreshing…';
+    beginUpdate();
   });
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (hasControlledPage) window.location.reload();
-    else hasControlledPage = true;
+    if (!hasControlledPage) {
+      hasControlledPage = true;
+      return;
+    }
+    if (offeredVersion) rememberAppliedVersion(offeredVersion);
+    finishUpdate();
   });
 
   void navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((registration) => {
-    showUpdate(registration.waiting);
+    void showUpdate(registration.waiting);
 
     registration.addEventListener('updatefound', () => {
       const installingWorker = registration.installing;
       if (!installingWorker) return;
       installingWorker.addEventListener('statechange', () => {
-        if (installingWorker.state === 'installed') showUpdate(registration.waiting);
+        if (installingWorker.state === 'installed') void showUpdate(registration.waiting ?? installingWorker);
       });
     });
 
     const checkForUpdate = (): void => {
-      void registration.update().catch((error: unknown) => {
+      void registration.update().then(() => {
+        void showUpdate(registration.waiting);
+      }).catch((error: unknown) => {
         console.warn('EditsBeauty could not check for an app update.', error);
       });
     };
@@ -291,6 +430,8 @@ if ('serviceWorker' in navigator) {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') checkForUpdate();
     });
+    window.addEventListener('pageshow', checkForUpdate);
+    window.setInterval(checkForUpdate, 60 * 60 * 1000);
   }).catch((error: unknown) => {
     console.error('EditsBeauty could not register its service worker.', error);
   });
