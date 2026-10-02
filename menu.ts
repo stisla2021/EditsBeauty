@@ -1,4 +1,5 @@
 // Copyright (c) StISLA2021
+import { inject } from '@vercel/analytics';
 import { startReports } from './report';
 import { noteInstall, noteVision, startUsage } from './usage';
 const themeKey = 'editsbeauty-theme';
@@ -702,3 +703,4 @@ bindSettings();
 bindAboutId();
 startReports();
 startUsage();
+inject();
