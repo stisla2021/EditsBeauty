@@ -1,5 +1,6 @@
 // Copyright (c) StISLA2021
 import { ensureFaceMeshScript, liveEffectsActive, liveRecordStream, liveStill, publishStillLandmarks, startLivePreview, stopLivePreview } from './camera-live';
+import { noteEdit, noteGuide, noteTool } from './usage';
 
 type FacePoint = { x: number; y: number; z?: number };
 type FaceMeshResults = { multiFaceLandmarks?: FacePoint[][] };
@@ -2246,6 +2247,7 @@ const revealInSheet = (element: HTMLElement | null): void => {
 document.querySelectorAll<HTMLButtonElement>('[data-tool]').forEach((button) => {
   button.addEventListener('click', () => {
     const tool = button.dataset.tool ?? 'Tool';
+    noteTool(tool);
     if (tool === 'AI Duo' || tool === 'Carousel-temp') {
       closeTools();
       openGridStudio(tool === 'Carousel-temp' ? '2x2' : '2-up');
@@ -3467,6 +3469,7 @@ const startCameraRecording = (ms: number | null, onStop: (blob: Blob) => void): 
 };
 
 async function openCamera(): Promise<void> {
+  noteTool('Camera');
   if (!cameraView || !cameraVideo) return;
   const session = cameraSession + 1;
   cameraSession = session;
@@ -3608,6 +3611,8 @@ const selectLook = (chip: HTMLButtonElement): void => {
   if (now - lastLookTap < 350) return;
   lastLookTap = now;
   if (!chip.dataset.look || !photoFilter) return;
+  noteTool('Filters');
+  noteEdit();
   remember();
   activeHomeEffect = null;
   const title = byId<HTMLElement>('editorTitle');
@@ -3664,7 +3669,11 @@ const paintSmooth = (): void => {
   scheduleRender();
 };
 smoothSlider?.addEventListener('input', paintSmooth);
-smoothSlider?.addEventListener('change', paintSmooth);
+smoothSlider?.addEventListener('change', () => {
+  paintSmooth();
+  noteTool('Smooth');
+  noteEdit();
+});
 
 const setTeethAmount = (amount: number): void => {
   const next = String(Math.max(0, Math.min(100, Math.round(amount))));
@@ -3692,6 +3701,8 @@ const paintTeeth = (): void => {
 teethSlider?.addEventListener('input', paintTeeth);
 teethSlider?.addEventListener('change', () => {
   paintTeeth();
+  noteTool('Teeth');
+  noteEdit();
   if (originalImage) render();
   const amount = Number(teethSlider?.value ?? 0);
   if (amount <= 0) return;
@@ -3888,12 +3899,17 @@ byId<HTMLButtonElement>('resetBtn')?.addEventListener('click', () => {
 document.querySelectorAll<HTMLButtonElement>('[data-bg-scene]').forEach((button) => {
   button.addEventListener('click', () => {
     const scene = button.dataset.bgScene ?? '';
-    if (isBackgroundScene(scene)) void selectBackgroundScene(scene, true);
+    if (isBackgroundScene(scene)) {
+      noteTool('Background');
+      noteEdit();
+      void selectBackgroundScene(scene, true);
+    }
   });
 });
 
 downloadButton?.addEventListener('click', () => {
   if (!canvas || !originalImage) return;
+  noteEdit();
   const blankBackground = activeBackgroundScene === 'blank';
   const fileName = blankBackground ? 'editsbeauty-edit.png' : 'editsbeauty-edit.jpg';
   const mime = blankBackground ? 'image/png' : 'image/jpeg';
@@ -4290,7 +4306,10 @@ const fitAspect = (kind: string): void => {
 document.querySelectorAll<HTMLButtonElement>('[data-studio-tab]').forEach((button) => {
   button.addEventListener('click', () => {
     const tab = button.dataset.studioTab;
-    if (tab === 'adjust' || tab === 'filters' || tab === 'crop') setStudioTab(tab);
+    if (tab === 'adjust' || tab === 'filters' || tab === 'crop') {
+      noteTool(tab === 'adjust' ? 'Adjust' : tab === 'filters' ? 'Filters' : 'Crop');
+      setStudioTab(tab);
+    }
   });
 });
 
@@ -4780,6 +4799,7 @@ const applyGuidePlan = async (plan: GuidePlan): Promise<void> => {
 const answerGuide = async (raw: string): Promise<void> => {
   const typed = raw.trim();
   if (!typed) return;
+  noteGuide();
   if (!originalImage && photoLoading) {
     pendingGuideRequest = typed;
     guideLine('you', typed);
@@ -4801,6 +4821,7 @@ const answerGuide = async (raw: string): Promise<void> => {
   if (plan) {
     try {
       await applyGuidePlan(plan);
+      noteEdit();
     } finally {
       waiting?.remove();
     }

@@ -6,7 +6,7 @@ Updated 2 October 2026.
 - Canonical Vercel URL: https://editsbeauty.vercel.app/
 - Repository: https://github.com/stisla2021/EditsBeauty
 - Branch: `main`
-- Version: V1.1.6
+- Version: V1.1.7
 
 Editing happens on the device. The AI guide reads the words of a request and chooses the same tools a person can move by hand. Groq does that reading. The photo is not sent unless Settings has “Allow AI to see my photo (better results)” turned on. That switch is off until the person turns it on, and the first time shows a short warning. While it is on, asking the guide sends a small compressed copy for that request only. EditsBeauty does not store it. If that free vision model is unavailable, the same request continues with the text-only guide. The guide does not generate a new picture. If Groq cannot be reached, a simpler on-device reader uses the same tools.
 
@@ -15,6 +15,11 @@ Adjust holds Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightne
 The camera runs on the device. Portrait starts with a background blur and a feathered edge so the person stays sharper. A tray under the preview lists Original first, then beauty, makeup, fun, classic, and background lenses: Soft, Glow, Blush, Contour, Glasses, Cat, Crown, Earrings, Sparkle, Puppy, Hearts, Film, Portrait, White, and Sunset. The last lens is remembered. Long-press a lens, or tap Tune, for strength and sliders from 0 to 100: skin smooth, slim face, V-shape jaw, chin, eye enlarge, eye brighten, nose slim, lips plump, lip color, teeth, foundation, blush, contour and highlight, soft glow, portrait blur, and edge feather. Save look stores that mix on the device as My look. MediaPipe Face Mesh supplies eyes, nose, mouth, cheeks, jaw, and forehead for those effects. Mesh on the camera, or Face mesh overlay in Settings, draws a light mesh and stays off until turned on. If Face Mesh cannot load, color beauty still runs. Video and the short Live clip record the processed preview, including the current beauty and lens. Heavy effects use WebGL. Phones use a smaller preview. If the preview stays under 20 fps, Lite mode turns off face reshape and lenses; Full quality in Tune turns them back on.
 
 The installed app checks for a new version when it opens and when you return to it. A normal browser visit and the first open after installing do not show an update prompt. iPhone and iPad never show that prompt; a newer version is applied on its own. On other devices, Update available appears on the home screen only after the app has been opened before and the version number changes. Update switches to the new version and reloads. The × on the banner hides it for this visit; it can show again the next time the app opens if that version is still waiting. After that version is running, the banner stays hidden until the next version.
+
+Recent updates in V1.1.7:
+
+- Anonymous usage counts visits, weekly and monthly visitors, PWA installs, tool use, AI guide use, and how often “Allow AI to see my photo (better results)” is turned on. Device type, browser name, country, and a rough session length are included. Names, emails, photos, and face data are not. The numbers are at `/usage`.
+- After about five edits, or a few days of use, a star rating from 1 to 5 can be sent with an optional note. Not now hides it for three weeks. The rating does not include the photo.
 
 Recent updates in V1.1.6:
 

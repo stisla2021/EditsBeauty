@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { planEdit } from './guide-plan.js';
 import { acceptReport, saveReport } from './report-store.js';
+import { acceptUsage, commentsAllowed, readUsage, saveUsage } from './usage-store.js';
 
 const groqKey = () => {
   if (process.env.GROQ_API_KEY) return process.env.GROQ_API_KEY;
@@ -64,6 +65,56 @@ const attachGuide = (middlewares) => {
         reply(status, { stored: false, error: status === 503 ? 'unconfigured' : 'store' });
       }
     }).catch(() => reply(400, { stored: false, error: 'json' }));
+  });
+  middlewares.use('/api/usage', (req, res) => {
+    const reply = (status, body) => {
+      res.statusCode = status;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(body));
+    };
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+    if (req.method === 'GET') {
+      void readUsage(commentsAllowed(req.headers['x-usage-key'])).then((summary) => reply(200, summary)).catch((error) => {
+        const status = error && typeof error.status === 'number' ? error.status : 502;
+        reply(status, { stored: false, error: status === 503 ? 'unconfigured' : 'store' });
+      });
+      return;
+    }
+    if (req.method !== 'POST') {
+      reply(405, { stored: false, error: 'method' });
+      return;
+    }
+    const chunks = [];
+    let size = 0;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > 8000) req.destroy();
+      else chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (size > 8000) {
+        reply(413, { stored: false, error: 'field' });
+        return;
+      }
+      void (async () => {
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+          const accepted = acceptUsage(body, req.headers['x-vercel-ip-country']);
+          if (!accepted.ok) {
+            reply(accepted.status, { stored: false, error: accepted.error });
+            return;
+          }
+          reply(200, await saveUsage(accepted.record));
+        } catch (error) {
+          const status = error && typeof error.status === 'number' ? error.status : 400;
+          reply(status, { stored: false, error: status === 503 ? 'unconfigured' : 'store' });
+        }
+      })();
+    });
   });
   middlewares.use('/api/guide', (req, res) => {
     if (req.method === 'OPTIONS') {
@@ -138,6 +189,7 @@ const pages = [
   'licensing.html',
   'copyright.html',
   'fontlicense.html',
+  'usage.html',
 ];
 
 export default defineConfig({

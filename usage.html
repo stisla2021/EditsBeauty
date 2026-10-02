@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!-- Copyright (c) StISLA2021 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Usage - EditsBeauty</title>
+  <meta name="description" content="Anonymous EditsBeauty usage counts. Photos and names are not included.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="usage-page">
+    <p><a href="index.html">Home</a></p>
+    <h1>Usage</h1>
+    <p>These are anonymous counts. They do not include names, emails, photos, or face data. Country is the host’s approximate region. Device, browser, and country totals are visit-days over the last 30 days.</p>
+    <form class="usage-key" id="usageKeyForm">
+      <label class="visually-hidden" for="usageKey">View key</label>
+      <input id="usageKey" type="password" autocomplete="current-password" placeholder="View key, if one is set">
+      <button type="submit">Show</button>
+    </form>
+    <p id="usageStatus">Loading the counts.</p>
+    <div class="usage-grid" id="usageTotals"></div>
+    <h2>Tools</h2>
+    <table id="usageTools"></table>
+    <h2>Last 30 days</h2>
+    <table id="usageMix"></table>
+    <h2>Ratings</h2>
+    <div id="usageRatings"></div>
+  </main>
+  <script>
+    const endpoint = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === 'editsbeauty.vercel.app'
+      ? new URL('/api/usage', location.origin).href
+      : 'https://editsbeauty.vercel.app/api/usage';
+    const status = document.getElementById('usageStatus');
+    const totals = document.getElementById('usageTotals');
+    const tools = document.getElementById('usageTools');
+    const mix = document.getElementById('usageMix');
+    const ratings = document.getElementById('usageRatings');
+    const keyInput = document.getElementById('usageKey');
+    const storedKey = sessionStorage.getItem('editsbeauty-usage-key') || '';
+    if (storedKey) keyInput.value = storedKey;
+
+    const card = (label, value) => {
+      const item = document.createElement('article');
+      const number = document.createElement('strong');
+      number.textContent = String(value);
+      item.append(number, document.createTextNode(label));
+      return item;
+    };
+
+    const rows = (table, entries) => {
+      table.replaceChildren();
+      const list = Object.entries(entries).sort((a, b) => b[1] - a[1]);
+      if (!list.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 2;
+        cell.textContent = 'None yet.';
+        row.append(cell);
+        table.append(row);
+        return;
+      }
+      list.forEach(([name, value]) => {
+        const row = document.createElement('tr');
+        const label = document.createElement('td');
+        const count = document.createElement('td');
+        label.textContent = name;
+        count.textContent = String(value);
+        row.append(label, count);
+        table.append(row);
+      });
+    };
+
+    const load = async () => {
+      const headers = {};
+      if (keyInput.value.trim()) headers['X-Usage-Key'] = keyInput.value.trim();
+      const response = await fetch(endpoint, { headers });
+      const body = await response.json();
+      if (!response.ok) {
+        status.textContent = body.error === 'unconfigured'
+          ? 'Nothing is stored yet. Connect Postgres with POSTGRES_URL or DATABASE_URL, or use the local data file while developing.'
+          : 'The counts could not be loaded.';
+        return;
+      }
+      status.textContent = 'Counts update when someone uses the editor.';
+      totals.replaceChildren(
+        card('Today', body.daily),
+        card('7 days', body.weekly),
+        card('30 days', body.monthly),
+        card('Installs', body.installs),
+        card('AI guide', body.guide),
+        card('Photo vision on', body.vision),
+        card('Avg. session', body.averageSessionSeconds + 's'),
+      );
+      rows(tools, body.tools || {});
+      rows(mix, { ...(body.devices || {}), ...(body.browsers || {}), ...(body.countries || {}) });
+      ratings.replaceChildren();
+      const summary = document.createElement('p');
+      const rating = body.ratings || {};
+      summary.textContent = rating.count
+        ? rating.count + ' ratings, average ' + rating.average + '.'
+        : 'No ratings yet.';
+      ratings.append(summary);
+      (rating.comments || []).forEach((item) => {
+        const line = document.createElement('p');
+        line.textContent = item.stars + ' stars. ' + item.comment;
+        ratings.append(line);
+      });
+      if (!rating.comments?.length && rating.count) {
+        const locked = document.createElement('p');
+        locked.textContent = 'Written notes stay hidden until USAGE_VIEW_KEY is set and entered here.';
+        ratings.append(locked);
+      }
+    };
+
+    document.getElementById('usageKeyForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      sessionStorage.setItem('editsbeauty-usage-key', keyInput.value.trim());
+      void load();
+    });
+    void load().catch(() => {
+      status.textContent = 'The counts could not be loaded.';
+    });
+  </script>
+</body>
+</html>

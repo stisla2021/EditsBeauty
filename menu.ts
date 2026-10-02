@@ -1,5 +1,6 @@
 // Copyright (c) StISLA2021
 import { startReports } from './report';
+import { noteInstall, noteVision, startUsage } from './usage';
 const themeKey = 'editsbeauty-theme';
 type ThemePreference = 'system' | 'light' | 'dark';
 const deviceTheme = window.matchMedia('(prefers-color-scheme: dark)');
@@ -163,6 +164,7 @@ if (appleDevice() || alreadyInstalled()) {
 }
 
 const hideInstall = (): void => {
+  noteInstall();
   rememberInstalled();
   installPrompt = null;
   installButton.remove();
@@ -622,6 +624,7 @@ const bindSettings = (): void => {
     setSwitch(visionSee, true);
     writeSetting('editsbeauty-ai-vision', 'on');
     writeSetting('editsbeauty-ai-vision-warned', 'on');
+    noteVision();
     if (visionWarning) visionWarning.hidden = true;
   };
   visionSee?.addEventListener('click', () => {
@@ -698,3 +701,4 @@ const bindAboutId = (): void => {
 bindSettings();
 bindAboutId();
 startReports();
+startUsage();
