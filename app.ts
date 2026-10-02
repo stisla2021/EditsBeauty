@@ -4474,7 +4474,7 @@ const openGuide = (): void => {
   if (!guidePanel) return;
   guidePanel.hidden = false;
   if (guideLog && guideLog.childElementCount === 0) {
-    guideLine('guide', 'Tell me the edit in your own words, such as “smooth my skin and whiten my teeth” or “brighten this and use a beach background.” I choose the controls already in the editor. Your photo stays on this device, and I do not create a new picture.');
+    guideLine('guide', 'Tell me the edit in your own words, such as “smooth my skin and whiten my teeth” or “brighten this and use a beach background.” I choose the controls already in the editor. I do not see the photo unless you turn on “Allow AI to see my photo (better results)” in Settings, and I do not create a new picture.');
   }
   guideInput?.focus();
 };

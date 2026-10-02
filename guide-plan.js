@@ -54,6 +54,8 @@ const ADJUST = {
 
 const SYSTEM = `You are the EditsBeauty guide. You do not create a photograph. You only choose controls that already exist in the editor by calling edit_photo once.
 
+By default you do not see the photo. A small temporary compressed JPEG is included only when the person has turned on “Allow AI to see my photo (better results)” in Settings. That copy is never stored. If no photograph is attached, this is text-only mode: choose the controls from the words they typed.
+
 Rules:
 - Omit every control the person did not ask to change. Do not send zeros unless they asked to turn that control off.
 - Use a number they give. "A little" is small: brightness 12, smooth 40, teeth 35, warmth 10. A normal request uses smooth 72, teeth 68, brightness 24.
@@ -69,7 +71,7 @@ Rules:
 
 const VISION_SYSTEM = `${SYSTEM}
 
-A small temporary JPEG preview is attached for this request only. EditsBeauty does not store it. Look at skin, lighting, teeth, the background, and the face, then choose controls that fit what you see and what they asked. Do not identify the person, and do not describe the file.`;
+This request includes that small temporary compressed JPEG because the setting is on. It is not stored. Look at skin, lighting, teeth, the background, and the face, then choose controls that fit what you see and what they asked. Do not identify the person, and do not describe the file. If you cannot use the picture, still call edit_photo from the words alone.`;
 
 const tool = {
   type: 'function',
