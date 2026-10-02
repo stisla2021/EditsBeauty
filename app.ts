@@ -1564,6 +1564,7 @@ const applyStamp = async (stamp: EditorStamp): Promise<void> => {
     applyingAuto = true;
     adjustControlIds.forEach((id) => setHistorySlider(id, stamp.adjusts[id] ?? '0'));
     applyingAuto = false;
+    syncAdjustBoard();
     activeHomeEffect = stamp.effect && isHomeEffect(stamp.effect) ? stamp.effect : null;
     stickerOverlays.splice(0, stickerOverlays.length, ...cloneStickers(stamp.stickers));
     textOverlays.splice(0, textOverlays.length, ...stamp.texts);
@@ -3763,12 +3764,70 @@ const formatAdjustValue = (id: string, value: string): string => {
   return String(amount);
 };
 
+const adjustToolNames: Record<string, string> = {
+  adjustAuto: 'AUTO',
+  adjustExposure: 'EXPOSURE',
+  adjustBrilliance: 'BRILLIANCE',
+  adjustHighlights: 'HIGHLIGHTS',
+  adjustShadows: 'SHADOWS',
+  adjustContrast: 'CONTRAST',
+  adjustBrightness: 'BRIGHTNESS',
+  adjustBlackPoint: 'BLACK POINT',
+  adjustSaturation: 'SATURATION',
+  adjustVibrance: 'VIBRANCE',
+  adjustWarmth: 'WARMTH',
+  adjustTint: 'TINT',
+  adjustSharpness: 'SHARPNESS',
+  adjustDefinition: 'DEFINITION',
+  adjustNoise: 'NOISE REDUCTION',
+  adjustVignette: 'VIGNETTE',
+};
+
+let selectedAdjustTool = 'adjustExposure';
+
+const autoRecipeActive = (): boolean => adjustControlIds.every((id) => Number(byId<HTMLInputElement>(id)?.value ?? 0) === autoAdjustRecipe[id]);
+
+function syncAdjustBoard(): void {
+  const board = byId<HTMLElement>('adjustBoard');
+  const name = byId<HTMLElement>('adjustName');
+  const live = byId<HTMLOutputElement>('adjustLive');
+  if (name) name.textContent = adjustToolNames[selectedAdjustTool] ?? 'ADJUST';
+  const selected = byId<HTMLInputElement>(selectedAdjustTool);
+  if (live) live.value = selected ? formatAdjustValue(selectedAdjustTool, selected.value) : '';
+  board?.classList.toggle('is-auto', selectedAdjustTool === 'adjustAuto');
+  document.querySelectorAll<HTMLElement>('[data-adjust-slider]').forEach((label) => {
+    label.classList.toggle('is-active', label.dataset.adjustSlider === selectedAdjustTool);
+  });
+  const auto = byId<HTMLButtonElement>('adjustAuto');
+  if (auto && !applyingAuto) auto.setAttribute('aria-pressed', String(autoRecipeActive()));
+  document.querySelectorAll<HTMLButtonElement>('[data-adjust-pick]').forEach((button) => {
+    const id = button.dataset.adjustPick ?? '';
+    button.classList.toggle('is-selected', id === selectedAdjustTool);
+    if (id === 'adjustAuto') {
+      button.classList.toggle('is-changed', button.getAttribute('aria-pressed') === 'true');
+      return;
+    }
+    button.classList.toggle('is-changed', Number(byId<HTMLInputElement>(id)?.value ?? 0) !== 0);
+  });
+}
+
+const selectAdjustTool = (id: string, scroll = false): void => {
+  if (!adjustToolNames[id]) return;
+  selectedAdjustTool = id;
+  syncAdjustBoard();
+  if (!scroll) return;
+  const icons = byId<HTMLElement>('adjustIcons');
+  const button = document.querySelector<HTMLButtonElement>(`[data-adjust-pick="${id}"]`);
+  if (!icons || !button) return;
+  icons.scrollTo({ left: button.offsetLeft - (icons.clientWidth - button.offsetWidth) / 2, behavior: 'smooth' });
+};
+
 let applyingAuto = false;
 const paintAdjustControl = (input: HTMLInputElement, draw: boolean): void => {
   paintRange(input);
   const output = byId<HTMLOutputElement>(`${input.id}Val`);
   if (output) output.value = formatAdjustValue(input.id, input.value);
-  if (!applyingAuto) byId<HTMLButtonElement>('adjustAuto')?.setAttribute('aria-pressed', 'false');
+  if (!applyingAuto) syncAdjustBoard();
   if (draw) {
     console.log('filter', input.id, input.value);
     scheduleRender();
@@ -3807,7 +3866,13 @@ const applyAutoAdjust = (on: boolean): void => {
 byId<HTMLButtonElement>('adjustAuto')?.addEventListener('click', () => {
   const button = byId<HTMLButtonElement>('adjustAuto');
   applyAutoAdjust(button?.getAttribute('aria-pressed') !== 'true');
+  selectAdjustTool('adjustAuto', true);
 });
+document.querySelectorAll<HTMLButtonElement>('[data-adjust-pick]').forEach((button) => {
+  if (button.id === 'adjustAuto') return;
+  button.addEventListener('click', () => selectAdjustTool(button.dataset.adjustPick ?? 'adjustExposure', true));
+});
+selectAdjustTool('adjustExposure');
 
 ['filterIntensity'].forEach((id) => {
   const input = byId<HTMLInputElement>(id);

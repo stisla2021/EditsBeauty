@@ -4,12 +4,12 @@ On-device portrait and photo editor. Photos stay in the browser. Filters, Adjust
 
 **Live app:** https://stisla2021.github.io/EditsBeauty/
 
-Version V1.1.3. Copyright (c) StISLA2021.
+Version V1.1.4. Copyright (c) StISLA2021.
 
 ## What you can do
 
 - **Ask AI** on the home page, or **AI** in the editor. Ask in ordinary language, for example “make my skin smoother” or “brighten the photo and change the background to beach.” Groq’s Llama 3.3 70B chooses the existing Adjust, filter, beauty, background, crop, and Save controls. The photo stays in the browser and is not uploaded or regenerated. If that connection is unavailable, a simpler on-device reader uses the same controls.
-- **Adjust** has Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. B/W is a filter. Move the sliders yourself any time.
+- **Adjust** has Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. They sit in a horizontal row of circular icons. The selected name, such as SHADOWS, appears above one slider. B/W is a filter. Move the slider yourself any time. Undo and Redo keep those changes.
 - **Filters and retouching** include Vivid, B/W, Soft, Pink, Vintage, Pop, Matte, Golden, Beauty, Smooth, and teeth whitening. Smooth keeps edges such as brows and lips sharper than the skin. Beauty also raises smooth, warmth, and brilliance.
 - **Backgrounds** under Adjust, then More tools: Blank, Blur, solid colors, gradients, and photo scenes (Beach, City, Studio, Garden, Sunset, Mountains, Forest, Night, Cafe, Sky, Flowers, Ocean, Office, Snow, Desert, Library, Room, Brick, Street, Autumn, Waterfall, Park, Rain, Space). The person stays. Blank saves a PNG; other saves stay JPEG. Scenes use real photos.
 - **Choose your photo**, then tap an example portrait to apply that look to your picture. The example does not replace your photo.
