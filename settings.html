@@ -60,6 +60,10 @@
         <span class="ios-value"><span id="languageValue">English</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
       </button>
       <div class="ios-row">
+        <span class="ios-copy">Allow AI to see my photo (better results)<small>Off by default. When on, asking the guide sends a small compressed copy for that request only. It is not stored.</small></span>
+        <button class="ios-switch" id="visionSee" type="button" role="switch" aria-checked="false" aria-label="Allow AI to see my photo (better results)"></button>
+      </div>
+      <div class="ios-row">
         <span class="ios-copy">Diagnostic reports<small>Off by default. When on, you can agree to store a short problem report and email the same list to the publisher. Photos, the canvas, and face landmarks are never included.</small></span>
         <button class="ios-switch" id="diagnosticReports" type="button" role="switch" aria-checked="false" aria-label="Diagnostic reports"></button>
       </div>
@@ -80,8 +84,18 @@
         <svg class="ios-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </a>
     </div>
-    <p class="ios-version">EditsBeauty V1.1.5</p>
+    <p class="ios-version">EditsBeauty V1.1.6</p>
   </main>
+  <div class="confirm-dialog" id="visionWarning" hidden>
+    <div class="confirm-card" role="dialog" aria-labelledby="visionWarningTitle">
+      <h2 id="visionWarningTitle">Allow AI to see my photo?</h2>
+      <p>A small, compressed copy of the current photo is sent only when you ask the guide. EditsBeauty does not store that copy. You can turn this off at any time.</p>
+      <div class="confirm-actions">
+        <button id="visionCancel" type="button">Not now</button>
+        <button id="visionAllow" type="button">Allow</button>
+      </div>
+    </div>
+  </div>
   <div class="confirm-dialog" id="clearDialog" hidden>
     <div class="confirm-card" role="dialog" aria-labelledby="clearTitle">
       <h2 id="clearTitle">Clear Cache?</h2>

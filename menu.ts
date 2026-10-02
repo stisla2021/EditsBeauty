@@ -581,6 +581,8 @@ const bindSettings = (): void => {
   if (faceMeshOverlay instanceof HTMLButtonElement) setSwitch(faceMeshOverlay, readSetting('editsbeauty-face-mesh', 'off') === 'on');
   const diagnosticReports = document.getElementById('diagnosticReports');
   if (diagnosticReports instanceof HTMLButtonElement) setSwitch(diagnosticReports, readSetting('editsbeauty-diagnostics', 'off') === 'on');
+  const visionSee = document.getElementById('visionSee');
+  if (visionSee instanceof HTMLButtonElement) setSwitch(visionSee, readSetting('editsbeauty-ai-vision', 'off') === 'on');
   if (resolutionValue) resolutionValue.textContent = readSetting('editsbeauty-resolution', 'High');
   if (liveValue) liveValue.textContent = readSetting('editsbeauty-live-format', 'Ask every time');
   if (languageValue) languageValue.textContent = readSetting('editsbeauty-language', 'English');
@@ -614,6 +616,32 @@ const bindSettings = (): void => {
     setSwitch(diagnosticReports, next);
     writeSetting('editsbeauty-diagnostics', next ? 'on' : 'off');
   });
+  const visionWarning = document.getElementById('visionWarning');
+  const allowVision = (): void => {
+    if (!(visionSee instanceof HTMLButtonElement)) return;
+    setSwitch(visionSee, true);
+    writeSetting('editsbeauty-ai-vision', 'on');
+    writeSetting('editsbeauty-ai-vision-warned', 'on');
+    if (visionWarning) visionWarning.hidden = true;
+  };
+  visionSee?.addEventListener('click', () => {
+    if (!(visionSee instanceof HTMLButtonElement)) return;
+    const turningOn = visionSee.getAttribute('aria-checked') !== 'true';
+    if (!turningOn) {
+      setSwitch(visionSee, false);
+      writeSetting('editsbeauty-ai-vision', 'off');
+      return;
+    }
+    if (readSetting('editsbeauty-ai-vision-warned', 'off') === 'on') {
+      allowVision();
+      return;
+    }
+    if (visionWarning) visionWarning.hidden = false;
+  });
+  document.getElementById('visionCancel')?.addEventListener('click', () => {
+    if (visionWarning) visionWarning.hidden = true;
+  });
+  document.getElementById('visionAllow')?.addEventListener('click', allowVision);
 
   const resolutions = ['High', 'Standard', 'Original'];
   const liveFormats = ['Ask every time', 'Live', 'Still'];

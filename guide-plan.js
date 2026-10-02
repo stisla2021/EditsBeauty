@@ -1,7 +1,12 @@
 // Copyright (c) StISLA2021
-// Turns a typed editing request into editor controls. The photo is never accepted here.
+// Turns a typed editing request into editor controls.
+// A preview is used only when the person turned vision on. It is not stored.
 
-const MODEL = 'llama-3.3-70b-versatile';
+const TEXT_MODEL = 'llama-3.3-70b-versatile';
+const VISION_MODELS = [
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+  'llama-3.2-11b-vision-preview',
+];
 
 const LOOKS = [
   'original', 'vivid', 'vivid-warm', 'vivid-cool', 'dramatic', 'dramatic-warm', 'dramatic-cool',
@@ -47,7 +52,7 @@ const ADJUST = {
   vignette: 'adjustVignette',
 };
 
-const SYSTEM = `You are the EditsBeauty guide. You never see, receive, or create a photograph. You only choose controls that already exist in the editor by calling edit_photo once.
+const SYSTEM = `You are the EditsBeauty guide. You do not create a photograph. You only choose controls that already exist in the editor by calling edit_photo once.
 
 Rules:
 - Omit every control the person did not ask to change. Do not send zeros unless they asked to turn that control off.
@@ -61,6 +66,10 @@ Rules:
 - auto is true only for auto adjust.
 - reply is one or two plain sentences naming what changed. Say they can still move the sliders. Do not mention models, APIs, or servers, and do not say you generated a new picture.
 - If they only ask how to do something, call edit_photo with reply alone and name the control.`;
+
+const VISION_SYSTEM = `${SYSTEM}
+
+A small temporary JPEG preview is attached for this request only. EditsBeauty does not store it. Look at skin, lighting, teeth, the background, and the face, then choose controls that fit what you see and what they asked. Do not identify the person, and do not describe the file.`;
 
 const tool = {
   type: 'function',
@@ -154,23 +163,21 @@ const cleanList = (value, limit) => {
   return value
     .filter((item) => typeof item === 'string')
     .map((item) => item.replace(/\s+/g, ' ').trim().slice(0, 180))
-    .filter(Boolean)
+    .filter((item) => item && !/data:image/i.test(item))
     .slice(-limit);
 };
 
-export const planEdit = async ({ message, state, history, apiKey }) => {
-  const key = apiKey || process.env.GROQ_API_KEY || '';
-  if (!key) {
-    const error = new Error('unconfigured');
-    error.status = 503;
-    throw error;
-  }
-  const text = String(message ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
-  if (!text || /data:image|base64,/i.test(text)) {
-    const error = new Error('empty');
-    error.status = 400;
-    throw error;
-  }
+const acceptPreview = (preview) => {
+  if (preview == null || preview === '') return '';
+  if (typeof preview !== 'string') return null;
+  if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(preview)) return null;
+  if (preview.length > 120000) return null;
+  return preview;
+};
+
+const userText = (message, state, history) => `Earlier lines:\n${cleanList(history, 6).join('\n') || '(none)'}\nCurrent controls: ${JSON.stringify(state ?? {})}\nRequest: ${message}`;
+
+const askModel = async (key, model, messages) => {
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -178,24 +185,18 @@ export const planEdit = async ({ message, state, history, apiKey }) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       temperature: 0.1,
-      max_tokens: 450,
+      max_tokens: 500,
       parallel_tool_calls: false,
       tool_choice: { type: 'function', function: { name: 'edit_photo' } },
       tools: [tool],
-      messages: [
-        { role: 'system', content: SYSTEM },
-        {
-          role: 'user',
-          content: `Earlier lines:\n${cleanList(history, 6).join('\n') || '(none)'}\nCurrent controls: ${JSON.stringify(state ?? {})}\nRequest: ${text}`,
-        },
-      ],
+      messages,
     }),
   });
   if (!response.ok) {
     const error = new Error('guide');
-    error.status = response.status === 429 ? 429 : 502;
+    error.status = response.status;
     throw error;
   }
   const payload = await response.json();
@@ -206,4 +207,66 @@ export const planEdit = async ({ message, state, history, apiKey }) => {
     throw error;
   }
   return plan;
+};
+
+const visionCanRetry = (status) => [400, 404, 408, 413, 422, 429, 500, 502, 503].includes(status);
+
+export const planEdit = async ({ message, state, history, apiKey, preview, ...extra }) => {
+  if (Object.keys(extra).length || /data:image/i.test(JSON.stringify(state ?? {}))) {
+    const error = new Error('photo');
+    error.status = 400;
+    throw error;
+  }
+  const text = String(message ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
+  if (!text || /data:image|base64,/i.test(text)) {
+    const error = new Error('empty');
+    error.status = 400;
+    throw error;
+  }
+  const image = acceptPreview(preview);
+  if (image === null) {
+    const error = new Error('photo');
+    error.status = 400;
+    throw error;
+  }
+  const key = apiKey || process.env.GROQ_API_KEY || '';
+  if (!key) {
+    const error = new Error('unconfigured');
+    error.status = 503;
+    throw error;
+  }
+  const words = userText(text, state, history);
+  if (image) {
+    const messages = [
+      { role: 'system', content: VISION_SYSTEM },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: words },
+          { type: 'image_url', image_url: { url: image } },
+        ],
+      },
+    ];
+    for (const model of VISION_MODELS) {
+      try {
+        return await askModel(key, model, messages);
+      } catch (error) {
+        if (!visionCanRetry(error?.status)) throw error;
+      }
+    }
+  }
+  try {
+    return await askModel(key, TEXT_MODEL, [
+      { role: 'system', content: SYSTEM },
+      { role: 'user', content: words },
+    ]);
+  } catch (error) {
+    if (error?.status === 429) throw error;
+    if (error?.status === 401 || error?.status === 403) {
+      error.status = 503;
+    } else if (error?.status !== 503) {
+      error.status = 502;
+    }
+    throw error;
+  }
 };

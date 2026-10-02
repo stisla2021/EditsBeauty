@@ -1,5 +1,6 @@
 // Copyright (c) StISLA2021
-// Groq reads the typed request and returns editor controls. The photo is not accepted.
+// Groq reads the typed request and returns editor controls.
+// A preview is accepted only as a short-lived JPEG and is not stored.
 
 import { planEdit } from '../guide-plan.js';
 
@@ -47,7 +48,8 @@ export default async function handler(req, res) {
     send(res, origin, 400, { error: 'json' });
     return;
   }
-  if (body.image || body.photo || body.pixels || body.dataUrl || body.file) {
+  const allowed = ['message', 'state', 'history', 'preview'];
+  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some((key) => !allowed.includes(key))) {
     send(res, origin, 400, { error: 'photo' });
     return;
   }
@@ -56,10 +58,12 @@ export default async function handler(req, res) {
       message: body.message,
       state: body.state,
       history: body.history,
+      preview: body.preview,
     });
     send(res, origin, 200, plan);
   } catch (error) {
     const status = error && typeof error.status === 'number' ? error.status : 502;
-    send(res, origin, status, { error: status === 503 ? 'unconfigured' : 'guide' });
+    const code = status === 503 ? 'unconfigured' : status === 400 && error?.message === 'photo' ? 'photo' : 'guide';
+    send(res, origin, status, { error: code });
   }
 }

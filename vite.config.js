@@ -77,12 +77,28 @@ const attachGuide = (middlewares) => {
       return;
     }
     const chunks = [];
-    req.on('data', (chunk) => chunks.push(chunk));
+    let size = 0;
+    let rejected = false;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (rejected) return;
+      if (size > 180000) {
+        rejected = true;
+        res.statusCode = 413;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: 'photo' }));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on('end', () => {
+      if (rejected) return;
       void (async () => {
         try {
           const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
-          if (body.image || body.photo || body.pixels || body.dataUrl) {
+          const allowed = ['message', 'state', 'history', 'preview'];
+          if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some((key) => !allowed.includes(key))) {
             res.statusCode = 400;
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ error: 'photo' }));
@@ -92,6 +108,7 @@ const attachGuide = (middlewares) => {
             message: body.message,
             state: body.state,
             history: body.history,
+            preview: body.preview,
             apiKey: groqKey(),
           });
           res.statusCode = 200;
@@ -99,9 +116,10 @@ const attachGuide = (middlewares) => {
           res.end(JSON.stringify(plan));
         } catch (error) {
           const status = error && typeof error.status === 'number' ? error.status : 502;
+          const code = status === 503 ? 'unconfigured' : status === 400 && error?.message === 'photo' ? 'photo' : 'guide';
           res.statusCode = status;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: status === 503 ? 'unconfigured' : 'guide' }));
+          res.end(JSON.stringify({ error: code }));
         }
       })();
     });

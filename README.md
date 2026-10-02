@@ -4,11 +4,11 @@ On-device portrait and photo editor. Photos stay in the browser. Filters, Adjust
 
 **Live app:** https://stisla2021.github.io/EditsBeauty/
 
-Version V1.1.5. Copyright (c) StISLA2021.
+Version V1.1.6. Copyright (c) StISLA2021.
 
 ## What you can do
 
-- **Ask AI** on the home page, or **AI** in the editor. Ask in ordinary language, for example “make my skin smoother” or “brighten the photo and change the background to beach.” Groq’s Llama 3.3 70B chooses the existing Adjust, filter, beauty, background, crop, and Save controls. The photo stays in the browser and is not uploaded or regenerated. If that connection is unavailable, a simpler on-device reader uses the same controls.
+- **Ask AI** on the home page, or **AI** in the editor. Ask in ordinary language, for example “make my skin smoother” or “brighten the photo and change the background to beach.” Groq’s Llama 3.3 70B chooses the existing Adjust, filter, beauty, background, crop, and Save controls. The photo stays in the browser and is not uploaded or regenerated unless Settings has “Allow AI to see my photo (better results)” turned on. That switch is off by default. While it is on, a small compressed JPEG is sent with the request and is not stored. If the free vision model is unavailable, the text-only guide is used. If that connection is unavailable, a simpler on-device reader uses the same controls.
 - **Adjust** has Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, and Vignette. They sit in a horizontal row of circular icons. Every one starts at 0. The photo does not change until you move that slider, or you tap Auto. The selected name, such as SHADOWS, appears above one slider. B/W is a filter. Undo and Redo keep those changes.
 - **Filters and retouching** include Vivid, B/W, Soft, Pink, Vintage, Pop, Matte, Golden, Beauty, Smooth, and teeth whitening. Smooth keeps edges such as brows and lips sharper than the skin. Beauty raises smooth skin and leaves the Adjust sliders at 0.
 - **Backgrounds** under Adjust, then More tools: Blank, Blur, solid colors, gradients, and photo scenes (Beach, City, Studio, Garden, Sunset, Mountains, Forest, Night, Cafe, Sky, Flowers, Ocean, Office, Snow, Desert, Library, Room, Brick, Street, Autumn, Waterfall, Park, Rain, Space). The person stays. Blank saves a PNG; other saves stay JPEG. Scenes use real photos.
@@ -36,7 +36,7 @@ Pushes to `main` publish the site with GitHub Actions (`.github/workflows/pages.
 
 After a push, the Pages workflow must finish before the new files show up.
 
-`vercel.json` also configures Vercel to run `npm run build` and serve `dist/`. The AI guide’s `/api/guide` function runs on Vercel and calls Groq. Set `GROQ_API_KEY` in the Vercel project environment. The key stays there and is not written into the page. Vercel deploys on push only when this GitHub repository is connected to a Vercel project; that project connection is not stored in this checkout. The canonical Vercel address in the app is https://editsbeauty.vercel.app/.
+`vercel.json` also configures Vercel to run `npm run build` and serve `dist/`. The AI guide’s `/api/guide` function runs on Vercel and calls Groq. A small temporary JPEG is included only when “Allow AI to see my photo (better results)” is on, and that copy is not stored. Set `GROQ_API_KEY` in the Vercel project environment. The key stays there and is not written into the page. Vercel deploys on push only when this GitHub repository is connected to a Vercel project; that project connection is not stored in this checkout. The canonical Vercel address in the app is https://editsbeauty.vercel.app/.
 
 ## Pages
 

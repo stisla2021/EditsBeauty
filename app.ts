@@ -4628,14 +4628,46 @@ const guideState = (): Record<string, string | number | boolean | null> => ({
   vignette: sliderNumber('adjustVignette'),
 });
 
-const requestGuidePlan = async (message: string, history: string[]): Promise<GuidePlan | null> => {
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 15000);
+const guidePreview = (): string => {
   try {
+    if (localStorage.getItem('editsbeauty-ai-vision') !== 'on') return '';
+  } catch {
+    return '';
+  }
+  if (!originalImage?.naturalWidth || !originalImage.naturalHeight) return '';
+  const longest = Math.max(originalImage.naturalWidth, originalImage.naturalHeight);
+  let edge = Math.min(384, longest);
+  const small = document.createElement('canvas');
+  const context = small.getContext('2d');
+  if (!context) return '';
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const scale = edge / longest;
+    small.width = Math.max(1, Math.round(originalImage.naturalWidth * scale));
+    small.height = Math.max(1, Math.round(originalImage.naturalHeight * scale));
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, small.width, small.height);
+    context.drawImage(originalImage, 0, 0, small.width, small.height);
+    const url = small.toDataURL('image/jpeg', attempt === 0 ? 0.55 : 0.4);
+    if (url.startsWith('data:image/jpeg;base64,') && url.length <= 100000) return url;
+    edge = Math.max(64, Math.round(edge * 0.7));
+  }
+  return '';
+};
+
+const requestGuidePlan = async (message: string, history: string[], preview = ''): Promise<GuidePlan | null> => {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), preview ? 25000 : 15000);
+  try {
+    const payload: { message: string; state: ReturnType<typeof guideState>; history: string[]; preview?: string } = {
+      message,
+      state: guideState(),
+      history,
+    };
+    if (preview) payload.preview = preview;
     const response = await fetch(guideEndpoint(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, state: guideState(), history }),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
     if (!response.ok) return null;
@@ -4757,13 +4789,15 @@ const answerGuide = async (raw: string): Promise<void> => {
   const historyBefore = guideHistory();
   guideLine('you', typed);
   const waiting = guideLog ? document.createElement('p') : null;
+  const preview = guidePreview();
   if (waiting && guideLog) {
     waiting.className = 'guide-reply';
-    waiting.textContent = 'Choosing the controls…';
+    waiting.textContent = preview ? 'Looking at the photo…' : 'Choosing the controls…';
     guideLog.append(waiting);
     guideLog.scrollTop = guideLog.scrollHeight;
   }
-  const plan = await requestGuidePlan(typed, historyBefore);
+  let plan = await requestGuidePlan(typed, historyBefore, preview);
+  if (!plan && preview) plan = await requestGuidePlan(typed, historyBefore);
   if (plan) {
     try {
       await applyGuidePlan(plan);
