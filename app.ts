@@ -1384,16 +1384,10 @@ aiEnhanceButton?.addEventListener('click', () => {
   control?.addEventListener('change', () => {
     if (control === photoFilter) {
       syncFilterChips();
-      if (photoFilter.value === 'beauty') {
-        if (smoothSlider) {
-          smoothSlider.value = '72';
-          if (smoothValue) smoothValue.value = '72';
-          paintRange(smoothSlider);
-        }
-        const warmth = byId<HTMLInputElement>('adjustWarmth');
-        const brilliance = byId<HTMLInputElement>('adjustBrilliance');
-        if (warmth) warmth.value = '14';
-        if (brilliance) brilliance.value = '16';
+      if (photoFilter.value === 'beauty' && smoothSlider) {
+        smoothSlider.value = '72';
+        if (smoothValue) smoothValue.value = '72';
+        paintRange(smoothSlider);
       }
     }
     render();
@@ -3245,7 +3239,6 @@ let pendingSmooth: string | null = null;
 let pendingTeeth: string | null = null;
 let pendingApply: string | null = null;
 let pendingGuideRequest: string | null = null;
-let pendingPortraitFinish = false;
 let photoLoading = false;
 
 const showYourPhoto = (src: string): void => {
@@ -3306,6 +3299,7 @@ const openPhoto = (src: string): void => {
     if (teethSlider) paintRange(teethSlider);
     byId<HTMLButtonElement>('teethToggle')?.setAttribute('aria-pressed', String(Number(teethAmount) > 0));
     if (noseValue) noseValue.value = '0';
+    zeroAdjustControls();
     render();
     paintFilterPreviews();
     if (faceDetectionStatus) faceDetectionStatus.textContent = 'Detecting face landmarks on this device…';
@@ -3319,13 +3313,6 @@ const openPhoto = (src: string): void => {
     const chosen = pendingApply;
     pendingApply = null;
     if (chosen) applyChosenLook(chosen);
-    if (pendingPortraitFinish) {
-      pendingPortraitFinish = false;
-      setAdjustControl('adjustExposure', 6, false);
-      setAdjustControl('adjustBrilliance', 14, false);
-      setAdjustControl('adjustWarmth', 8, false);
-      render();
-    }
     if (pendingPortrait) openPortrait(pendingPortrait);
     photoLoading = false;
     const queued = pendingGuideRequest;
@@ -3573,7 +3560,6 @@ const captureCamera = (): void => {
       closeCamera();
       if (still) {
         pendingSmooth = baked ? '0' : '48';
-        pendingPortraitFinish = true;
         openPhoto(still);
         setStudioTab('filters');
       }
@@ -3584,7 +3570,6 @@ const captureCamera = (): void => {
   const still = stillFromCamera();
   if (!still) return;
   pendingSmooth = liveEffectsActive() ? '0' : '48';
-  pendingPortraitFinish = true;
   closeCamera();
   setStudioTab('filters');
   openPhoto(still);
@@ -3628,16 +3613,10 @@ const selectLook = (chip: HTMLButtonElement): void => {
   const title = byId<HTMLElement>('editorTitle');
   if (title) title.textContent = 'Filters';
   photoFilter.value = chip.dataset.look;
-  if (chip.dataset.look === 'beauty') {
-    if (smoothSlider) {
-      smoothSlider.value = '72';
-      if (smoothValue) smoothValue.value = '72';
-      paintRange(smoothSlider);
-    }
-    const warmth = byId<HTMLInputElement>('adjustWarmth');
-    const brilliance = byId<HTMLInputElement>('adjustBrilliance');
-    if (warmth) warmth.value = '14';
-    if (brilliance) brilliance.value = '16';
+  if (chip.dataset.look === 'beauty' && smoothSlider) {
+    smoothSlider.value = '72';
+    if (smoothValue) smoothValue.value = '72';
+    paintRange(smoothSlider);
   }
   console.log('filter', chip.dataset.look);
   syncFilterChips();
@@ -3842,6 +3821,14 @@ adjustControlIds.forEach((id) => {
   input.addEventListener('change', paint);
   paintAdjustControl(input, false);
 });
+
+const zeroAdjustControls = (): void => {
+  applyingAuto = true;
+  adjustControlIds.forEach((id) => setAdjustControl(id, 0, false));
+  applyingAuto = false;
+  byId<HTMLButtonElement>('adjustAuto')?.setAttribute('aria-pressed', 'false');
+  syncAdjustBoard();
+};
 
 const setAdjustControl = (id: string, value: number, draw: boolean): void => {
   const input = byId<HTMLInputElement>(id);
@@ -4673,10 +4660,6 @@ const applyPlannedLook = (look: string): void => {
       paintRange(smoothSlider);
     }
     pendingSmooth = '72';
-    const warmth = byId<HTMLInputElement>('adjustWarmth');
-    const brilliance = byId<HTMLInputElement>('adjustBrilliance');
-    if (warmth) warmth.value = '14';
-    if (brilliance) brilliance.value = '16';
   }
   syncFilterChips();
   showEditor();

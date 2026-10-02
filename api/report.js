@@ -1,7 +1,8 @@
 // Copyright (c) StISLA2021
 // Stores a diagnostic report after the app has already asked the person to confirm.
-// Photos are rejected. On Vercel, set KV_REST_API_URL and KV_REST_API_TOKEN
-// (or UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN). Until then this replies unconfigured.
+// Photos are rejected. On Vercel, connect Postgres (POSTGRES_URL or DATABASE_URL)
+// or set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. Optional RESEND_API_KEY
+// emails a copy to stisla2021@gmail.com. Until a database is set, this replies unconfigured.
 
 import { acceptReport, saveReport } from '../report-store.js';
 

@@ -2,7 +2,7 @@
 // Diagnostic reports are off until Settings is turned on, and nothing is sent until the person confirms.
 // The report never includes a photo, the canvas, or face landmarks.
 
-const reportVersion = '1.1.4';
+const reportVersion = '1.1.5';
 const diagnosticsKey = 'editsbeauty-diagnostics';
 const seenErrors = new Set<string>();
 let pendingError = { error: '', stack: '' };
@@ -144,7 +144,7 @@ export const startReports = (): void => {
     const sample = buildReport('');
     body.replaceChildren();
     const intro = document.createElement('p');
-    intro.textContent = 'Nothing is sent until you confirm. If you agree, only this list is stored or emailed. Your photo, the canvas, face landmarks, your name, and your email are not included.';
+    intro.textContent = 'Nothing is sent until you confirm. If you agree, only this list is stored, and the same list is emailed to stisla2021@gmail.com. Your photo, the canvas, face landmarks, your name, and your email are not included.';
     const list = document.createElement('ul');
     const rows = [
       `App version: ${sample.version}`,
@@ -194,38 +194,44 @@ export const startReports = (): void => {
       status.textContent = 'Check the box to confirm. Nothing has been sent.';
       return false;
     };
+    const openMail = (report: ReportBody): void => {
+      window.location.href = `mailto:stisla2021@gmail.com?subject=${encodeURIComponent('EditsBeauty diagnostic report')}&body=${encodeURIComponent(reportText(report))}`;
+    };
     store.addEventListener('click', () => {
       if (!agreed() || sending || !diagnosticsOn()) return;
       sending = true;
       store.disabled = true;
       const report = buildReport(note.value);
-      status.textContent = 'Sending the report…';
-      void fetch(reportEndpoint(), {
+      status.textContent = 'Saving the report and opening an email copy…';
+      const pending = fetch(reportEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(report),
-      }).then(async (response) => {
-        const payload = await response.json().catch(() => ({})) as { stored?: boolean; error?: string };
+      });
+      openMail(report);
+      void pending.then(async (response) => {
+        const payload = await response.json().catch(() => ({})) as { stored?: boolean; error?: string; emailed?: boolean };
         if (response.ok && payload.stored) {
-          status.textContent = 'Stored. The photo was not included.';
-          window.setTimeout(close, 1200);
+          status.textContent = payload.emailed
+            ? 'Saved, and a copy was emailed to stisla2021@gmail.com. The photo was not included.'
+            : 'Saved. Your email app has the same report for stisla2021@gmail.com. The photo was not included.';
+          window.setTimeout(close, 1600);
           return;
         }
         sending = false;
         store.disabled = false;
         status.textContent = payload.error === 'unconfigured'
-          ? 'The server is not keeping reports yet. Nothing was stored. You can email this report instead.'
-          : 'The report was not stored. Nothing else was sent. You can email it instead.';
+          ? 'Your email app has the report. The database is not connected yet, so nothing was stored there.'
+          : 'Your email app has the report. The database did not keep a copy.';
       }).catch(() => {
         sending = false;
         store.disabled = false;
-        status.textContent = 'The report was not stored. You can email it instead.';
+        status.textContent = 'Your email app has the report. The database did not keep a copy.';
       });
     });
     email.addEventListener('click', () => {
       if (!agreed() || !diagnosticsOn()) return;
-      const report = buildReport(note.value);
-      window.location.href = `mailto:stisla2021@gmail.com?subject=${encodeURIComponent('EditsBeauty diagnostic report')}&body=${encodeURIComponent(reportText(report))}`;
+      openMail(buildReport(note.value));
       status.textContent = 'Opening your email app with this report. The photo is not included.';
     });
     cancel.addEventListener('click', close);
