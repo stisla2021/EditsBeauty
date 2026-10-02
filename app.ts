@@ -1415,7 +1415,7 @@ byId<HTMLButtonElement>('addText')?.addEventListener('click', () => {
   textOverlays.push(value);
   render();
 });
-const stickerTones = ['#1a2332', '#c4622d', '#2f6f62', '#8a5a44', '#3d4f66', '#9a3412'];
+const stickerTones = ['#1a2332', '#14b8a6', '#2f6f62', '#8a5a44', '#3d4f66', '#9a3412'];
 const stickerCatalog: Array<{ title: string; kind: PlacedSticker['kind']; items: string[] }> = [
   { title: 'Shapes', kind: 'mark', items: ['star', 'heart', 'spark', 'blossom', 'sun', 'moon', 'ring', 'drop', 'diamond'] },
   { title: 'Beauty', kind: 'mark', items: ['gloss', 'lash', 'petal', 'mirror', 'blush'] },
