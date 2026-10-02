@@ -98,14 +98,6 @@ const rememberedInstall = (): boolean => {
   }
 };
 
-const forgetInstalled = (): void => {
-  try {
-    localStorage.removeItem(installedKey);
-  } catch {
-    // A later install prompt can still show the button.
-  }
-};
-
 const launchedInstalled = (): boolean => {
   const nav = navigator as Navigator & { standalone?: boolean };
   return nav.standalone === true
@@ -124,12 +116,11 @@ const appleDevice = (): boolean => {
 };
 
 let installPrompt: InstallPromptEvent | null = (window as Window & { __editsbeautyInstall?: InstallPromptEvent }).__editsbeautyInstall ?? null;
-if (installPrompt && !appleDevice() && !launchedInstalled()) forgetInstalled();
 const installButton = document.createElement('button');
 installButton.type = 'button';
 installButton.className = 'install-app';
 installButton.textContent = 'Install app';
-installButton.hidden = appleDevice() || alreadyInstalled();
+installButton.hidden = true;
 const installHelp = document.createElement('div');
 installHelp.className = 'install-help';
 installHelp.hidden = true;
@@ -150,14 +141,18 @@ installMenuButton.className = 'nav-share';
 installMenuButton.id = 'installApp';
 installMenuButton.textContent = 'Install app';
 installMenuItem.append(installMenuButton);
-installMenuItem.hidden = appleDevice() || alreadyInstalled();
+installMenuItem.hidden = true;
 const placeInstallMenu = (): void => {
   if (!navLinks || installMenuItem.isConnected) return;
   const shareItem = document.getElementById('shareApp')?.closest('li');
   if (shareItem?.parentElement === navLinks) navLinks.insertBefore(installMenuItem, shareItem);
   else navLinks.prepend(installMenuItem);
 };
-if (!appleDevice() && !alreadyInstalled()) placeInstallMenu();
+if (installPrompt && !appleDevice() && !alreadyInstalled()) {
+  installButton.hidden = false;
+  installMenuItem.hidden = false;
+  placeInstallMenu();
+}
 if (appleDevice() || alreadyInstalled()) {
   installButton.remove();
   installHelp.remove();
@@ -181,8 +176,7 @@ const showInstallHelp = (message: string): void => {
 
 window.addEventListener('beforeinstallprompt', (event: Event) => {
   event.preventDefault();
-  if (appleDevice() || launchedInstalled()) return;
-  forgetInstalled();
+  if (appleDevice() || alreadyInstalled()) return;
   installPrompt = event as InstallPromptEvent;
   document.documentElement.dataset.installable = 'true';
   if (!installButton.isConnected) document.body.append(installButton);
@@ -191,8 +185,9 @@ window.addEventListener('beforeinstallprompt', (event: Event) => {
   installMenuItem.hidden = false;
 });
 
+let installOpening = false;
 const runInstall = (): void => {
-  if (appleDevice()) return;
+  if (appleDevice() || installOpening) return;
   if (alreadyInstalled()) {
     hideInstall();
     return;
@@ -200,17 +195,27 @@ const runInstall = (): void => {
   if (installPrompt) {
     const prompt = installPrompt;
     installPrompt = null;
+    installOpening = true;
     void prompt.prompt().then(() => prompt.userChoice).then((choice) => {
+      installOpening = false;
       if (choice.outcome === 'accepted') hideInstall();
     }).catch(() => {
-      showInstallHelp('Open the browser menu and choose Install app.');
+      installOpening = false;
+      showInstallHelp('Open the browser menu and choose Install app or Add to Home screen.');
     });
     return;
   }
-  showInstallHelp('Open the browser menu and choose Install app.');
+  showInstallHelp('Open the browser menu and choose Install app or Add to Home screen.');
 };
 
-installButton.addEventListener('click', runInstall);
+installButton.addEventListener('pointerup', (event) => {
+  if (event.pointerType === 'mouse') return;
+  runInstall();
+});
+installButton.addEventListener('click', () => {
+  if (installOpening) return;
+  runInstall();
+});
 installMenuButton.addEventListener('click', () => {
   navLinks?.classList.remove('active');
   if (hamburger instanceof HTMLButtonElement) hamburger.setAttribute('aria-expanded', 'false');

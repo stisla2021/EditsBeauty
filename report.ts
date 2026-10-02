@@ -2,7 +2,7 @@
 // Diagnostic reports are off until Settings is turned on, and nothing is sent until the person confirms.
 // The report never includes a photo, the canvas, or face landmarks.
 
-const reportVersion = '1.1.7';
+const reportVersion = '1.1.8';
 const diagnosticsKey = 'editsbeauty-diagnostics';
 const seenErrors = new Set<string>();
 let pendingError = { error: '', stack: '' };

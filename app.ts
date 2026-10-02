@@ -3907,29 +3907,60 @@ document.querySelectorAll<HTMLButtonElement>('[data-bg-scene]').forEach((button)
   });
 });
 
+const photoFileName = (extension: string): string => {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `EditsBeauty-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.${extension}`;
+};
+
+const blobFromCanvas = (source: HTMLCanvasElement, mime: string, quality?: number): Blob | null => {
+  try {
+    const dataUrl = source.toDataURL(mime, quality);
+    const comma = dataUrl.indexOf(',');
+    if (comma < 0) return null;
+    const binary = atob(dataUrl.slice(comma + 1));
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return new Blob([bytes], { type: mime });
+  } catch {
+    return null;
+  }
+};
+
+const wantsPhotoLibrary = (): boolean => /Android/i.test(navigator.userAgent) || phoneDevice;
+
+const savePhotoFile = async (blob: Blob, fileName: string, mime: string): Promise<void> => {
+  const file = new File([blob], fileName, { type: mime, lastModified: Date.now() });
+  if (wantsPhotoLibrary() && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'EditsBeauty' });
+      showToast('Saved to Photos');
+      return;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+    }
+  }
+  downloadBlob(blob, fileName);
+  showToast(wantsPhotoLibrary() ? 'Saved. Open Photos or Gallery to see it.' : `Saved ${fileName}`);
+};
+
 downloadButton?.addEventListener('click', () => {
   if (!canvas || !originalImage) return;
   noteEdit();
   const blankBackground = activeBackgroundScene === 'blank';
-  const fileName = blankBackground ? 'editsbeauty-edit.png' : 'editsbeauty-edit.jpg';
   const mime = blankBackground ? 'image/png' : 'image/jpeg';
-  canvas.toBlob(async (blob) => {
-    if (!blob) {
+  const fileName = photoFileName(blankBackground ? 'png' : 'jpg');
+  const blob = blobFromCanvas(canvas, mime, blankBackground ? undefined : 0.95);
+  if (blob) {
+    void savePhotoFile(blob, fileName, mime);
+    return;
+  }
+  canvas.toBlob((fallback) => {
+    if (!fallback) {
       showToast('The edited photo could not be exported.');
       return;
     }
-    const file = new File([blob], fileName, { type: mime });
-    if (phoneDevice && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'EditsBeauty' });
-        showToast(`Saved ${fileName}`);
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-      }
-    }
-    downloadBlob(blob, fileName);
-    showToast(`Saved ${fileName}`);
+    void savePhotoFile(fallback, fileName, mime);
   }, mime, blankBackground ? undefined : 0.95);
 });
 
