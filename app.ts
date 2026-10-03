@@ -4559,6 +4559,16 @@ const saveCurrentCanvas = (mime: string, extension: string, quality?: number): v
 downloadButton?.addEventListener('click', () => {
   if (!canvas || !originalImage || !photoRatio) return;
   noteEdit();
+  const savedCompare = compareRatio;
+  if (savedCompare < 0.999) {
+    compareRatio = 1;
+    render();
+  }
+  const restoreCompare = (): void => {
+    if (savedCompare >= 0.999) return;
+    compareRatio = savedCompare;
+    render();
+  };
   const blankBackground = activeBackgroundScene === 'blank';
   const format = chosenExportFormat();
   const quality = chosenExportQuality();
@@ -4568,6 +4578,7 @@ downloadButton?.addEventListener('click', () => {
   if (defaultSave) {
     const mime = blankBackground ? 'image/png' : 'image/jpeg';
     saveCurrentCanvas(mime, blankBackground ? 'png' : 'jpg', blankBackground ? undefined : 0.95);
+    restoreCompare();
     return;
   }
 
@@ -4619,14 +4630,15 @@ downloadButton?.addEventListener('click', () => {
       savedMime = encoded.mime;
     }
   } finally {
+    compareRatio = savedCompare;
     if (resized) {
       photoRatio.value = savedRatio;
       canvas.width = savedWidth;
       canvas.height = savedHeight;
       canvas.style.width = savedStyleWidth;
       canvas.style.height = savedStyleHeight;
-      render();
     }
+    if (resized || savedCompare < 0.999) render();
   }
   if (!savedBlob) {
     showToast('The edited photo could not be exported.');
