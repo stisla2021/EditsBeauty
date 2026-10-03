@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /usage
+Disallow: /settings
+
+Sitemap: https://editsbeauty.vercel.app/sitemap.xml

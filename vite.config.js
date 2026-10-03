@@ -267,6 +267,10 @@ export default defineConfig({
         copyFileSync(resolve('sw.js'), resolve('dist/sw.js'));
         const ads = resolve('public/ads.txt');
         if (existsSync(ads)) copyFileSync(ads, resolve('dist/ads.txt'));
+        for (const file of ['robots.txt', 'sitemap.xml']) {
+          const source = resolve('public', file);
+          if (existsSync(source)) copyFileSync(source, resolve('dist', file));
+        }
         const imagesDir = resolve('dist/images');
         mkdirSync(imagesDir, { recursive: true });
         for (const file of readdirSync(resolve('images'))) {

@@ -1,7 +1,7 @@
 {
   "name": "EditsBeauty",
   "short_name": "EditsBeauty",
-  "description": "On-device portrait and photo editing studio",
+  "description": "EditsBeauty is a portrait and photo editor that runs in the browser. Smooth skin, filters, crop, and backgrounds stay on your device. Add it to your home screen and keep editing after the first visit.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -35,6 +35,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "images/screenshot-narrow.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Edit a portrait and save it from your phone"
+    },
+    {
+      "src": "images/screenshot-wide.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Filters and a sample portrait on a wide screen"
     }
   ]
 }
