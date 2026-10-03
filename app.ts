@@ -2945,6 +2945,7 @@ const paintHomeEffect = (): void => {
 };
 
 let holdCompare = false;
+let legacyExport = false;
 
 const render = (): void => {
   if (!originalImage || !context || !canvas) return;
@@ -3749,7 +3750,9 @@ document.querySelectorAll<HTMLButtonElement>('[data-export]').forEach((button) =
     document.querySelectorAll<HTMLButtonElement>('[data-export]').forEach((item) => {
       item.setAttribute('aria-pressed', String(item === button));
     });
+    legacyExport = true;
     downloadButton.click();
+    legacyExport = false;
   });
 });
 
@@ -4294,45 +4297,148 @@ const photoFileName = (extension: string): string => {
 };
 
 const blobFromCanvas = (source: HTMLCanvasElement, mime: string, quality?: number): Blob | null => {
+  const encoded = encodedCanvas(source, mime, quality);
+  return encoded?.blob ?? null;
+};
+
+const encodedCanvas = (source: HTMLCanvasElement, mime: string, quality?: number): { blob: Blob; mime: string } | null => {
   try {
     const dataUrl = source.toDataURL(mime, quality);
     const comma = dataUrl.indexOf(',');
     if (comma < 0) return null;
+    const header = dataUrl.slice(0, comma);
+    const actualMime = header.includes('image/webp') ? 'image/webp' : header.includes('image/jpeg') ? 'image/jpeg' : 'image/png';
     const binary = atob(dataUrl.slice(comma + 1));
     const bytes = new Uint8Array(binary.length);
     for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-    return new Blob([bytes], { type: mime });
+    return { blob: new Blob([bytes], { type: actualMime }), mime: actualMime };
   } catch {
     return null;
   }
 };
 
+const socialExportSizes: Record<string, { width: number; height: number; expand: boolean; label: string }> = {
+  'ig-square': { width: 1080, height: 1080, expand: false, label: 'Instagram square' },
+  'ig-story': { width: 1080, height: 1920, expand: true, label: 'Instagram story' },
+  'fb-cover': { width: 820, height: 312, expand: false, label: 'Facebook cover' },
+  'yt-thumb': { width: 1280, height: 720, expand: false, label: 'YouTube thumbnail' },
+  tiktok: { width: 1080, height: 1920, expand: true, label: 'TikTok' },
+};
+
+let socialExportId: string | null = null;
+
+const exportLongCap = (): number => (phoneDevice ? 4096 : 8192);
+
+const fitLongEdge = (width: number, height: number): { width: number; height: number; capped: boolean } => {
+  const cap = exportLongCap();
+  const longEdge = Math.max(width, height);
+  if (longEdge <= cap) return { width: Math.max(1, Math.round(width)), height: Math.max(1, Math.round(height)), capped: false };
+  const scale = cap / longEdge;
+  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)), capped: true };
+};
+
+const fullExportSize = (): { width: number; height: number; capped: boolean } => {
+  if (!originalImage) return { width: 1, height: 1, capped: false };
+  const ratio = photoRatio?.value ?? 'free';
+  const srcW = originalImage.naturalWidth;
+  const srcH = originalImage.naturalHeight;
+  if (ratio === 'square' || ratio === 'expand-square') {
+    const side = ratio.startsWith('expand') ? Math.max(srcW, srcH) : Math.min(srcW, srcH);
+    return fitLongEdge(side, side);
+  }
+  if (ratio === 'id' || ratio === 'expand-portrait') {
+    const height = ratio.startsWith('expand') ? Math.max(srcH, Math.round(srcW * 1.25)) : srcW / srcH > 0.8 ? srcH : Math.round(srcW / 0.8);
+    return fitLongEdge(Math.round(height * 0.8), height);
+  }
+  if (ratio === 'expand-story') {
+    const height = Math.max(srcH, Math.round(srcW * 16 / 9));
+    return fitLongEdge(Math.round(height * 9 / 16), height);
+  }
+  return fitLongEdge(srcW, srcH);
+};
+
+const chosenExportFormat = (): 'jpeg' | 'png' | 'webp' => {
+  const value = byId<HTMLSelectElement>('exportFormat')?.value;
+  if (value === 'png' || value === 'webp') return value;
+  return 'jpeg';
+};
+
+const chosenExportQuality = (): number => {
+  const raw = Number(byId<HTMLInputElement>('exportQuality')?.value ?? 95);
+  if (!Number.isFinite(raw)) return 0.95;
+  return Math.max(0.6, Math.min(1, raw / 100));
+};
+
+const syncExportNote = (): void => {
+  const note = byId<HTMLElement>('exportNote');
+  const format = chosenExportFormat();
+  const quality = byId<HTMLInputElement>('exportQuality');
+  const qualityLabel = byId<HTMLOutputElement>('exportQualityVal');
+  if (quality) quality.disabled = format === 'png';
+  if (qualityLabel) qualityLabel.value = format === 'png' ? 'Lossless' : `${quality?.value ?? 95}%`;
+  if (!note) return;
+  const social = socialExportId ? socialExportSizes[socialExportId] : null;
+  const full = byId<HTMLSelectElement>('exportResolution')?.value === 'full';
+  const size = social ? `${social.label}, ${social.width}×${social.height}` : full ? 'full resolution' : 'editor size';
+  const formatName = format === 'jpeg' ? 'JPEG' : format === 'png' ? 'PNG' : 'WebP';
+  note.textContent = format === 'png'
+    ? `Next save: ${size}, PNG.`
+    : `Next save: ${size}, ${formatName} at ${quality?.value ?? 95}%.`;
+};
+
+const paintSocialExport = (): void => {
+  document.querySelectorAll<HTMLButtonElement>('[data-social]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.social === socialExportId));
+  });
+  syncExportNote();
+};
+
+byId<HTMLSelectElement>('exportResolution')?.addEventListener('change', () => {
+  socialExportId = null;
+  paintSocialExport();
+});
+byId<HTMLSelectElement>('exportFormat')?.addEventListener('change', syncExportNote);
+byId<HTMLInputElement>('exportQuality')?.addEventListener('input', () => {
+  const input = byId<HTMLInputElement>('exportQuality');
+  if (input) paintRange(input);
+  syncExportNote();
+});
+document.querySelectorAll<HTMLButtonElement>('[data-social]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const id = button.dataset.social ?? '';
+    if (!socialExportSizes[id]) return;
+    socialExportId = socialExportId === id ? null : id;
+    paintSocialExport();
+    const social = socialExportId ? socialExportSizes[socialExportId] : null;
+    showToast(social ? `${social.label} is ready. Tap Save.` : 'Social size cleared. Save uses the editor size.');
+  });
+});
+syncExportNote();
+
 const wantsPhotoLibrary = (): boolean => /Android/i.test(navigator.userAgent) || phoneDevice;
 
-const savePhotoFile = async (blob: Blob, fileName: string, mime: string): Promise<void> => {
+const savePhotoFile = async (blob: Blob, fileName: string, mime: string, note?: string): Promise<void> => {
   const file = new File([blob], fileName, { type: mime, lastModified: Date.now() });
+  const finish = (message: string): void => showToast(note ? `${message} ${note}` : message);
   if (wantsPhotoLibrary() && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: 'EditsBeauty' });
-      showToast('Saved to Photos');
+      finish('Saved to Photos');
       return;
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
     }
   }
   downloadBlob(blob, fileName);
-  showToast(wantsPhotoLibrary() ? 'Saved. Open Photos or Gallery to see it.' : `Saved ${fileName}`);
+  finish(wantsPhotoLibrary() ? 'Saved. Open Photos or Gallery to see it.' : `Saved ${fileName}`);
 };
 
-downloadButton?.addEventListener('click', () => {
-  if (!canvas || !originalImage) return;
-  noteEdit();
-  const blankBackground = activeBackgroundScene === 'blank';
-  const mime = blankBackground ? 'image/png' : 'image/jpeg';
-  const fileName = photoFileName(blankBackground ? 'png' : 'jpg');
-  const blob = blobFromCanvas(canvas, mime, blankBackground ? undefined : 0.95);
-  if (blob) {
-    void savePhotoFile(blob, fileName, mime);
+const saveCurrentCanvas = (mime: string, extension: string, quality?: number): void => {
+  if (!canvas) return;
+  const fileName = photoFileName(extension);
+  const encoded = encodedCanvas(canvas, mime, quality);
+  if (encoded) {
+    void savePhotoFile(encoded.blob, fileName, encoded.mime);
     return;
   }
   canvas.toBlob((fallback) => {
@@ -4341,7 +4447,91 @@ downloadButton?.addEventListener('click', () => {
       return;
     }
     void savePhotoFile(fallback, fileName, mime);
-  }, mime, blankBackground ? undefined : 0.95);
+  }, mime, quality);
+};
+
+downloadButton?.addEventListener('click', () => {
+  if (!canvas || !originalImage || !photoRatio) return;
+  noteEdit();
+  const blankBackground = activeBackgroundScene === 'blank';
+  const format = chosenExportFormat();
+  const quality = chosenExportQuality();
+  const social = socialExportId ? socialExportSizes[socialExportId] : null;
+  const full = byId<HTMLSelectElement>('exportResolution')?.value === 'full';
+  const defaultSave = legacyExport || (!social && !full && format === 'jpeg' && Math.abs(quality - 0.95) < 0.001);
+  if (defaultSave) {
+    const mime = blankBackground ? 'image/png' : 'image/jpeg';
+    saveCurrentCanvas(mime, blankBackground ? 'png' : 'jpg', blankBackground ? undefined : 0.95);
+    return;
+  }
+
+  let exportFormat = format;
+  let transparentPng = false;
+  if (blankBackground && exportFormat === 'jpeg') {
+    exportFormat = 'png';
+    transparentPng = true;
+  }
+  const mime = exportFormat === 'png' ? 'image/png' : exportFormat === 'webp' ? 'image/webp' : 'image/jpeg';
+  const extension = exportFormat === 'png' ? 'png' : exportFormat === 'webp' ? 'webp' : 'jpg';
+  const exportQuality = exportFormat === 'png' ? undefined : quality;
+  const savedRatio = photoRatio.value;
+  const savedWidth = canvas.width;
+  const savedHeight = canvas.height;
+  const savedStyleWidth = canvas.style.width;
+  const savedStyleHeight = canvas.style.height;
+  let capped = false;
+  let resized = false;
+  let savedBlob: Blob | null = null;
+  let savedMime = mime;
+  let savedExtension = extension;
+  let webpFallback = false;
+  try {
+    if (social || full) {
+      const target = social ? { width: social.width, height: social.height, capped: false } : fullExportSize();
+      capped = target.capped;
+      resized = true;
+      const displayWidth = canvas.clientWidth || savedWidth;
+      const displayHeight = canvas.clientHeight || savedHeight;
+      canvas.style.width = `${displayWidth}px`;
+      canvas.style.height = `${displayHeight}px`;
+      if (social) photoRatio.value = social.expand ? 'expand-story' : 'square';
+      canvas.width = target.width;
+      canvas.height = target.height;
+      render();
+    }
+    const encoded = encodedCanvas(canvas, mime, exportQuality);
+    if (encoded && exportFormat === 'webp' && encoded.mime !== 'image/webp') {
+      const jpeg = encodedCanvas(canvas, 'image/jpeg', quality);
+      if (jpeg) {
+        savedBlob = jpeg.blob;
+        savedMime = jpeg.mime;
+        savedExtension = 'jpg';
+        webpFallback = true;
+      }
+    } else if (encoded) {
+      savedBlob = encoded.blob;
+      savedMime = encoded.mime;
+    }
+  } finally {
+    if (resized) {
+      photoRatio.value = savedRatio;
+      canvas.width = savedWidth;
+      canvas.height = savedHeight;
+      canvas.style.width = savedStyleWidth;
+      canvas.style.height = savedStyleHeight;
+      render();
+    }
+  }
+  if (!savedBlob) {
+    showToast('The edited photo could not be exported.');
+    return;
+  }
+  const notes = [
+    webpFallback ? 'This browser saved a JPEG instead of WebP.' : '',
+    transparentPng ? 'Blank backgrounds save as PNG so they stay transparent.' : '',
+    capped ? `The longest edge was limited to ${exportLongCap()} px.` : '',
+  ].filter(Boolean);
+  void savePhotoFile(savedBlob, photoFileName(savedExtension), savedMime, notes.join(' ') || undefined);
 });
 
 const splash = byId<HTMLDivElement>('splash');

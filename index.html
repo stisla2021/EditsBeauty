@@ -83,6 +83,30 @@
         <button type="button" data-export="story">Story</button>
         <button type="button" data-export="original">Original</button>
       </div>
+      <div class="export-options" id="exportOptions">
+        <label class="export-field">Resolution
+          <select id="exportResolution">
+            <option value="editor">Editor size</option>
+            <option value="full">Full resolution</option>
+          </select>
+        </label>
+        <label class="export-field">Format
+          <select id="exportFormat">
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+            <option value="webp">WebP</option>
+          </select>
+        </label>
+        <label class="range-control export-quality" for="exportQuality"><span>Quality</span><output id="exportQualityVal">95%</output><input type="range" id="exportQuality" min="60" max="100" value="95"></label>
+        <div class="export-presets" role="group" aria-label="Social sizes">
+          <button type="button" data-social="ig-square">Instagram square</button>
+          <button type="button" data-social="ig-story">Instagram story</button>
+          <button type="button" data-social="fb-cover">Facebook cover</button>
+          <button type="button" data-social="yt-thumb">YouTube thumbnail</button>
+          <button type="button" data-social="tiktok">TikTok</button>
+        </div>
+        <p class="export-note" id="exportNote">Next save: editor size, JPEG at 95%.</p>
+      </div>
       <aside class="studio-rail" aria-label="Tools">
         <button type="button" data-studio-tab="filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3.2 13.7 8.4 19 7.2 15.4 11.2 18.6 16 13.6 14.6 12 20.8 10.4 14.6 5.4 16 8.6 11.2 5 7.2 10.3 8.4z"/></svg><span>Filters</span></button>
         <button type="button" data-studio-tab="adjust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M12 4v16M17 4v16"/><circle cx="7" cy="9" r="2.1"/><circle cx="12" cy="15" r="2.1"/><circle cx="17" cy="7" r="2.1"/></svg><span>Adjust</span></button>

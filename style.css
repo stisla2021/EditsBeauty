@@ -419,7 +419,13 @@ body.studio-open .tool-dock { display: flex; }
 .look-pills button { flex: 0 0 auto; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--surface); color: var(--text); font-weight: 750; box-shadow: 0 6px 16px rgb(17 17 17 / 8%); cursor: pointer; }
 .look-pills button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 .export-presets { display: flex; gap: 8px; overflow-x: auto; padding: 0 12px 8px; background: var(--surface); }
-.export-presets button { flex: 0 0 auto; min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; }
+.export-presets button { flex: 0 0 auto; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; }
+.export-presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+.export-options { display: grid; gap: 8px; padding: 0 12px 10px; background: var(--surface); }
+.export-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.export-field select { min-height: 44px; padding: 0 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); }
+.export-quality { margin: 0; }
+.export-note { margin: 0; color: var(--muted); font-size: 12px; }
 .compare-hint { position: absolute; z-index: 4; right: 10px; bottom: 10px; margin: 0; padding: 4px 8px; border-radius: 999px; background: rgb(17 17 17 / 55%); color: #fff; font-size: 11px; font-weight: 700; pointer-events: none; }
 .studio-stage:not(.has-photo) .compare-hint { display: none; }
 .account-sheet { width: min(24rem, calc(100% - 24px)); padding: 0; border: 0; border-radius: 20px; background: var(--surface); color: var(--text); }
