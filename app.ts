@@ -963,8 +963,16 @@ const closeStudio = (): void => {
   document.body.classList.remove('studio-open');
 };
 
+const markDock = (name: string): void => {
+  document.querySelectorAll<HTMLButtonElement>('[data-dock]').forEach((button) => {
+    const selected = button.dataset.dock === name;
+    button.setAttribute('aria-pressed', String(selected));
+  });
+};
+
 const setStudioTab = (tab: 'adjust' | 'filters' | 'crop'): void => {
   if (tab === 'crop') {
+    markDock('Crop');
     if (!originalImage) {
       showEditor();
       showToast('Choose a photo to crop.');
@@ -988,6 +996,7 @@ const setStudioTab = (tab: 'adjust' | 'filters' | 'crop'): void => {
   document.querySelectorAll<HTMLButtonElement>('[data-studio-tab]').forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.studioTab === tab));
   });
+  markDock(tab === 'filters' ? 'Filters' : tab === 'adjust' ? 'Adjust' : 'Crop');
 };
 
 type PhotoGridLayout = '2-up' | '2x2' | '3x3' | 'strip-horizontal' | 'strip-vertical';
@@ -2935,11 +2944,21 @@ const paintHomeEffect = (): void => {
   context.restore();
 };
 
+let holdCompare = false;
+
 const render = (): void => {
   if (!originalImage || !context || !canvas) return;
   const sourceImage = originalImage;
   const width = canvas.width;
   const height = canvas.height;
+  if (holdCompare) {
+    context.save();
+    context.filter = 'none';
+    context.clearRect(0, 0, width, height);
+    context.drawImage(sourceImage, 0, 0, width, height);
+    context.restore();
+    return;
+  }
   const sourceRatio = originalImage.naturalWidth / originalImage.naturalHeight;
   const targetRatio = width / height;
   let sourceX = 0;
@@ -3578,18 +3597,310 @@ const captureCamera = (): void => {
   openPhoto(still);
 };
 
-byId<HTMLButtonElement>('navHome')?.addEventListener('click', () => {
-  closeCamera();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-});
 byId<HTMLButtonElement>('navCamera')?.addEventListener('click', () => {
   console.log('filter', 'camera');
-  setStudioTab('filters');
+  markDock('Camera');
+  noteTool('Camera');
   void openCamera();
 });
-byId<HTMLButtonElement>('navTemplates')?.addEventListener('click', () => {
-  document.getElementById('templatesSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+const openNamedTool = (tool: string): void => {
+  document.querySelector<HTMLButtonElement>(`[data-tool="${tool}"]`)?.click();
+};
+
+const applyAutoBeauty = (): void => {
+  remember();
+  activeHomeEffect = null;
+  if (photoFilter) photoFilter.value = 'beauty';
+  syncFilterChips();
+  if (smoothSlider) {
+    smoothSlider.value = '72';
+    if (smoothValue) smoothValue.value = '72';
+    paintRange(smoothSlider);
+  }
+  applyAutoAdjust(true);
+  const title = byId<HTMLElement>('editorTitle');
+  if (title) title.textContent = 'Auto Beauty';
+  markDock('Auto Beauty');
+  noteTool('Retouch');
+  noteEdit();
+  if (!originalImage) {
+    showToast('Choose a photo. Auto Beauty will apply to it.');
+    requestPhoto();
+    return;
+  }
+  showToast('Auto Beauty applied.');
+};
+
+const applyEffectLook = (): void => {
+  activeHomeEffect = null;
+  if (photoFilter) photoFilter.value = 'glow';
+  syncFilterChips();
+  setStudioTab('filters');
+  const title = byId<HTMLElement>('editorTitle');
+  if (title) title.textContent = 'Effects';
+  markDock('Effects');
+  noteTool('Filters');
+  if (originalImage) {
+    render();
+    showToast('Glow effect applied. Hold the photo to compare.');
+    return;
+  }
+  showToast('Choose a photo for this effect.');
+  requestPhoto();
+};
+
+document.querySelectorAll<HTMLButtonElement>('[data-dock]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const name = button.dataset.dock ?? '';
+    if (name === 'Camera' || name === 'Compare') return;
+    if (name === 'More') {
+      openTools();
+      return;
+    }
+    if (name === 'Profile') {
+      if (accountSheet instanceof HTMLDialogElement) accountSheet.showModal();
+      return;
+    }
+    if (name === 'Auto Beauty') {
+      applyAutoBeauty();
+      return;
+    }
+    if (name === 'Effects') {
+      applyEffectLook();
+      return;
+    }
+    if (name === 'Filters' || name === 'Adjust') {
+      activeHomeEffect = null;
+      setStudioTab(name === 'Filters' ? 'filters' : 'adjust');
+      if (!originalImage) requestPhoto();
+      return;
+    }
+    if (name === 'Beauty') {
+      markDock('Beauty');
+      openPortrait('retouch');
+      return;
+    }
+    markDock(name);
+    openNamedTool(name);
+  });
 });
+
+const compareControl = document.querySelector<HTMLButtonElement>('[data-dock="Compare"]');
+const setCompare = (on: boolean): void => {
+  if (!originalImage) return;
+  holdCompare = on;
+  compareControl?.setAttribute('aria-pressed', String(on));
+  render();
+};
+const bindCompare = (element: HTMLElement | null): void => {
+  if (!element) return;
+  element.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    setCompare(true);
+  });
+  const stop = (): void => setCompare(false);
+  element.addEventListener('pointerup', stop);
+  element.addEventListener('pointercancel', stop);
+  element.addEventListener('pointerleave', stop);
+};
+canvas?.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || brushEnabled || !originalImage) return;
+  const point = brushPoint(event);
+  if (point && hitSticker(point.x, point.y)) return;
+  setCompare(true);
+});
+const stopCompare = (): void => setCompare(false);
+canvas?.addEventListener('pointerup', stopCompare);
+canvas?.addEventListener('pointercancel', stopCompare);
+canvas?.addEventListener('pointerleave', stopCompare);
+bindCompare(compareControl);
+
+document.querySelectorAll<HTMLButtonElement>('[data-export]').forEach((button) => {
+  button.addEventListener('click', () => {
+    if (!originalImage || !photoRatio || !downloadButton || downloadButton.disabled) {
+      showToast('Choose a photo before exporting.');
+      requestPhoto();
+      return;
+    }
+    const preset = button.dataset.export;
+    photoRatio.value = preset === 'post' ? 'id' : preset === 'story' ? 'expand-story' : 'free';
+    photoRatio.dispatchEvent(new Event('change'));
+    document.querySelectorAll<HTMLButtonElement>('[data-export]').forEach((item) => {
+      item.setAttribute('aria-pressed', String(item === button));
+    });
+    downloadButton.click();
+  });
+});
+
+const accountKey = 'editsbeauty-account';
+const looksKey = 'editsbeauty-saved-looks';
+const accountSheet = document.getElementById('accountSheet');
+const accountStatus = document.getElementById('accountStatus');
+type LocalAccount = { email: string; hash: string; name: string; photo: string; provider: 'email' | 'google' | 'x' };
+type SavedLook = { name: string; look: string; smooth: string };
+
+const readAccount = (): LocalAccount | null => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(accountKey) ?? 'null') as LocalAccount | null;
+    return parsed && typeof parsed.email === 'string' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const hashPassword = async (email: string, password: string): Promise<string> => {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${email.toLowerCase()}\n${password}`));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+};
+
+const paintAccount = (): void => {
+  const account = readAccount();
+  const preview = document.getElementById('profilePreview');
+  if (preview instanceof HTMLImageElement) {
+    preview.hidden = !account?.photo;
+    preview.src = account?.photo ?? '';
+  }
+  const name = document.getElementById('profileName');
+  const email = document.getElementById('profileEmail');
+  if (name instanceof HTMLInputElement && account) name.value = account.name;
+  if (email instanceof HTMLInputElement && account) email.value = account.email;
+  if (accountStatus) {
+    accountStatus.textContent = account
+      ? `Signed in on this device as ${account.name || account.email}. Photos stay on the device.`
+      : 'No profile yet. Google and X stay on this device too. Nothing is sent to those services.';
+  }
+  const list = document.getElementById('savedLooks');
+  if (!list) return;
+  list.replaceChildren();
+  let looks: SavedLook[] = [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(looksKey) ?? '[]') as SavedLook[];
+    if (Array.isArray(parsed)) looks = parsed;
+  } catch {
+    looks = [];
+  }
+  looks.forEach((look) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = look.name;
+    button.addEventListener('click', () => {
+      if (photoFilter) photoFilter.value = look.look;
+      if (smoothSlider) smoothSlider.value = look.smooth;
+      if (smoothValue) smoothValue.value = look.smooth;
+      if (smoothSlider) paintRange(smoothSlider);
+      syncFilterChips();
+      showEditor();
+      render();
+      if (accountSheet instanceof HTMLDialogElement) accountSheet.close();
+      showToast(`${look.name} applied.`);
+    });
+    list.append(button);
+  });
+};
+
+document.getElementById('accountForm')?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  void (async () => {
+    const nameInput = document.getElementById('profileName');
+    const emailInput = document.getElementById('profileEmail');
+    const passwordInput = document.getElementById('profilePassword');
+    const email = emailInput instanceof HTMLInputElement ? emailInput.value.trim() : '';
+    const password = passwordInput instanceof HTMLInputElement ? passwordInput.value : '';
+    const name = nameInput instanceof HTMLInputElement ? nameInput.value.trim() : '';
+    if (!email || password.length < 6) {
+      if (accountStatus) accountStatus.textContent = 'Use an email and a password of at least 6 characters. It stays on this device.';
+      return;
+    }
+    const existing = readAccount();
+    const hash = await hashPassword(email, password);
+    if (existing && existing.email.toLowerCase() === email.toLowerCase() && existing.hash !== hash && existing.provider === 'email') {
+      if (accountStatus) accountStatus.textContent = 'That password does not match the one saved on this device.';
+      return;
+    }
+    const next: LocalAccount = { email, hash, name: name || email, photo: existing?.photo ?? '', provider: 'email' };
+    localStorage.setItem(accountKey, JSON.stringify(next));
+    if (passwordInput instanceof HTMLInputElement) passwordInput.value = '';
+    paintAccount();
+  })();
+});
+
+const continueLocal = (provider: 'google' | 'x'): void => {
+  const nameInput = document.getElementById('profileName');
+  const name = nameInput instanceof HTMLInputElement ? nameInput.value.trim() : '';
+  if (!name) {
+    if (accountStatus) accountStatus.textContent = 'Type a display name. It is saved on this device only and is not sent to Google or X.';
+    return;
+  }
+  const existing = readAccount();
+  const next: LocalAccount = {
+    email: existing?.email ?? '',
+    hash: existing?.hash ?? '',
+    name,
+    photo: existing?.photo ?? '',
+    provider,
+  };
+  localStorage.setItem(accountKey, JSON.stringify(next));
+  paintAccount();
+};
+
+document.getElementById('accountGoogle')?.addEventListener('click', () => continueLocal('google'));
+document.getElementById('accountX')?.addEventListener('click', () => continueLocal('x'));
+document.getElementById('accountOut')?.addEventListener('click', () => {
+  localStorage.removeItem(accountKey);
+  paintAccount();
+});
+document.getElementById('accountClose')?.addEventListener('click', () => {
+  if (accountSheet instanceof HTMLDialogElement) accountSheet.close();
+});
+document.getElementById('profilePhoto')?.addEventListener('change', () => {
+  const input = document.getElementById('profilePhoto');
+  const file = input instanceof HTMLInputElement ? input.files?.[0] : undefined;
+  const account = readAccount();
+  if (!file || !account) {
+    if (accountStatus && !account) accountStatus.textContent = 'Save the profile before adding a photo.';
+    return;
+  }
+  const image = new Image();
+  const url = URL.createObjectURL(file);
+  image.onload = () => {
+    const copy = document.createElement('canvas');
+    copy.width = 96;
+    copy.height = 96;
+    const copyContext = copy.getContext('2d');
+    if (!copyContext) return;
+    const side = Math.min(image.naturalWidth, image.naturalHeight);
+    copyContext.drawImage(image, (image.naturalWidth - side) / 2, (image.naturalHeight - side) / 2, side, side, 0, 0, 96, 96);
+    account.photo = copy.toDataURL('image/jpeg', 0.7);
+    localStorage.setItem(accountKey, JSON.stringify(account));
+    URL.revokeObjectURL(url);
+    paintAccount();
+  };
+  image.src = url;
+});
+document.getElementById('accountLook')?.addEventListener('click', () => {
+  if (!readAccount()) {
+    if (accountStatus) accountStatus.textContent = 'Save a profile on this device before saving a Look.';
+    return;
+  }
+  const look: SavedLook = {
+    name: photoFilter?.value || 'Look',
+    look: photoFilter?.value ?? 'original',
+    smooth: smoothSlider?.value ?? '0',
+  };
+  let looks: SavedLook[] = [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(looksKey) ?? '[]') as SavedLook[];
+    if (Array.isArray(parsed)) looks = parsed.filter((item) => item.look !== look.look);
+  } catch {
+    looks = [];
+  }
+  looks.unshift(look);
+  localStorage.setItem(looksKey, JSON.stringify(looks.slice(0, 12)));
+  paintAccount();
+  showToast('Look saved on this device.');
+});
+paintAccount();
 document.querySelectorAll<HTMLButtonElement>('[data-camera-mode]').forEach((button) => {
   button.addEventListener('click', () => {
     const mode = button.dataset.cameraMode;
@@ -3855,7 +4166,7 @@ const applyAutoAdjust = (on: boolean): void => {
   applyingAuto = true;
   adjustControlIds.forEach((id) => setAdjustControl(id, on ? autoAdjustRecipe[id] : 0, false));
   applyingAuto = false;
-  byId<HTMLButtonElement>('adjustAuto')?.setAttribute('aria-pressed', String(on));
+  syncAdjustBoard();
   showEditor();
   setStudioTab('adjust');
   render();

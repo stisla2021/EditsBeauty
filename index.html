@@ -60,6 +60,19 @@
       <button class="start-pill" id="startEditing" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z"/><path d="M18 13l.6 1.8L20.5 16l-1.9.7L18 18.5l-.6-1.8L15.5 16l1.9-.7L18 13z"/></svg> Start Editing</button>
       <button class="start-pill guide-home" id="homeGuide" type="button">Ask AI</button>
     </div>
+    <section class="vibes-section home-section" aria-labelledby="looksQuickTitle">
+      <h2 id="looksQuickTitle">Looks</h2>
+      <div class="look-pills" role="list">
+        <button type="button" data-look="beauty">Beauty</button>
+        <button type="button" data-look="glow">Glow</button>
+        <button type="button" data-look="golden">Golden</button>
+        <button type="button" data-look="soft">Soft</button>
+        <button type="button" data-look="film">Film</button>
+        <button type="button" data-look="vivid">Vivid</button>
+        <button type="button" data-look="vintage">Vintage</button>
+        <button type="button" data-look="pink">Pink</button>
+      </div>
+    </section>
 
     <section class="studio" id="editor" aria-labelledby="editorTitle" hidden>
       <header class="studio-bar">
@@ -72,6 +85,11 @@
         <button class="studio-guide" id="guideLaunch" type="button">AI</button>
         <button class="studio-save" id="downloadBtn" type="button" disabled>Save</button>
       </header>
+      <div class="export-presets" role="group" aria-label="Export size">
+        <button type="button" data-export="post">Post</button>
+        <button type="button" data-export="story">Story</button>
+        <button type="button" data-export="original">Original</button>
+      </div>
       <aside class="studio-rail" aria-label="Tools">
         <button type="button" data-studio-tab="filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3.2 13.7 8.4 19 7.2 15.4 11.2 18.6 16 13.6 14.6 12 20.8 10.4 14.6 5.4 16 8.6 11.2 5 7.2 10.3 8.4z"/></svg><span>Filters</span></button>
         <button type="button" data-studio-tab="adjust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M12 4v16M17 4v16"/><circle cx="7" cy="9" r="2.1"/><circle cx="12" cy="15" r="2.1"/><circle cx="17" cy="7" r="2.1"/></svg><span>Adjust</span></button>
@@ -95,6 +113,7 @@
           </label>
         </div>
         <canvas id="canvas" aria-label="Photo editing preview"></canvas>
+        <p class="compare-hint" id="compareHint">Hold the photo to compare</p>
         <div class="sticker-layer" id="stickerLayer">
           <div class="sticker-frame" id="stickerFrame" hidden>
             <button type="button" id="stickerRotate" aria-label="Rotate sticker">↻</button>
@@ -598,11 +617,45 @@
     </footer>
   </section>
 
-  <nav class="bottom-nav" aria-label="Main">
-    <button id="navHome" type="button" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg></button>
-    <button class="nav-camera" id="navCamera" type="button" aria-label="Camera"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
-    <button id="navTemplates" type="button" aria-label="Templates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/></svg></button>
+  <nav class="tool-dock" aria-label="Tools">
+    <button class="tool-dock-camera" id="navCamera" type="button" data-dock="Camera" aria-label="Camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Camera</span></button>
+    <div class="tool-dock-row" id="toolDock">
+      <button type="button" data-dock="Filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3V20.5M3.5 12h2.2M18.3 12H20.5"/></svg><span>Filters</span></button>
+      <button type="button" data-dock="Adjust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M12 4v16M17 4v16"/><circle cx="7" cy="9" r="2.1"/><circle cx="12" cy="15" r="2.1"/><circle cx="17" cy="7" r="2.1"/></svg><span>Adjust</span></button>
+      <button type="button" data-dock="Beauty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="5"/><path d="M10.2 12.4h.01M13.8 12.4h.01M10.4 14.6c.5.5 1 .8 1.6.8s1.1-.3 1.6-.8"/><path d="M17.2 4.2l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5z"/></svg><span>Beauty</span></button>
+      <button type="button" data-dock="Background"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M20.5 15.5 15 11l-6.5 5.5"/></svg><span>Background</span></button>
+      <button type="button" data-dock="Effects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.4 4.2L18 8.5l-4.6 1.3L12 14l-1.4-4.2L6 8.5l4.6-1.3z"/><path d="M18 14l.6 1.6 1.6.6-1.6.6L18 18.4l-.6-1.6-1.6-.6 1.6-.6z"/></svg><span>Effects</span></button>
+      <button type="button" data-dock="Text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h14M12 6v12M8 18h8"/></svg><span>Text</span></button>
+      <button type="button" data-dock="Stickers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h6.5L19 9.5V19a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M13.5 4V9.5H19"/></svg><span>Stickers</span></button>
+      <button type="button" data-dock="Crop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5V8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M16 20h2.5a1.5 1.5 0 0 0 1.5-1.5V16"/></svg><span>Crop</span></button>
+      <button type="button" data-dock="Enhance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Enhance</span></button>
+      <button type="button" data-dock="Compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 8l-2 4 2 4M19 8l2 4-2 4"/></svg><span>Compare</span></button>
+      <button class="tool-dock-auto" type="button" data-dock="Auto Beauty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 13.6 8 18.5 8.4 14.8 11.4 16.2 16 12 13.6 7.8 16 9.2 11.4 5.5 8.4 10.4 8z"/></svg><span>Auto</span></button>
+      <button type="button" data-dock="More"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg><span>More</span></button>
+      <button type="button" data-dock="Profile" id="openProfile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5.5 19c1.4-2.6 3.6-3.8 6.5-3.8s5.1 1.2 6.5 3.8"/></svg><span>Profile</span></button>
+    </div>
   </nav>
+  <dialog class="account-sheet" id="accountSheet">
+    <form method="dialog" id="accountForm">
+      <h2>Profile</h2>
+      <p>Your name, profile photo, and saved Looks stay on this device. Editing photos are not uploaded.</p>
+      <img id="profilePreview" alt="" hidden>
+      <label>Display name<input id="profileName" name="name" maxlength="40" autocomplete="nickname"></label>
+      <label>Profile photo<input id="profilePhoto" type="file" accept="image/*"></label>
+      <label>Email<input id="profileEmail" name="email" type="email" autocomplete="username" maxlength="80"></label>
+      <label>Password<input id="profilePassword" name="password" type="password" autocomplete="current-password" maxlength="80"></label>
+      <div class="account-actions">
+        <button type="submit" id="accountSave" value="save">Save on this device</button>
+        <button type="button" id="accountGoogle">Continue with Google</button>
+        <button type="button" id="accountX">Continue with X</button>
+        <button type="button" id="accountLook">Save this Look</button>
+        <button type="button" id="accountOut">Sign out</button>
+        <button type="button" id="accountClose">Close</button>
+      </div>
+      <p id="accountStatus"></p>
+      <div id="savedLooks"></div>
+    </form>
+  </dialog>
   <section class="camera-view" id="cameraView" hidden>
     <video id="cameraVideo" autoplay muted playsinline webkit-playsinline></video>
     <canvas class="camera-stage" id="cameraStage"></canvas>

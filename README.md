@@ -4,7 +4,7 @@ On-device portrait and photo editor. Photos stay in the browser. Filters, Adjust
 
 **Live app:** https://stisla2021.github.io/EditsBeauty/
 
-Version V1.1.8. Copyright (c) StISLA2021.
+Version V1.1.9. Copyright (c) StISLA2021.
 
 ## What you can do
 
