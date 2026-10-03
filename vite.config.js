@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { planEdit } from './guide-plan.js';
@@ -6,13 +6,35 @@ import { acceptReport, saveReport } from './report-store.js';
 import { acceptUsage, commentsAllowed, readUsage, saveUsage } from './usage-store.js';
 import { acceptAccount, signInAccount, updateAccount } from './account-store.js';
 
-const groqKey = () => {
-  if (process.env.GROQ_API_KEY) return process.env.GROQ_API_KEY;
+const readEnv = (name) => {
+  const fromProcess = process.env[name];
+  if (fromProcess) return String(fromProcess).trim().replace(/^["']|["']$/g, '');
   const file = resolve('.env');
   if (!existsSync(file)) return '';
-  const line = readFileSync(file, 'utf8').split(/\r?\n/).find((item) => item.startsWith('GROQ_API_KEY='));
+  const line = readFileSync(file, 'utf8').split(/\r?\n/).find((item) => item.startsWith(`${name}=`));
   if (!line) return '';
-  return line.slice('GROQ_API_KEY='.length).trim().replace(/^["']|["']$/g, '');
+  return line.slice(name.length + 1).trim().replace(/^["']|["']$/g, '');
+};
+
+const groqKey = () => readEnv('GROQ_API_KEY');
+
+const adsenseClient = () => {
+  const client = readEnv('ADSENSE_CLIENT');
+  return /^ca-pub-\d+$/.test(client) ? client : '';
+};
+
+const adsenseTag = () => {
+  const client = adsenseClient();
+  if (!client) return '';
+  return `\n  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}" crossorigin="anonymous"></script>`;
+};
+
+const adsenseLine = () => {
+  const explicit = readEnv('ADSENSE_ADS_TXT');
+  if (explicit) return explicit;
+  const client = adsenseClient();
+  if (!client) return '';
+  return `google.com, ${client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0`;
 };
 
 const guideApi = () => ({
@@ -263,11 +285,17 @@ export default defineConfig({
   plugins: [
     guideApi(),
     {
+      name: 'adsense-client',
+      transformIndexHtml(html) {
+        return html.replace('<!-- ADSENSE -->', adsenseTag());
+      },
+    },
+    {
       name: 'copy-service-worker',
       closeBundle() {
         copyFileSync(resolve('sw.js'), resolve('dist/sw.js'));
-        const ads = resolve('public/ads.txt');
-        if (existsSync(ads)) copyFileSync(ads, resolve('dist/ads.txt'));
+        const adsLine = adsenseLine();
+        if (adsLine) writeFileSync(resolve('dist/ads.txt'), `${adsLine}\n`);
         for (const file of ['robots.txt', 'sitemap.xml']) {
           const source = resolve('public', file);
           if (existsSync(source)) copyFileSync(source, resolve('dist', file));
