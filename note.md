@@ -6,8 +6,8 @@ Updated 3 October 2026 from the source on `main`.
 - Canonical URL: https://editsbeauty.vercel.app/
 - Repository: https://github.com/stisla2021/EditsBeauty
 - Branch: `main`
-- Version: V1.1.10
-- Service-worker cache: `editsbeauty-shell-v38`
+- Version: V1.1.11
+- Service-worker cache: `editsbeauty-shell-v39`
 - Publisher: StISLA2021, Jalangbam near Brikama, The Gambia
 - Email: stisla2021@gmail.com
 - Copyright: (c) StISLA2021
@@ -34,7 +34,7 @@ Looks are not left to `ctx.filter` on `drawImage`. Phone browsers drop that filt
 | `app.ts` | Editor state, render, tools, undo, save, guide client, dock, local account. |
 | `camera-live.ts` | getUserMedia loop, Face Mesh, lens tray, WebGL warp and blur, Lite mode, still-landmark export. |
 | `menu.ts` | Theme, hamburger, install, update banner, settings switches, cache measure, `startReports`, `startUsage`, `inject()`. |
-| `report.ts` | Diagnostic dialog and the allowlisted POST. Version string `1.1.10`. |
+| `report.ts` | Diagnostic dialog and the allowlisted POST. Version string `1.1.11`. |
 | `usage.ts` | Anonymous event queue, rating dialog. |
 | `guide-plan.js` | Groq tool call and `normalizePlan`. |
 | `api/guide.js` | Vercel handler and CORS for the guide. |
@@ -338,6 +338,11 @@ From `:root` in `style.css`:
 5. Commit and push `main`.
 6. Confirm the GitHub commit status for Vercel is success, then confirm `https://editsbeauty.vercel.app/sw.js` contains the new `APP_VERSION` and `CACHE`.
 7. Do not commit `dist/`, `data/`, `.env`, or a SQL file beside `api/usage.js`.
+
+## Recent updates in V1.1.11
+
+- The homepage is the short pill again: Home, Camera, and Templates. The scrolling tool bar appears only while the editor is open. The Looks row under the header is gone.
+- Shell version is 1.1.11 / `editsbeauty-shell-v39`.
 
 ## Recent updates in V1.1.10
 

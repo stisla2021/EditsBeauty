@@ -8,7 +8,7 @@ The optional AI guide does not generate a new picture. It chooses the same slide
 **GitHub Pages:** [https://stisla2021.github.io/EditsBeauty/](https://stisla2021.github.io/EditsBeauty/)  
 **Repository:** [https://github.com/stisla2021/EditsBeauty](https://github.com/stisla2021/EditsBeauty)
 
-Version **V1.1.10**. Published by **StISLA2021**, Jalangbam near Brikama, The Gambia. Contact: [stisla2021@gmail.com](mailto:stisla2021@gmail.com). Copyright (c) StISLA2021.
+Version **V1.1.11**. Published by **StISLA2021**, Jalangbam near Brikama, The Gambia. Contact: [stisla2021@gmail.com](mailto:stisla2021@gmail.com). Copyright (c) StISLA2021.
 
 `package.json` sets `"private": true`, so this package is not published to npm. The source is the product.
 
@@ -20,9 +20,13 @@ Start Editing, or any tool in the bottom bar, asks for a photo from the camera r
 
 The editor is a fixed studio (`#editor`). On a phone it fills the screen. From **1025 px** wide it becomes a centered card with a left tool rail, the canvas, and the control sheet. Back closes the studio and returns to the home screen. The original file on the device is not overwritten. Save writes a new file.
 
+### Homepage
+
+The home screen is Start Editing, Ask AI, then Face Details and the portrait rows. The bottom bar is the short pill: Home, a raised black Camera button, and Templates. Home scrolls to the top. Templates scrolls to the template grid. The scrolling editor tool bar stays hidden until a photo is open.
+
 ### Bottom tool bar
 
-The bottom of every home and editor view is a horizontal tool dock (`.tool-dock`). It replaces the earlier three-button pill.
+While the editor is open, the bottom of the screen is a horizontal tool dock (`.tool-dock`).
 
 The camera is a black circle, slightly raised, fixed at the left of the bar so it stays reachable while the rest of the row scrolls. The scrolling row holds:
 
@@ -46,7 +50,7 @@ The selected tool uses the teal accent `#14B8A6` with dark text `#042f2e`. On vi
 
 ### Looks
 
-Under the home header, a horizontal Looks row applies a filter in one tap: Beauty, Glow, Golden, Soft, Film, Vivid, Vintage, or Pink. The same `data-look` path is used by the filter chips. A second tap inside 350 ms is ignored so a finger that fires both `pointerup` and `click` does not apply the look twice. If no photo is loaded, the look is remembered and the file picker opens.
+Filter chips inside the editor apply a look in one tap. A second tap inside 350 ms is ignored so a finger that fires both `pointerup` and `click` does not apply the look twice. If no photo is loaded, the look is remembered and the file picker opens.
 
 Beauty sets the Beauty color recipe and raises Smooth to 72. It does not move the Adjust sliders.
 
@@ -225,7 +229,7 @@ Rendering is coalesced. Slider input calls `scheduleRender`, which paints on the
 
 ### Service worker
 
-`sw.js` is hand-written, not generated. `APP_VERSION` is `1.1.10` and `CACHE` is `editsbeauty-shell-v38`. Those two constants change together. Install precaches the shell and does not call `skipWaiting`, so an open session keeps running. Activate deletes every other cache and calls `clients.claim()`.
+`sw.js` is hand-written, not generated. `APP_VERSION` is `1.1.11` and `CACHE` is `editsbeauty-shell-v39`. Those two constants change together. Install precaches the shell and does not call `skipWaiting`, so an open session keeps running. Activate deletes every other cache and calls `clients.claim()`.
 
 Fetch handles same-origin GET requests for images, HTML, JS, CSS, and JSON. Images are cache-first. Documents and code are network-first, then cached. A failed navigation falls back to `index.html`. POST requests, including `/api/guide`, `/api/report`, and `/api/usage`, are not intercepted. `usage.html` is not in the precache list.
 
@@ -298,7 +302,7 @@ Vercel Web Analytics is separate. `inject()` in `menu.ts` loads `/_vercel/insigh
 | File | Role |
 | --- | --- |
 | `index.html` | Home, editor, camera, guide, dock, profile |
-| `settings.html` | Settings. `noindex`. Shows V1.1.10 |
+| `settings.html` | Settings. `noindex`. Shows V1.1.11 |
 | `about.html` | Publisher, mission, and a short description of each face tool |
 | `faq.html` | Editor, privacy, and site questions |
 | `privacy-policy.html` | Privacy policy |

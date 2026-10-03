@@ -52,19 +52,6 @@
       <button class="start-pill" id="startEditing" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z"/><path d="M18 13l.6 1.8L20.5 16l-1.9.7L18 18.5l-.6-1.8L15.5 16l1.9-.7L18 13z"/></svg> Start Editing</button>
       <button class="start-pill guide-home" id="homeGuide" type="button">Ask AI</button>
     </div>
-    <section class="vibes-section home-section" aria-labelledby="looksQuickTitle">
-      <h2 id="looksQuickTitle">Looks</h2>
-      <div class="look-pills" role="list">
-        <button type="button" data-look="beauty">Beauty</button>
-        <button type="button" data-look="glow">Glow</button>
-        <button type="button" data-look="golden">Golden</button>
-        <button type="button" data-look="soft">Soft</button>
-        <button type="button" data-look="film">Film</button>
-        <button type="button" data-look="vivid">Vivid</button>
-        <button type="button" data-look="vintage">Vintage</button>
-        <button type="button" data-look="pink">Pink</button>
-      </div>
-    </section>
 
     <section class="studio" id="editor" aria-labelledby="editorTitle" hidden>
       <header class="studio-bar">
@@ -609,8 +596,13 @@
     </footer>
   </section>
 
+  <nav class="bottom-nav" aria-label="Main">
+    <button id="navHome" type="button" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg></button>
+    <button class="nav-camera" id="navCamera" type="button" aria-label="Camera"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+    <button id="navTemplates" type="button" aria-label="Templates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/></svg></button>
+  </nav>
   <nav class="tool-dock" aria-label="Tools">
-    <button class="tool-dock-camera" id="navCamera" type="button" data-dock="Camera" aria-label="Camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Camera</span></button>
+    <button class="tool-dock-camera" type="button" data-dock="Camera" aria-label="Camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Camera</span></button>
     <div class="tool-dock-row" id="toolDock">
       <button type="button" data-dock="Filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3V20.5M3.5 12h2.2M18.3 12H20.5"/></svg><span>Filters</span></button>
       <button type="button" data-dock="Adjust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M12 4v16M17 4v16"/><circle cx="7" cy="9" r="2.1"/><circle cx="12" cy="15" r="2.1"/><circle cx="17" cy="7" r="2.1"/></svg><span>Adjust</span></button>

@@ -3597,11 +3597,24 @@ const captureCamera = (): void => {
   openPhoto(still);
 };
 
+byId<HTMLButtonElement>('navHome')?.addEventListener('click', () => {
+  closeCamera();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 byId<HTMLButtonElement>('navCamera')?.addEventListener('click', () => {
   console.log('filter', 'camera');
   markDock('Camera');
   noteTool('Camera');
   void openCamera();
+});
+byId<HTMLButtonElement>('navTemplates')?.addEventListener('click', () => {
+  const title = document.getElementById('templatesTitle');
+  if (!title) return;
+  document.querySelectorAll<HTMLElement>('.home-section').forEach((section) => {
+    section.style.contentVisibility = 'visible';
+  });
+  const top = title.getBoundingClientRect().top + window.scrollY - 8;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 });
 
 const openNamedTool = (tool: string): void => {
@@ -3653,7 +3666,14 @@ const applyEffectLook = (): void => {
 document.querySelectorAll<HTMLButtonElement>('[data-dock]').forEach((button) => {
   button.addEventListener('click', () => {
     const name = button.dataset.dock ?? '';
-    if (name === 'Camera' || name === 'Compare') return;
+    if (name === 'Camera') {
+      console.log('filter', 'camera');
+      markDock('Camera');
+      noteTool('Camera');
+      void openCamera();
+      return;
+    }
+    if (name === 'Compare') return;
     if (name === 'More') {
       openTools();
       return;
