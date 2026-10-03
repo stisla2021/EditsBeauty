@@ -2217,13 +2217,23 @@ byId<HTMLButtonElement>('sheetStart')?.addEventListener('click', () => {
   closeTools();
   setStudioTab('filters');
 });
-byId<HTMLButtonElement>('startEditing')?.addEventListener('click', () => {
+const beginEditing = (): void => {
   activeHomeEffect = null;
   const title = byId<HTMLElement>('editorTitle');
   if (title) title.textContent = 'Filters';
   setStudioTab('filters');
   if (!originalImage) requestPhoto();
-});
+};
+byId<HTMLButtonElement>('startEditing')?.addEventListener('click', beginEditing);
+byId<HTMLButtonElement>('heroStart')?.addEventListener('click', beginEditing);
+const heroSplit = byId<HTMLInputElement>('heroSplit');
+const heroFrame = byId<HTMLElement>('heroFrame');
+const paintHeroSplit = (): void => {
+  if (!heroSplit || !heroFrame) return;
+  heroFrame.style.setProperty('--hero-split', `${heroSplit.value}%`);
+};
+heroSplit?.addEventListener('input', paintHeroSplit);
+paintHeroSplit();
 byId<HTMLButtonElement>('studioBack')?.addEventListener('click', closeStudio);
 backdrop?.addEventListener('click', closeTools);
 document.addEventListener('keydown', (event: KeyboardEvent) => {

@@ -100,6 +100,34 @@ h1, h2, .studio-title, .section-head h2 { font-family: Palatino, "Iowan Old Styl
 .nav-links a:hover, .nav-links a.active, .nav-links .nav-share:hover { background: var(--surface-muted); }
 main.container, .page.container { width: min(100% - 32px, 1120px); max-width: 1120px; margin: 0 auto; }
 .home { padding: 8px 0 120px; }
+.hero { display: grid; gap: 22px; width: min(100% - 32px, 1080px); margin: 8px auto 28px; align-items: center; }
+.hero-kicker { margin: 0 0 8px; color: var(--accent-text); font-size: 13px; font-weight: 750; letter-spacing: 0.04em; text-transform: uppercase; }
+.hero h1 { margin: 0 0 10px; font-size: clamp(34px, 6vw, 58px); line-height: 1.05; letter-spacing: -0.03em; }
+.hero-copy p { margin: 0 0 16px; max-width: 38rem; color: var(--muted); font-size: 17px; line-height: 1.45; }
+.hero-start { min-height: 48px; padding: 0 22px; font-size: 16px; }
+.hero-compare { margin: 0; }
+.hero-frame { position: relative; overflow: hidden; border-radius: 22px; box-shadow: var(--shadow); }
+.hero-frame img { display: block; width: 100%; height: auto; }
+.hero-after { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(0 0 0 var(--hero-split, 58%)); }
+.hero-compare figcaption { display: grid; gap: 4px; margin-top: 10px; }
+.hero-split { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 13px; font-weight: 750; }
+.hero-split input { flex: 1; min-height: 44px; }
+.hero-compare figcaption p { margin: 0; color: var(--muted); font-size: 13px; }
+.feature-band, .install-section { width: min(100% - 32px, 1080px); margin: 0 auto 28px; }
+.feature-band h2, .install-section h2 { margin: 0 0 12px; font-size: 28px; }
+.feature-grid { display: grid; gap: 12px; }
+.feature-grid article { padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.feature-grid h3 { margin: 0 0 6px; font-size: 18px; }
+.feature-grid p, .install-section p { margin: 0; color: var(--muted); line-height: 1.45; }
+.install-section { display: grid; gap: 14px; padding: 18px; border-radius: 22px; background: var(--accent-soft); color: var(--accent-ink); }
+.install-section h2, .install-section p { color: var(--accent-ink); }
+.install-actions { display: grid; gap: 8px; align-content: start; }
+.install-ready { font-weight: 750; }
+@media (min-width: 800px) {
+  .hero { grid-template-columns: 1.1fr 0.9fr; }
+  .feature-grid { grid-template-columns: repeat(4, 1fr); }
+  .install-section { grid-template-columns: 1.4fr 0.8fr; align-items: center; }
+}
 .banner-slider { position: relative; height: 352px; margin: 8px 0 16px; overflow: hidden; border-radius: 18px; background: #272629; color: #fff; isolation: isolate; }
 .banner { position: absolute; inset: 0; visibility: hidden; overflow: hidden; opacity: 0; transition: opacity .65s ease, visibility .65s ease; }
 .banner.active { visibility: visible; opacity: 1; }

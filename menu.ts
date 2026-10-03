@@ -155,8 +155,14 @@ if (installPrompt && !appleDevice() && !alreadyInstalled()) {
 }
 if (appleDevice() || alreadyInstalled()) {
   installButton.remove();
-  installHelp.remove();
   installMenuItem.remove();
+}
+if (alreadyInstalled()) {
+  installHelp.remove();
+  document.documentElement.dataset.installed = 'true';
+  document.getElementById('homeInstall')?.setAttribute('hidden', '');
+  const installReady = document.querySelector<HTMLElement>('.install-ready');
+  if (installReady) installReady.hidden = false;
 }
 
 const hideInstall = (): void => {
@@ -187,7 +193,11 @@ window.addEventListener('beforeinstallprompt', (event: Event) => {
 
 let installOpening = false;
 const runInstall = (): void => {
-  if (appleDevice() || installOpening) return;
+  if (installOpening) return;
+  if (appleDevice()) {
+    showInstallHelp('On iPhone or iPad, tap the Share button, then Add to Home Screen.');
+    return;
+  }
   if (alreadyInstalled()) {
     hideInstall();
     return;
@@ -224,6 +234,7 @@ installMenuButton.addEventListener('click', () => {
 installHelpClose.addEventListener('click', () => {
   installHelp.hidden = true;
 });
+document.getElementById('homeInstall')?.addEventListener('click', runInstall);
 
 window.addEventListener('appinstalled', hideInstall);
 if (launchedInstalled()) hideInstall();

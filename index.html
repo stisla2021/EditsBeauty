@@ -61,7 +61,59 @@
   </nav>
 
   <main class="container home" id="main">
-    <h1 class="visually-hidden">EditsBeauty free photo editor</h1>
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <p class="hero-kicker">On-device portrait editor</p>
+        <h1 id="heroTitle">Make the photo look like you meant it.</h1>
+        <p>Smooth skin, color, crop, and backgrounds run in this browser. The picture is not uploaded.</p>
+        <button class="start-pill hero-start" id="heroStart" type="button">Start editing</button>
+      </div>
+      <figure class="hero-compare">
+        <div class="hero-frame" id="heroFrame">
+          <img src="images/hero-before.jpg" alt="" width="900" height="1125">
+          <img class="hero-after" src="images/hero-after.jpg" alt="" width="900" height="1125">
+        </div>
+        <figcaption>
+          <label class="hero-split">Before
+            <input id="heroSplit" type="range" min="0" max="100" value="58" aria-label="Sample before and after">
+            After
+          </label>
+          <p>Sample portrait. Drag to compare a flatter photo with a warmer look.</p>
+        </figcaption>
+      </figure>
+    </section>
+    <section class="feature-band" aria-labelledby="featureTitle">
+      <h2 id="featureTitle">What you can do</h2>
+      <div class="feature-grid">
+        <article>
+          <h3>Private by default</h3>
+          <p>Filters, Adjust, crop, and retouch paint on this device.</p>
+        </article>
+        <article>
+          <h3>One-tap looks</h3>
+          <p>Vivid, Warm, Glow, Film, and Beauty are ready before you move a slider.</p>
+        </article>
+        <article>
+          <h3>Portrait tools</h3>
+          <p>Smooth skin, teeth, a new background, text, and stickers stay in one editor.</p>
+        </article>
+        <article>
+          <h3>Sizes people post</h3>
+          <p>Save JPEG, PNG, or WebP, or pick Instagram, Facebook, YouTube, or TikTok.</p>
+        </article>
+      </div>
+    </section>
+    <section class="install-section" id="installSection" aria-labelledby="installTitle">
+      <div>
+        <h2 id="installTitle">Keep EditsBeauty on your home screen</h2>
+        <p>Install it and it opens like an app. After this page has loaded once, filters, Adjust, crop, and the camera still open without a connection.</p>
+        <p class="install-ready" hidden>EditsBeauty is already on this home screen.</p>
+      </div>
+      <div class="install-actions">
+        <button class="start-pill" id="homeInstall" type="button">Install the app</button>
+        <p>On iPhone or iPad, tap Share, then Add to Home Screen.</p>
+      </div>
+    </section>
     <div class="top-edit">
       <button class="start-pill" id="startEditing" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3z"/><path d="M18 13l.6 1.8L20.5 16l-1.9.7L18 18.5l-.6-1.8L15.5 16l1.9-.7L18 13z"/></svg> Start Editing</button>
       <button class="start-pill guide-home" id="homeGuide" type="button">Ask AI</button>
