@@ -605,6 +605,10 @@ const lookRecipes: Record<string, LookRecipe> = {
   matte: { saturate: 0.7, contrast: 0.86, brightness: 1.1 },
   golden: { sepia: 0.3, saturate: 1.18, brightness: 1.08, hue: -8 },
   beauty: { brightness: 1.1, saturate: 1.04, contrast: 0.92, sepia: 0.1 },
+  // Extra looks. They work for everyone in this build. A buyer can reserve them for Pro.
+  pearl: { brightness: 1.14, saturate: 0.9, contrast: 0.92, sepia: 0.08 },
+  honey: { sepia: 0.24, saturate: 1.26, brightness: 1.08, hue: -8 },
+  mist: { brightness: 1.12, contrast: 0.84, saturate: 0.78, hue: 10 },
 };
 
 const mixUnit = (value: number, amount: number): number => 1 + (value - 1) * amount;
@@ -2218,6 +2222,7 @@ byId<HTMLButtonElement>('sheetStart')?.addEventListener('click', () => {
   setStudioTab('filters');
 });
 const beginEditing = (): void => {
+  dismissTour(true);
   activeHomeEffect = null;
   const title = byId<HTMLElement>('editorTitle');
   if (title) title.textContent = 'Filters';
@@ -2234,10 +2239,77 @@ const paintHeroSplit = (): void => {
 };
 heroSplit?.addEventListener('input', paintHeroSplit);
 paintHeroSplit();
+
+const compareRangeControl = byId<HTMLInputElement>('compareRange');
+compareRangeControl?.addEventListener('input', () => {
+  compareRatio = Number(compareRangeControl.value) / 100;
+  if (originalImage) render();
+});
+
+const tourSteps = [
+  { title: 'Start with a photo', body: 'Tap Start editing and choose a picture from your camera roll. The photo stays on this device.' },
+  { title: 'Try a look in one tap', body: 'Quick looks sit above the other filters. Each one has a thumbnail of your photo, or of the sample until you choose one.' },
+  { title: 'Compare before and after', body: 'Drag Before / After under the photo. You can still hold the photo to see the original.' },
+  { title: 'Save, or install the app', body: 'Save writes a new file. Add EditsBeauty to your home screen when you want it one tap away.' },
+];
+let tourIndex = 0;
+
+function dismissTour(remember: boolean): void {
+  const tour = byId<HTMLElement>('firstRunTour');
+  if (tour) tour.hidden = true;
+  if (!remember) return;
+  try {
+    localStorage.setItem('editsbeauty-tour-seen', '1');
+  } catch {
+    // The tour still stays closed for this visit.
+  }
+}
+
+function showTourStep(): void {
+  const step = tourSteps[tourIndex];
+  const title = byId<HTMLElement>('tourTitle');
+  const body = byId<HTMLElement>('tourBody');
+  const count = byId<HTMLElement>('tourCount');
+  const next = byId<HTMLButtonElement>('tourNext');
+  if (title) title.textContent = step.title;
+  if (body) body.textContent = step.body;
+  if (count) count.textContent = `${tourIndex + 1} of ${tourSteps.length}`;
+  if (next) next.textContent = tourIndex === tourSteps.length - 1 ? 'Done' : 'Next';
+}
+
+const startTour = (): void => {
+  const tour = byId<HTMLElement>('firstRunTour');
+  if (!tour || (editorPanel && !editorPanel.hidden)) return;
+  try {
+    if (localStorage.getItem('editsbeauty-tour-seen') === '1') return;
+  } catch {
+    return;
+  }
+  tourIndex = 0;
+  showTourStep();
+  tour.hidden = false;
+  byId<HTMLButtonElement>('tourNext')?.focus();
+};
+
+byId<HTMLButtonElement>('tourSkip')?.addEventListener('click', () => dismissTour(true));
+byId<HTMLButtonElement>('tourNext')?.addEventListener('click', () => {
+  if (tourIndex >= tourSteps.length - 1) {
+    dismissTour(true);
+    return;
+  }
+  tourIndex += 1;
+  showTourStep();
+});
+window.setTimeout(startTour, 2200);
 byId<HTMLButtonElement>('studioBack')?.addEventListener('click', closeStudio);
 backdrop?.addEventListener('click', closeTools);
 document.addEventListener('keydown', (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
+    const tour = byId<HTMLElement>('firstRunTour');
+    if (tour && !tour.hidden) {
+      dismissTour(true);
+      return;
+    }
     if (retouchScreen && !retouchScreen.hidden || narrowScreen && !narrowScreen.hidden) closePortrait(false);
     const cropScreen = byId<HTMLElement>('cropScreen');
     if (cropScreen && !cropScreen.hidden) {
@@ -2956,6 +3028,7 @@ const paintHomeEffect = (): void => {
 
 let holdCompare = false;
 let legacyExport = false;
+let compareRatio = 1;
 
 const render = (): void => {
   if (!originalImage || !context || !canvas) return;
@@ -3209,6 +3282,26 @@ const render = (): void => {
   paintHomeEffect();
   updatePortraitGuides();
   placeStickerFrame();
+  if (!holdCompare && compareRatio < 0.999 && context && originalImage) {
+    const edited = document.createElement('canvas');
+    edited.width = width;
+    edited.height = height;
+    edited.getContext('2d')?.drawImage(canvas, 0, 0);
+    context.save();
+    context.filter = 'none';
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = editBackground?.value ?? '#ffffff';
+    context.fillRect(0, 0, width, height);
+    context.drawImage(originalImage, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+    const splitX = Math.round(width * (1 - compareRatio));
+    context.beginPath();
+    context.rect(splitX, 0, Math.max(0, width - splitX), height);
+    context.clip();
+    context.drawImage(edited, 0, 0);
+    context.restore();
+    context.fillStyle = '#ffffff';
+    context.fillRect(Math.max(0, Math.min(width - 2, splitX - 1)), 0, 2, height);
+  }
 };
 
 const selectBackgroundScene = async (scene: BackgroundScene, scroll: boolean): Promise<void> => {
@@ -3332,6 +3425,9 @@ const openPhoto = (src: string): void => {
     byId<HTMLButtonElement>('teethToggle')?.setAttribute('aria-pressed', String(Number(teethAmount) > 0));
     if (noseValue) noseValue.value = '0';
     zeroAdjustControls();
+    compareRatio = 1;
+    const compareRange = byId<HTMLInputElement>('compareRange');
+    if (compareRange) compareRange.value = '100';
     render();
     paintFilterPreviews();
     if (faceDetectionStatus) faceDetectionStatus.textContent = 'Detecting face landmarks on this device…';

@@ -119,18 +119,26 @@ let installPrompt: InstallPromptEvent | null = (window as Window & { __editsbeau
 const installButton = document.createElement('button');
 installButton.type = 'button';
 installButton.className = 'install-app';
-installButton.textContent = 'Install app';
 installButton.hidden = true;
+const installLabel = document.createElement('span');
+installLabel.textContent = 'Install app';
+const installHint = document.createElement('small');
+installHint.textContent = 'Home screen';
+installButton.append(installLabel, installHint);
 const installHelp = document.createElement('div');
 installHelp.className = 'install-help';
 installHelp.hidden = true;
 installHelp.setAttribute('role', 'dialog');
-installHelp.setAttribute('aria-label', 'Install EditsBeauty');
+installHelp.setAttribute('aria-labelledby', 'installHelpTitle');
+const installHelpTitle = document.createElement('h2');
+installHelpTitle.id = 'installHelpTitle';
+installHelpTitle.textContent = 'Install EditsBeauty';
 const installHelpText = document.createElement('p');
+const installHelpList = document.createElement('ul');
 const installHelpClose = document.createElement('button');
 installHelpClose.type = 'button';
-installHelpClose.textContent = 'Close';
-installHelp.append(installHelpText, installHelpClose);
+installHelpClose.textContent = 'Not now';
+installHelp.append(installHelpTitle, installHelpText, installHelpList, installHelpClose);
 document.body.append(installButton, installHelp);
 if (installPrompt) document.documentElement.dataset.installable = 'true';
 
@@ -177,7 +185,17 @@ const hideInstall = (): void => {
 
 const showInstallHelp = (message: string): void => {
   installHelpText.textContent = message;
+  installHelpList.replaceChildren();
+  const steps = appleDevice()
+    ? ['Tap the Share button in Safari.', 'Choose Add to Home Screen.', 'Tap Add. EditsBeauty then opens from that icon.']
+    : ['Open the browser menu.', 'Choose Install app or Add to Home screen.', 'Confirm. After this visit, filters and Adjust can open offline.'];
+  steps.forEach((step) => {
+    const item = document.createElement('li');
+    item.textContent = step;
+    installHelpList.append(item);
+  });
   installHelp.hidden = false;
+  installHelpClose.focus();
 };
 
 window.addEventListener('beforeinstallprompt', (event: Event) => {

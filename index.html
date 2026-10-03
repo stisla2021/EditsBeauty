@@ -182,7 +182,8 @@
           </label>
         </div>
         <canvas id="canvas" aria-label="Photo editing preview"></canvas>
-        <p class="compare-hint" id="compareHint">Hold the photo to compare</p>
+        <p class="compare-hint" id="compareHint">Hold the photo, or drag Before / After</p>
+        <label class="compare-slider" id="compareSlider"><span>Before</span><input type="range" id="compareRange" min="0" max="100" value="100" aria-label="Before and after. Move left to see the original."><span>After</span></label>
         <div class="sticker-layer" id="stickerLayer">
           <div class="sticker-frame" id="stickerFrame" hidden>
             <button type="button" id="stickerRotate" aria-label="Rotate sticker">↻</button>
@@ -194,8 +195,19 @@
       </div>
       <input type="file" id="upload" accept="image/*" hidden>
       <div class="studio-sheet creative-controls" id="creativeControls">
-        <label class="grid-setting visually-hidden">Filter<select id="photoFilter"><option value="original">Original</option><option value="vivid">Vivid</option><option value="vivid-warm">Vivid Warm</option><option value="vivid-cool">Vivid Cool</option><option value="dramatic">Dramatic</option><option value="dramatic-warm">Dramatic Warm</option><option value="dramatic-cool">Dramatic Cool</option><option value="mono">B/W</option><option value="silvertone">Silvertone</option><option value="noir">B/W</option><option value="fade">Fade</option><option value="instant">Instant</option><option value="transfer">Transfer</option><option value="chrome">Chrome</option><option value="film">Film</option><option value="warm">Warm</option><option value="glow">Glow</option><option value="cool">Cool</option><option value="soft">Soft</option><option value="pink">Pink</option><option value="vintage">Vintage</option><option value="pop">Pop</option><option value="matte">Matte</option><option value="golden">Golden</option><option value="beauty">Beauty</option></select></label>
+        <label class="grid-setting visually-hidden">Filter<select id="photoFilter"><option value="original">Original</option><option value="vivid">Vivid</option><option value="vivid-warm">Vivid Warm</option><option value="vivid-cool">Vivid Cool</option><option value="dramatic">Dramatic</option><option value="dramatic-warm">Dramatic Warm</option><option value="dramatic-cool">Dramatic Cool</option><option value="mono">B/W</option><option value="silvertone">Silvertone</option><option value="noir">B/W</option><option value="fade">Fade</option><option value="instant">Instant</option><option value="transfer">Transfer</option><option value="chrome">Chrome</option><option value="film">Film</option><option value="warm">Warm</option><option value="glow">Glow</option><option value="cool">Cool</option><option value="soft">Soft</option><option value="pink">Pink</option><option value="vintage">Vintage</option><option value="pop">Pop</option><option value="matte">Matte</option><option value="golden">Golden</option><option value="beauty">Beauty</option><option value="pearl">Pearl</option><option value="honey">Honey</option><option value="mist">Mist</option></select></label>
         <div class="sheet-panel" id="panelFilters">
+          <div class="preset-row" id="presetRow" role="listbox" aria-label="Quick looks">
+            <button class="filter-chip" type="button" data-look="original" aria-pressed="true"><span class="thumb look-original"><canvas data-filter-preview="original" width="112" height="112"></canvas></span><span>Original</span></button>
+            <button class="filter-chip" type="button" data-look="vivid"><span class="thumb look-vivid"><canvas data-filter-preview="vivid" width="112" height="112"></canvas></span><span>Vivid</span></button>
+            <button class="filter-chip" type="button" data-look="warm"><span class="thumb look-warm"><canvas data-filter-preview="warm" width="112" height="112"></canvas></span><span>Warm</span></button>
+            <button class="filter-chip" type="button" data-look="glow"><span class="thumb look-glow"><canvas data-filter-preview="glow" width="112" height="112"></canvas></span><span>Glow</span></button>
+            <button class="filter-chip" type="button" data-look="beauty"><span class="thumb look-beauty"><canvas data-filter-preview="beauty" width="112" height="112"></canvas></span><span>Beauty</span></button>
+            <button class="filter-chip" type="button" data-look="film"><span class="thumb look-film"><canvas data-filter-preview="film" width="112" height="112"></canvas></span><span>Film</span></button>
+            <button class="filter-chip" type="button" data-look="pearl"><span class="thumb look-pearl"><canvas data-filter-preview="pearl" width="112" height="112"></canvas></span><span>Pearl</span></button>
+            <button class="filter-chip" type="button" data-look="honey"><span class="thumb look-honey"><canvas data-filter-preview="honey" width="112" height="112"></canvas></span><span>Honey</span></button>
+            <button class="filter-chip" type="button" data-look="mist"><span class="thumb look-mist"><canvas data-filter-preview="mist" width="112" height="112"></canvas></span><span>Mist</span></button>
+          </div>
           <div class="iphone-filters" id="iphoneFilters">
             <div class="filter-scroll" id="filterBar" role="listbox" aria-label="Photo filters">
               <button class="filter-chip" type="button" data-look="original" aria-pressed="true"><span class="thumb look-original"><canvas data-filter-preview="original" width="112" height="112"></canvas></span><span>Original</span></button>
@@ -222,6 +234,9 @@
               <button class="filter-chip" type="button" data-look="matte"><span class="thumb look-matte"><canvas data-filter-preview="matte" width="112" height="112"></canvas></span><span>Matte</span></button>
               <button class="filter-chip" type="button" data-look="golden"><span class="thumb look-golden"><canvas data-filter-preview="golden" width="112" height="112"></canvas></span><span>Golden</span></button>
               <button class="filter-chip" type="button" data-look="beauty"><span class="thumb look-beauty"><canvas data-filter-preview="beauty" width="112" height="112"></canvas></span><span>Beauty</span></button>
+              <button class="filter-chip" type="button" data-look="pearl"><span class="thumb look-pearl"><canvas data-filter-preview="pearl" width="112" height="112"></canvas></span><span>Pearl</span></button>
+              <button class="filter-chip" type="button" data-look="honey"><span class="thumb look-honey"><canvas data-filter-preview="honey" width="112" height="112"></canvas></span><span>Honey</span></button>
+              <button class="filter-chip" type="button" data-look="mist"><span class="thumb look-mist"><canvas data-filter-preview="mist" width="112" height="112"></canvas></span><span>Mist</span></button>
             </div>
             <label class="range-control" for="filterIntensity"><span>Intensity</span><output id="filterIntensityVal">100%</output><input type="range" id="filterIntensity" min="0" max="100" value="100"></label>
             <div id="smoothSlot">
@@ -789,6 +804,17 @@
       </form>
     </div>
   </section>
+  <div class="tour" id="firstRunTour" hidden>
+    <div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+      <p class="tour-count" id="tourCount">1 of 4</p>
+      <h2 id="tourTitle">Start with a photo</h2>
+      <p id="tourBody">Tap Start editing and choose a picture. It stays on this device.</p>
+      <div class="tour-actions">
+        <button type="button" id="tourSkip">Skip</button>
+        <button type="button" id="tourNext">Next</button>
+      </div>
+    </div>
+  </div>
   <script type="module" src="./menu.ts"></script>
   <script type="module" src="./app.ts"></script>
   <section class="home-note" id="feedback">
