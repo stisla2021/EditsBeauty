@@ -637,6 +637,12 @@ body.ios-about, body.dark.ios-about, body.ios-legal, body.dark.ios-legal { backg
 .legal-card h3 { margin: 14px 0 6px; font-size: 16px; }
 .legal-card p, .legal-card li { color: #3a3a3c; font-size: 15px; line-height: 1.55; }
 .legal-card ul { margin: 0 0 16px; padding-left: 18px; }
+.pro-benefits { display: grid; gap: 12px; margin: 0 0 16px; padding: 0; list-style: none; }
+.pro-benefits li { padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.pro-benefits h3 { margin: 0 0 6px; font-size: 18px; }
+.pro-benefits p { margin: 0; }
+.pro-checkout { min-height: 48px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 750; cursor: pointer; }
+.legal-card code { font-size: 0.92em; }
 .confirm-dialog { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 24px; background: rgb(0 0 0 / 40%); }
 .confirm-dialog[hidden] { display: none; }
 .confirm-card { width: min(100%, 320px); padding: 20px 16px 12px; border-radius: 16px; background: #fff; text-align: center; }

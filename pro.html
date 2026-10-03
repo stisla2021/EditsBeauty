@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!-- Copyright (c) Ismaila Jallow -->
+<!--
+  BUYER: connect payments here.
+  1. Create a checkout session on your server (Stripe, Paddle, or Lemon Squeezy).
+  2. Do not put a secret key in this file or in menu.ts.
+  3. Replace startProCheckout in menu.ts so it opens that session.
+  4. After the provider confirms payment, set localStorage key "editsbeauty-pro" to "1".
+  5. You can later gate full-resolution export, AdSense, and the Pearl, Honey, and Mist looks.
+  This build does not charge anyone and does not lock those features.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>Pro - EditsBeauty</title>
+  <meta name="description" content="EditsBeauty Pro lists HD export, no ads, and extra presets. Payments are not connected in this build.">
+  <link rel="canonical" href="https://editsbeauty.vercel.app/pro">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="EditsBeauty">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="images/logo-192.png">
+  <link rel="apple-touch-icon" href="images/logo-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="ios-legal">
+  <header class="ios-header">
+    <a class="ios-back" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</a>
+    <h1>Pro</h1>
+    <span></span>
+  </header>
+  <main class="legal-card">
+    <h2>EditsBeauty Pro</h2>
+    <p>Pro is a place for a paid upgrade. This build does not charge a card, and the editor stays usable without it.</p>
+    <ul class="pro-benefits">
+      <li>
+        <h3>HD export</h3>
+        <p>Full-resolution save, plus JPEG, PNG, and WebP. The free editor already offers these. A buyer can reserve the larger sizes for Pro.</p>
+      </li>
+      <li>
+        <h3>No ads</h3>
+        <p>Hide the AdSense script for people who have Pro. Ads load only when <code>ADSENSE_CLIENT</code> is set at build time.</p>
+      </li>
+      <li>
+        <h3>Extra presets</h3>
+        <p>Pearl, Honey, and Mist sit in Quick looks. They work for everyone today. A buyer can show them only when Pro is on.</p>
+      </li>
+    </ul>
+    <p id="proStatus">Pro is not on. Nothing on this page charges a card.</p>
+    <button class="pro-checkout" id="proCheckout" type="button">Upgrade — payments not connected</button>
+    <p class="tool-note">Plug-in point: <code>startProCheckout</code> in <code>menu.ts</code>. After a confirmed payment, set <code>editsbeauty-pro</code> to <code>1</code> in local storage. Do not put a secret key in the page.</p>
+  </main>
+  <footer class="site-footer">
+    <nav aria-label="Site">
+      <a href="index.html">Home</a>
+      <a href="about.html">About Us</a>
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms.html">Terms and Conditions</a>
+      <a href="contact.html">Contact Us</a>
+      <a href="faq.html">FAQ</a>
+    </nav>
+    <p>EditsBeauty is published by StISLA2021 in Jalangbam, The Gambia.</p>
+    <a href="mailto:stisla2021@gmail.com">stisla2021@gmail.com</a>
+    <span>Copyright © Ismaila Jallow</span>
+  </footer>
+  <script type="module" src="./menu.ts"></script>
+</body>
+</html>

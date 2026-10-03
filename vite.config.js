@@ -236,6 +236,7 @@ const pages = [
   'copyright.html',
   'fontlicense.html',
   'usage.html',
+  'pro.html',
 ];
 
 export default defineConfig({

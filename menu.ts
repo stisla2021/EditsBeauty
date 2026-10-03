@@ -680,8 +680,36 @@ const bindAboutId = (): void => {
   });
 };
 
+/**
+ * BUYER: replace this with Stripe Checkout, Paddle, or Lemon Squeezy.
+ * Call your server to create the session. Do not put a secret key in this file.
+ * After the provider confirms payment, set localStorage "editsbeauty-pro" to "1".
+ * This build never sets that key and never charges anyone.
+ */
+const startProCheckout = (): void => {
+  const proStatus = document.getElementById('proStatus');
+  if (proStatus) proStatus.textContent = 'Payments are not connected. Replace startProCheckout in menu.ts. Do not put a secret key in this file.';
+};
+
+const bindPro = (): void => {
+  const proStatus = document.getElementById('proStatus');
+  const proCheckout = document.getElementById('proCheckout');
+  if (!proStatus && !proCheckout) return;
+  let proOn = false;
+  try {
+    proOn = localStorage.getItem('editsbeauty-pro') === '1';
+  } catch {
+    proOn = false;
+  }
+  if (proStatus) proStatus.textContent = proOn
+    ? 'Pro is on for this browser. Payments are still not connected in this build.'
+    : 'Pro is not on. Nothing on this page charges a card.';
+  proCheckout?.addEventListener('click', startProCheckout);
+};
+
 bindSettings();
 bindAboutId();
+bindPro();
 startReports();
 startUsage();
 inject();
