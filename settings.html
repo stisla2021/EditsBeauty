@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
   <title>Settings - EditsBeauty</title>
-  <meta name="description" content="Settings for EditsBeauty: resolution, cache, and links to About and the FAQ.">
+  <meta name="description" content="Settings for EditsBeauty: theme, resolution, cache, and links to About and the FAQ.">
   <link rel="canonical" href="https://editsbeauty.vercel.app/settings">
   <meta name="robots" content="noindex">
   <meta name="mobile-web-app-capable" content="yes">
@@ -24,6 +24,16 @@
     <span></span>
   </header>
   <main>
+    <div class="ios-group">
+      <div class="ios-row theme-setting">
+        <span>Theme</span>
+        <div class="theme-options" role="group" aria-label="Theme">
+          <button class="theme-option" id="systemTheme" type="button" aria-pressed="true">System</button>
+          <button class="theme-option" id="lightTheme" type="button">Light</button>
+          <button class="theme-option" id="darkTheme" type="button">Dark</button>
+        </div>
+      </div>
+    </div>
     <div class="ios-group">
       <div class="ios-row">
         <span>Save to EditsBeauty Album</span>
@@ -87,7 +97,7 @@
         <svg class="ios-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </a>
     </div>
-    <p class="ios-version">EditsBeauty V1.1.9</p>
+    <p class="ios-version">EditsBeauty V1.1.10</p>
   </main>
   <div class="confirm-dialog" id="visionWarning" hidden>
     <div class="confirm-card" role="dialog" aria-labelledby="visionWarningTitle">

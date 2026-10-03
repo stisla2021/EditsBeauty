@@ -1,7 +1,7 @@
 // Copyright (c) StISLA2021
 // Bump APP_VERSION and CACHE together. The Home Screen update banner appears only when APP_VERSION changes.
-const APP_VERSION = '1.1.9';
-const CACHE = 'editsbeauty-shell-v37';
+const APP_VERSION = '1.1.10';
+const CACHE = 'editsbeauty-shell-v38';
 const SHELL = [
   './',
   './index.html',

@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 import { planEdit } from './guide-plan.js';
 import { acceptReport, saveReport } from './report-store.js';
 import { acceptUsage, commentsAllowed, readUsage, saveUsage } from './usage-store.js';
+import { acceptAccount, signInAccount, updateAccount } from './account-store.js';
 
 const groqKey = () => {
   if (process.env.GROQ_API_KEY) return process.env.GROQ_API_KEY;
@@ -112,6 +113,51 @@ const attachGuide = (middlewares) => {
         } catch (error) {
           const status = error && typeof error.status === 'number' ? error.status : 400;
           reply(status, { stored: false, error: status === 503 ? 'unconfigured' : 'store' });
+        }
+      })();
+    });
+  });
+  middlewares.use('/api/account', (req, res) => {
+    const reply = (status, body) => {
+      res.statusCode = status;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(body));
+    };
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+    if (req.method !== 'POST') {
+      reply(405, { ok: false, error: 'method' });
+      return;
+    }
+    const chunks = [];
+    let size = 0;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > 40000) req.destroy();
+      else chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (size > 40000) {
+        reply(413, { ok: false, error: 'field' });
+        return;
+      }
+      void (async () => {
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+          const accepted = acceptAccount(body, req.headers.authorization || '');
+          if (!accepted.ok) {
+            reply(accepted.status, { ok: false, error: accepted.error });
+            return;
+          }
+          const result = accepted.action === 'sign-in' ? await signInAccount(accepted) : await updateAccount(accepted);
+          reply(200, result);
+        } catch (error) {
+          const status = error && typeof error.status === 'number' ? error.status : 400;
+          const code = status === 503 ? 'unconfigured' : status === 401 ? 'password' : 'store';
+          reply(status, { ok: false, error: code });
         }
       })();
     });

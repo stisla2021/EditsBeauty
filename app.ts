@@ -3737,8 +3737,15 @@ const accountKey = 'editsbeauty-account';
 const looksKey = 'editsbeauty-saved-looks';
 const accountSheet = document.getElementById('accountSheet');
 const accountStatus = document.getElementById('accountStatus');
-type LocalAccount = { email: string; hash: string; name: string; photo: string; provider: 'email' | 'google' | 'x' };
+type LocalAccount = { email: string; name: string; photo: string; token: string; provider: 'email' | 'google' | 'x'; synced: boolean };
 type SavedLook = { name: string; look: string; smooth: string };
+type AccountPayload = { ok?: boolean; error?: string; email?: string; name?: string; photo?: string; looks?: SavedLook[]; token?: string };
+
+const accountEndpoint = (): string => {
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1' || host === 'editsbeauty.vercel.app') return new URL('/api/account', window.location.origin).href;
+  return 'https://editsbeauty.vercel.app/api/account';
+};
 
 const readAccount = (): LocalAccount | null => {
   try {
@@ -3749,9 +3756,21 @@ const readAccount = (): LocalAccount | null => {
   }
 };
 
-const hashPassword = async (email: string, password: string): Promise<string> => {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${email.toLowerCase()}\n${password}`));
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+const writeAccount = (account: LocalAccount): void => {
+  localStorage.setItem(accountKey, JSON.stringify(account));
+};
+
+const readLooks = (): SavedLook[] => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(looksKey) ?? '[]') as SavedLook[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeLooks = (looks: SavedLook[]): void => {
+  localStorage.setItem(looksKey, JSON.stringify(looks.slice(0, 12)));
 };
 
 const paintAccount = (): void => {
@@ -3766,21 +3785,14 @@ const paintAccount = (): void => {
   if (name instanceof HTMLInputElement && account) name.value = account.name;
   if (email instanceof HTMLInputElement && account) email.value = account.email;
   if (accountStatus) {
-    accountStatus.textContent = account
-      ? `Signed in on this device as ${account.name || account.email}. Photos stay on the device.`
-      : 'No profile yet. Google and X stay on this device too. Nothing is sent to those services.';
+    if (!account) accountStatus.textContent = 'Sign in with email and password to come back after the app is deleted. Editing photos are not uploaded. Google and X stay on this device only.';
+    else if (account.synced) accountStatus.textContent = `Signed in as ${account.name || account.email}. The same email and password work again after the app is deleted. Editing photos stay on this device.`;
+    else accountStatus.textContent = `Saved on this device as ${account.name || account.email}. The sign-in service is not connected, so deleting the app removes this password.`;
   }
   const list = document.getElementById('savedLooks');
   if (!list) return;
   list.replaceChildren();
-  let looks: SavedLook[] = [];
-  try {
-    const parsed = JSON.parse(localStorage.getItem(looksKey) ?? '[]') as SavedLook[];
-    if (Array.isArray(parsed)) looks = parsed;
-  } catch {
-    looks = [];
-  }
-  looks.forEach((look) => {
+  readLooks().forEach((look) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = look.name;
@@ -3799,6 +3811,38 @@ const paintAccount = (): void => {
   });
 };
 
+const applyServerAccount = (payload: AccountPayload, fallbackName: string): void => {
+  const account: LocalAccount = {
+    email: payload.email ?? '',
+    name: payload.name || fallbackName,
+    photo: payload.photo ?? '',
+    token: payload.token ?? '',
+    provider: 'email',
+    synced: true,
+  };
+  writeAccount(account);
+  if (Array.isArray(payload.looks)) writeLooks(payload.looks);
+  paintAccount();
+};
+
+const pushAccount = async (patch: { name?: string; photo?: string; looks?: SavedLook[] }): Promise<boolean> => {
+  const account = readAccount();
+  if (!account?.synced || !account.token) return false;
+  try {
+    const response = await fetch(accountEndpoint(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${account.token}` },
+      body: JSON.stringify({ action: 'update', ...patch }),
+    });
+    const payload = await response.json() as AccountPayload;
+    if (!response.ok || !payload.ok) return false;
+    applyServerAccount(payload, account.name);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 document.getElementById('accountForm')?.addEventListener('submit', (event) => {
   event.preventDefault();
   void (async () => {
@@ -3809,17 +3853,46 @@ document.getElementById('accountForm')?.addEventListener('submit', (event) => {
     const password = passwordInput instanceof HTMLInputElement ? passwordInput.value : '';
     const name = nameInput instanceof HTMLInputElement ? nameInput.value.trim() : '';
     if (!email || password.length < 6) {
-      if (accountStatus) accountStatus.textContent = 'Use an email and a password of at least 6 characters. It stays on this device.';
+      if (accountStatus) accountStatus.textContent = 'Use an email and a password of at least 6 characters.';
       return;
     }
+    if (accountStatus) accountStatus.textContent = 'Signing in…';
+    try {
+      const response = await fetch(accountEndpoint(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sign-in', email, password, name }),
+      });
+      const payload = await response.json() as AccountPayload;
+      if (passwordInput instanceof HTMLInputElement) passwordInput.value = '';
+      if (response.ok && payload.ok && payload.token) {
+        applyServerAccount(payload, name || email);
+        showToast('Signed in. This password works again after the app is deleted.');
+        return;
+      }
+      if (payload.error === 'password') {
+        if (accountStatus) accountStatus.textContent = 'That password does not match this email.';
+        return;
+      }
+      if (payload.error !== 'unconfigured') {
+        if (accountStatus) accountStatus.textContent = 'Sign-in did not finish. Try again.';
+        return;
+      }
+    } catch {
+      // The service is unreachable. A saved sign-in is left as it is.
+    }
     const existing = readAccount();
-    const hash = await hashPassword(email, password);
-    if (existing && existing.email.toLowerCase() === email.toLowerCase() && existing.hash !== hash && existing.provider === 'email') {
+    if (existing?.synced) {
+      if (accountStatus) accountStatus.textContent = 'Sign-in could not reach the server. Try again when you are online. This password is already saved for the next time.';
+      return;
+    }
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${email.toLowerCase()}\n${password}`));
+    const hash = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+    if (existing && existing.email.toLowerCase() === email.toLowerCase() && existing.token && existing.token !== hash && !existing.synced) {
       if (accountStatus) accountStatus.textContent = 'That password does not match the one saved on this device.';
       return;
     }
-    const next: LocalAccount = { email, hash, name: name || email, photo: existing?.photo ?? '', provider: 'email' };
-    localStorage.setItem(accountKey, JSON.stringify(next));
+    writeAccount({ email, name: name || existing?.name || email, photo: existing?.photo ?? '', token: hash, provider: 'email', synced: false });
     if (passwordInput instanceof HTMLInputElement) passwordInput.value = '';
     paintAccount();
   })();
@@ -3829,18 +3902,18 @@ const continueLocal = (provider: 'google' | 'x'): void => {
   const nameInput = document.getElementById('profileName');
   const name = nameInput instanceof HTMLInputElement ? nameInput.value.trim() : '';
   if (!name) {
-    if (accountStatus) accountStatus.textContent = 'Type a display name. It is saved on this device only and is not sent to Google or X.';
+    if (accountStatus) accountStatus.textContent = 'Type a display name. It stays on this device and is not sent to Google or X.';
     return;
   }
   const existing = readAccount();
-  const next: LocalAccount = {
+  writeAccount({
     email: existing?.email ?? '',
-    hash: existing?.hash ?? '',
     name,
     photo: existing?.photo ?? '',
+    token: existing?.token ?? '',
     provider,
-  };
-  localStorage.setItem(accountKey, JSON.stringify(next));
+    synced: existing?.synced ?? false,
+  });
   paintAccount();
 };
 
@@ -3858,7 +3931,7 @@ document.getElementById('profilePhoto')?.addEventListener('change', () => {
   const file = input instanceof HTMLInputElement ? input.files?.[0] : undefined;
   const account = readAccount();
   if (!file || !account) {
-    if (accountStatus && !account) accountStatus.textContent = 'Save the profile before adding a photo.';
+    if (accountStatus && !account) accountStatus.textContent = 'Sign in before adding a profile photo.';
     return;
   }
   const image = new Image();
@@ -3872,15 +3945,16 @@ document.getElementById('profilePhoto')?.addEventListener('change', () => {
     const side = Math.min(image.naturalWidth, image.naturalHeight);
     copyContext.drawImage(image, (image.naturalWidth - side) / 2, (image.naturalHeight - side) / 2, side, side, 0, 0, 96, 96);
     account.photo = copy.toDataURL('image/jpeg', 0.7);
-    localStorage.setItem(accountKey, JSON.stringify(account));
+    writeAccount(account);
     URL.revokeObjectURL(url);
     paintAccount();
+    void pushAccount({ photo: account.photo });
   };
   image.src = url;
 });
 document.getElementById('accountLook')?.addEventListener('click', () => {
   if (!readAccount()) {
-    if (accountStatus) accountStatus.textContent = 'Save a profile on this device before saving a Look.';
+    if (accountStatus) accountStatus.textContent = 'Sign in before saving a Look.';
     return;
   }
   const look: SavedLook = {
@@ -3888,17 +3962,13 @@ document.getElementById('accountLook')?.addEventListener('click', () => {
     look: photoFilter?.value ?? 'original',
     smooth: smoothSlider?.value ?? '0',
   };
-  let looks: SavedLook[] = [];
-  try {
-    const parsed = JSON.parse(localStorage.getItem(looksKey) ?? '[]') as SavedLook[];
-    if (Array.isArray(parsed)) looks = parsed.filter((item) => item.look !== look.look);
-  } catch {
-    looks = [];
-  }
+  const looks = readLooks().filter((item) => item.look !== look.look);
   looks.unshift(look);
-  localStorage.setItem(looksKey, JSON.stringify(looks.slice(0, 12)));
+  writeLooks(looks);
   paintAccount();
-  showToast('Look saved on this device.');
+  void pushAccount({ looks: looks.slice(0, 12) }).then((saved) => {
+    showToast(saved ? 'Look saved with your sign-in.' : 'Look saved on this device.');
+  });
 });
 paintAccount();
 document.querySelectorAll<HTMLButtonElement>('[data-camera-mode]').forEach((button) => {
