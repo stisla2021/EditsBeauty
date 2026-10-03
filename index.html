@@ -636,7 +636,7 @@
   <dialog class="account-sheet" id="accountSheet">
     <form method="dialog" id="accountForm">
       <h2>Profile</h2>
-      <p>Editing photos stay on this device. Your email and password let you sign in again after the app is deleted. The password is stored only as a protected hash, with your name, profile photo, and saved Looks.</p>
+      <p>Editing photos stay on this device. Your email and password let you sign in again after the app is deleted. The password is stored only as a protected hash, with your name, profile photo, and saved Looks. Google and X sign-in is not available yet.</p>
       <img id="profilePreview" alt="" hidden>
       <label>Display name<input id="profileName" name="name" maxlength="40" autocomplete="nickname"></label>
       <label>Profile photo<input id="profilePhoto" type="file" accept="image/*"></label>
@@ -644,8 +644,8 @@
       <label>Password<input id="profilePassword" name="password" type="password" autocomplete="current-password" maxlength="80"></label>
       <div class="account-actions">
         <button type="submit" id="accountSave" value="save">Sign in</button>
-        <button type="button" id="accountGoogle">Continue with Google</button>
-        <button type="button" id="accountX">Continue with X</button>
+        <button type="button" id="accountGoogle" disabled>Continue with Google — coming soon</button>
+        <button type="button" id="accountX" disabled>Continue with X — coming soon</button>
         <button type="button" id="accountLook">Save this Look</button>
         <button type="button" id="accountOut">Sign out</button>
         <button type="button" id="accountClose">Close</button>

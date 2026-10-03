@@ -3805,7 +3805,7 @@ const paintAccount = (): void => {
   if (name instanceof HTMLInputElement && account) name.value = account.name;
   if (email instanceof HTMLInputElement && account) email.value = account.email;
   if (accountStatus) {
-    if (!account) accountStatus.textContent = 'Sign in with email and password to come back after the app is deleted. Editing photos are not uploaded. Google and X stay on this device only.';
+    if (!account) accountStatus.textContent = 'Sign in with email and password to come back after the app is deleted. Editing photos are not uploaded. Google and X are not connected yet.';
     else if (account.synced) accountStatus.textContent = `Signed in as ${account.name || account.email}. The same email and password work again after the app is deleted. Editing photos stay on this device.`;
     else accountStatus.textContent = `Saved on this device as ${account.name || account.email}. The sign-in service is not connected, so deleting the app removes this password.`;
   }
@@ -3918,27 +3918,6 @@ document.getElementById('accountForm')?.addEventListener('submit', (event) => {
   })();
 });
 
-const continueLocal = (provider: 'google' | 'x'): void => {
-  const nameInput = document.getElementById('profileName');
-  const name = nameInput instanceof HTMLInputElement ? nameInput.value.trim() : '';
-  if (!name) {
-    if (accountStatus) accountStatus.textContent = 'Type a display name. It stays on this device and is not sent to Google or X.';
-    return;
-  }
-  const existing = readAccount();
-  writeAccount({
-    email: existing?.email ?? '',
-    name,
-    photo: existing?.photo ?? '',
-    token: existing?.token ?? '',
-    provider,
-    synced: existing?.synced ?? false,
-  });
-  paintAccount();
-};
-
-document.getElementById('accountGoogle')?.addEventListener('click', () => continueLocal('google'));
-document.getElementById('accountX')?.addEventListener('click', () => continueLocal('x'));
 document.getElementById('accountOut')?.addEventListener('click', () => {
   localStorage.removeItem(accountKey);
   paintAccount();

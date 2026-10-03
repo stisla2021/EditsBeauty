@@ -569,49 +569,18 @@ const clearAppCache = async (): Promise<void> => {
 };
 
 const bindSettings = (): void => {
-  const saveAlbum = document.getElementById('saveAlbum');
-  const stickerOptimize = document.getElementById('stickerOptimize');
-  const heicFormat = document.getElementById('heicFormat');
-  const resolutionValue = document.getElementById('resolutionValue');
-  const liveValue = document.getElementById('liveValue');
-  const languageValue = document.getElementById('languageValue');
   const cacheSize = document.getElementById('cacheSize');
   const dialog = document.getElementById('clearDialog');
-  if (!(saveAlbum instanceof HTMLButtonElement)) return;
-
   const setSwitch = (button: HTMLButtonElement, on: boolean): void => {
     button.setAttribute('aria-checked', String(on));
   };
-  setSwitch(saveAlbum, readSetting('editsbeauty-save-album', 'on') !== 'off');
-  if (stickerOptimize instanceof HTMLButtonElement) setSwitch(stickerOptimize, readSetting('editsbeauty-sticker-optimize', 'off') === 'on');
-  if (heicFormat instanceof HTMLButtonElement) setSwitch(heicFormat, readSetting('editsbeauty-heic', 'on') !== 'off');
   const faceMeshOverlay = document.getElementById('faceMeshOverlay');
   if (faceMeshOverlay instanceof HTMLButtonElement) setSwitch(faceMeshOverlay, readSetting('editsbeauty-face-mesh', 'off') === 'on');
   const diagnosticReports = document.getElementById('diagnosticReports');
   if (diagnosticReports instanceof HTMLButtonElement) setSwitch(diagnosticReports, readSetting('editsbeauty-diagnostics', 'off') === 'on');
   const visionSee = document.getElementById('visionSee');
   if (visionSee instanceof HTMLButtonElement) setSwitch(visionSee, readSetting('editsbeauty-ai-vision', 'off') === 'on');
-  if (resolutionValue) resolutionValue.textContent = readSetting('editsbeauty-resolution', 'High');
-  if (liveValue) liveValue.textContent = readSetting('editsbeauty-live-format', 'Ask every time');
-  if (languageValue) languageValue.textContent = readSetting('editsbeauty-language', 'English');
 
-  saveAlbum.addEventListener('click', () => {
-    const next = saveAlbum.getAttribute('aria-checked') !== 'true';
-    setSwitch(saveAlbum, next);
-    writeSetting('editsbeauty-save-album', next ? 'on' : 'off');
-  });
-  stickerOptimize?.addEventListener('click', () => {
-    if (!(stickerOptimize instanceof HTMLButtonElement)) return;
-    const next = stickerOptimize.getAttribute('aria-checked') !== 'true';
-    setSwitch(stickerOptimize, next);
-    writeSetting('editsbeauty-sticker-optimize', next ? 'on' : 'off');
-  });
-  heicFormat?.addEventListener('click', () => {
-    if (!(heicFormat instanceof HTMLButtonElement)) return;
-    const next = heicFormat.getAttribute('aria-checked') !== 'true';
-    setSwitch(heicFormat, next);
-    writeSetting('editsbeauty-heic', next ? 'on' : 'off');
-  });
   faceMeshOverlay?.addEventListener('click', () => {
     if (!(faceMeshOverlay instanceof HTMLButtonElement)) return;
     const next = faceMeshOverlay.getAttribute('aria-checked') !== 'true';
@@ -651,28 +620,6 @@ const bindSettings = (): void => {
     if (visionWarning) visionWarning.hidden = true;
   });
   document.getElementById('visionAllow')?.addEventListener('click', allowVision);
-
-  const resolutions = ['High', 'Standard', 'Original'];
-  const liveFormats = ['Ask every time', 'Live', 'Still'];
-  const languages = ['English', 'Français'];
-  document.getElementById('resolutionRow')?.addEventListener('click', () => {
-    const current = resolutionValue?.textContent ?? 'High';
-    const next = resolutions[(resolutions.indexOf(current) + 1) % resolutions.length];
-    if (resolutionValue) resolutionValue.textContent = next;
-    writeSetting('editsbeauty-resolution', next);
-  });
-  document.getElementById('liveRow')?.addEventListener('click', () => {
-    const current = liveValue?.textContent ?? 'Ask every time';
-    const next = liveFormats[(liveFormats.indexOf(current) + 1) % liveFormats.length];
-    if (liveValue) liveValue.textContent = next;
-    writeSetting('editsbeauty-live-format', next);
-  });
-  document.getElementById('languageRow')?.addEventListener('click', () => {
-    const current = languageValue?.textContent ?? 'English';
-    const next = languages[(languages.indexOf(current) + 1) % languages.length];
-    if (languageValue) languageValue.textContent = next;
-    writeSetting('editsbeauty-language', next);
-  });
 
   document.getElementById('clearCache')?.addEventListener('click', () => {
     if (dialog) dialog.hidden = false;
